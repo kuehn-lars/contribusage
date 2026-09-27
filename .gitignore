@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Local secrets, e.g. CONTRIBUSAGE_GITHUB_TOKEN for live tests (SPEC §16.1)
+.env
+
+# Swift and Xcode (SPEC §15.7)
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# llm-wiki: session files are local working memory and may hold personal detail
+llm-wiki/sessions/*
+!llm-wiki/sessions/.gitkeep
+
+# Obsidian: only the shared vault settings are committed
+llm-wiki/.obsidian/*
+!llm-wiki/.obsidian/app.json
+
+# Claude Code: personal overrides
+.claude/settings.local.json
