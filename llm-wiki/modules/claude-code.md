@@ -22,7 +22,7 @@ The v1 provider (`claude-code`). Limits come from the `/usage` probe (locator, p
 ## Contract
 Built so far: `ProviderID.claudeCode` (`claude-code`), pinned by a test because persistence folders and settings keys derive from it (SPEC §10.7).
 
-`UsageParser.windows(in:now:fallbackZone:)` (`Limits/UsageParser.swift`) turns `/usage` output into core `UsageWindow`s, classified by label (SPEC §8.1.3 P-1 to P-9, §8.1.4). It is pure: `now` and the fallback zone are parameters, so tests pin both. Classification is a private function tested through the parser; it lives here rather than in a separate `WindowClassifier` because it is three lines and has no other caller. The `LimitsReport` fields (P-10, P-11) come with T-2.2.
+`UsageParser.windows(in:now:fallbackZone:)` (`Limits/UsageParser.swift`) turns `/usage` output into core `UsageWindow`s, classified by label (SPEC §8.1.3 P-1 to P-9, §8.1.4). It is pure: `now` and the fallback zone are parameters, so tests pin both. Classification is a private function tested through the parser (`classifiesWindow`); it lives here rather than in a separate `WindowClassifier` because it is three lines and has no other caller. The `LimitsReport` fields (P-10, P-11) come with T-2.2.
 
 ## Things that bite
 - `Fixtures/usage/subscription-basic.txt` is reconstructed from Appendix A, not yet captured byte for byte as SPEC §16.2 requires; recapture it with the SPEC §16.6 command when R-2 runs.
