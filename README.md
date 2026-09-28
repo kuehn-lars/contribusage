@@ -1,7 +1,18 @@
 # contribusage
 A native macOS menu bar app for Apple Silicon that shows the usage of your AI coding tools and your GitHub contributions at a glance.
 
-**Status:** specification and research. Nothing to install yet.
+**Status:** foundation. The app skeleton builds and CI runs; nothing to install yet.
+
+## Build
+Needs an Apple Silicon Mac with Xcode 26 or later; the app itself runs on macOS 14 and later.
+
+```bash
+swift test --package-path Packages/ContribusageKit
+xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug -derivedDataPath .build/xcode build
+open .build/xcode/Build/Products/Debug/contribusage.app
+```
+
+More commands in [SPEC §15.6](SPEC.md#156-everyday-commands).
 
 ## How this repository works
 contribusage is built spec-first, with coding agents, and everything they need lives in the repository:

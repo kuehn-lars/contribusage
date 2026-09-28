@@ -1,0 +1,245 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C00000000000000000000014 /* ContribusageCore in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000011 /* ContribusageCore */; };
+		C00000000000000000000015 /* ContribusageClaudeCode in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000012 /* ContribusageClaudeCode */; };
+		C00000000000000000000016 /* ContribusageGitHub in Frameworks */ = {isa = PBXBuildFile; productRef = C00000000000000000000013 /* ContribusageGitHub */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		C00000000000000000000004 /* contribusage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = contribusage.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C00000000000000000000003 /* App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = App; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C00000000000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C00000000000000000000014 /* ContribusageCore in Frameworks */,
+				C00000000000000000000015 /* ContribusageClaudeCode in Frameworks */,
+				C00000000000000000000016 /* ContribusageGitHub in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C00000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000003 /* App */,
+				C00000000000000000000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C00000000000000000000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000004 /* contribusage.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C00000000000000000000005 /* Contribusage */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0000000000000000000000B /* Build configuration list for PBXNativeTarget "Contribusage" */;
+			buildPhases = (
+				C00000000000000000000006 /* Sources */,
+				C00000000000000000000007 /* Frameworks */,
+				C00000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C00000000000000000000003 /* App */,
+			);
+			name = Contribusage;
+			packageProductDependencies = (
+				C00000000000000000000011 /* ContribusageCore */,
+				C00000000000000000000012 /* ContribusageClaudeCode */,
+				C00000000000000000000013 /* ContribusageGitHub */,
+			);
+			productName = contribusage;
+			productReference = C00000000000000000000004 /* contribusage.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C0000000000000000000000A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+			};
+			buildConfigurationList = C00000000000000000000009 /* Build configuration list for PBXProject "Contribusage" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C00000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C00000000000000000000010 /* XCLocalSwiftPackageReference "Packages/ContribusageKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C00000000000000000000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C00000000000000000000005 /* Contribusage */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C00000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C0000000000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		C0000000000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C0000000000000000000000E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = contribusage;
+				INFOPLIST_KEY_LSUIElement = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kuehnlars.contribusage;
+				PRODUCT_NAME = contribusage;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+			};
+			name = Debug;
+		};
+		C0000000000000000000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = contribusage;
+				INFOPLIST_KEY_LSUIElement = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kuehnlars.contribusage;
+				PRODUCT_NAME = contribusage;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C00000000000000000000009 /* Build configuration list for PBXProject "Contribusage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0000000000000000000000C /* Debug */,
+				C0000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C0000000000000000000000B /* Build configuration list for PBXNativeTarget "Contribusage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0000000000000000000000E /* Debug */,
+				C0000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C00000000000000000000010 /* XCLocalSwiftPackageReference "Packages/ContribusageKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ContribusageKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C00000000000000000000011 /* ContribusageCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000010 /* XCLocalSwiftPackageReference "Packages/ContribusageKit" */;
+			productName = ContribusageCore;
+		};
+		C00000000000000000000012 /* ContribusageClaudeCode */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000010 /* XCLocalSwiftPackageReference "Packages/ContribusageKit" */;
+			productName = ContribusageClaudeCode;
+		};
+		C00000000000000000000013 /* ContribusageGitHub */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C00000000000000000000010 /* XCLocalSwiftPackageReference "Packages/ContribusageKit" */;
+			productName = ContribusageGitHub;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = C0000000000000000000000A /* Project object */;
+}
