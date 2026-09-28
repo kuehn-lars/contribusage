@@ -1417,7 +1417,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-1.4** Support protocols with live implementations and fakes: `TimeSource`, `ProcessRunning`, `HTTPTransport`, `SecretStore`, `FileEvents`, `AppPaths` (a struct, ADR-015). The live `ProcessRunning`, `SecretStore` and `FileEvents` are T-2.4, T-3.1 and T-4.5. *(10.6)* Accept: fakes used in at least one test each.
 - [x] **T-1.5** Persistence: versioned atomic JSON store, Application Support folder with `0700`, per provider folders. *(10.7)* Accept: tests for round trip, atomicity, version mismatch, provider folder deletion.
 - [x] **T-1.6** Provider framework: `UsageProvider`, `LimitsSource`, `ActivitySource`, `ProviderDescriptor`, `ProviderRegistry`, `FakeProvider`, `ProviderConformance`. *(FR-1 to FR-5, US-11, 16.4)* Accept: `FakeProvider` passes the conformance suite; registry tests for order, enablement and availability caching.
-- [ ] **T-1.7** Popover shell with mock `AppState`: provider groups, GitHub, footer, all states from 11.3 as SwiftUI previews, with one and with two providers. *(FR-4, FR-31)* Accept: every state renders in previews in light and dark mode.
+- [x] **T-1.7** Popover shell with mock `AppState`: provider groups, GitHub, footer, all states from 11.3 as SwiftUI previews, with one and with two providers. *(FR-4, FR-31)* Accept: every state renders in previews in light and dark mode.
 
 ### 17.2 Phase 2: Claude Code limits (M1)
 
