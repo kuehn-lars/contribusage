@@ -805,11 +805,10 @@ public protocol LimitsSource: Sendable {
     func pushedUpdates() -> AsyncStream<LimitsReport>
 }
 
-public protocol ActivitySource: Sendable {
-    func start() async                       // begin watching, emit an initial report
-    func stop() async                        // stop watching, release file handles
-    func rescan() async                      // e.g. on wake or popover open
-    func reports() -> AsyncStream<ActivityReport>
+public protocol ActivitySource: Sendable {   // watching runs while a reports() stream is consumed (ADR-016)
+    func reports() -> AsyncStream<ActivityReport>   // start watching, emit an initial report, then one per change;
+                                                    // cancelling the consumer stops watching, releases file handles
+    func rescan() async                             // e.g. on wake or popover open; result arrives on open streams
 }
 ```
 
@@ -1362,8 +1361,8 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - Every window has a kind; percentages are finite and not negative.
 - `fetch()` honours cancellation within 2 s (fake process runner that never finishes).
 - Failures surface as `SourceError`, never as crashes or untyped errors.
-- `stop()` releases all file watching (fake `FileEvents` reports zero active streams).
-- The provider performs no HTTP (it receives no `HTTPTransport`) and reads no path outside its declared roots (fake file system records accesses).
+- Cancelling the consumer of `reports()` releases all file watching (fake `FileEvents` reports zero active streams).
+- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots (fake file system records accesses; the seam and its check come with the first provider task that reads files).
 
 `FakeProvider` intentionally differs from Claude Code: only one window of kind `weekly`, limits delivered only via `pushedUpdates()`, token categories `input` and `output` only.
 
@@ -1417,7 +1416,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-1.3** Add `SPEC.md`, `AGENTS.md` (with `CLAUDE.md` importing it), `.gitignore`, `.swift-format`. Accept: lint command runs clean.
 - [x] **T-1.4** Support protocols with live implementations and fakes: `TimeSource`, `ProcessRunning`, `HTTPTransport`, `SecretStore`, `FileEvents`, `AppPaths` (a struct, ADR-015). The live `ProcessRunning`, `SecretStore` and `FileEvents` are T-2.4, T-3.1 and T-4.5. *(10.6)* Accept: fakes used in at least one test each.
 - [x] **T-1.5** Persistence: versioned atomic JSON store, Application Support folder with `0700`, per provider folders. *(10.7)* Accept: tests for round trip, atomicity, version mismatch, provider folder deletion.
-- [ ] **T-1.6** Provider framework: `UsageProvider`, `LimitsSource`, `ActivitySource`, `ProviderDescriptor`, `ProviderRegistry`, `FakeProvider`, `ProviderConformance`. *(FR-1 to FR-5, US-11, 16.4)* Accept: `FakeProvider` passes the conformance suite; registry tests for order, enablement and availability caching.
+- [x] **T-1.6** Provider framework: `UsageProvider`, `LimitsSource`, `ActivitySource`, `ProviderDescriptor`, `ProviderRegistry`, `FakeProvider`, `ProviderConformance`. *(FR-1 to FR-5, US-11, 16.4)* Accept: `FakeProvider` passes the conformance suite; registry tests for order, enablement and availability caching.
 - [ ] **T-1.7** Popover shell with mock `AppState`: provider groups, GitHub, footer, all states from 11.3 as SwiftUI previews, with one and with two providers. *(FR-4, FR-31)* Accept: every state renders in previews in light and dark mode.
 
 ### 17.2 Phase 2: Claude Code limits (M1)

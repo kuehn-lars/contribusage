@@ -36,6 +36,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0013-spec-standalone-contract]]: ADR-013, SPEC.md stays the contract; overlaps moved to one owner
 - [[decisions/0014-build-and-ci-foundation]]: ADR-014, project file, zero warnings, NFR-17 as a test, CI jobs
 - [[decisions/0015-app-paths-struct]]: ADR-015, `AppPaths` is a struct with a root, not a seam
+- [[decisions/0016-activity-source-stream-lifetime]]: ADR-016, `ActivitySource` watches while its `reports()` stream is consumed
 
 ## Guides
 - [[guides/llm-wiki-tooling]]: `wiki.sh`, Claude Code hooks, lint findings, reuse in another repository
