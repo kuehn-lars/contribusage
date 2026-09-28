@@ -64,3 +64,12 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-09-29] feat | T-2.2 limits report
 - `UsageParser.report` returns the `LimitsReport` with `billingNote`, `insights` and `rawOutput` (SPEC §8.1.3 P-10, P-11); it is the parser's only public entry point; `windows(in:)` is gone, a private `window(in:)` reads one line.
 - SPEC §16.2 synthetic fixtures stay inline strings in the tests.
+
+## [2026-09-29] feat | T-2.3 Claude locator
+- `ClaudeLocator` resolves `claude` in FR-6 order over `ProcessRunning` and returns the login shell's PATH with it, so npm installs validate from a Finder-started app
+- Stateless by design: caching moved to the provider task T-2.5, which owns re-resolution
+- `executableKind(at:)` tells arm64, x86_64 and script apart from the file header (FR-36)
+
+## [2026-09-29] refactor | T-2.3 review pass
+- `ClaudeLocator.ExecutableKind(at:)` reads header words with `UInt32(bigEndian:)`/`UInt32(littleEndian:)` instead of reversing bytes by hand
+- Dropped `Equatable` from `Found` (never compared) and the explicit one on `ExecutableKind` (enums without payloads get it)
