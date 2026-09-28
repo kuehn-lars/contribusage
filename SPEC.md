@@ -1411,7 +1411,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.1 Phase 1: Foundation
 
-- [ ] **T-1.1** Create the Xcode project per 15.3, arm64 only. *(FR-30, NFR-16)* Accept: app launches, menu bar icon visible, no Dock icon, Quit works, `lipo -archs` prints `arm64`.
+- [x] **T-1.1** Create the Xcode project per 15.3, arm64 only. *(FR-30, NFR-16)* Accept: app launches, menu bar icon visible, no Dock icon, Quit works, `lipo -archs` prints `arm64`.
 - [x] **T-1.2** Create `ContribusageKit` with the targets from 15.4, link them. *(ADR-004, ADR-010)* Accept: `swift test --package-path Packages/ContribusageKit` passes with one placeholder test per test target.
 - [x] **T-1.3** Add `SPEC.md`, `AGENTS.md` (with `CLAUDE.md` importing it), `.gitignore`, `.swift-format`. Accept: lint command runs clean.
 - [ ] **T-1.4** Support protocols with live implementations and fakes: `TimeSource`, `ProcessRunning`, `HTTPTransport`, `SecretStore`, `FileEvents`, `AppPaths`. *(10.6)* Accept: fakes used in at least one test each.
@@ -1474,7 +1474,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
 - [ ] **T-6.7** Distribution: name availability check (Q-6), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
-- [ ] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Started in Phase 1 (`.github/workflows/ci.yml`, ADR-014); ticked after its first green run on GitHub.
+- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
 - [ ] **T-6.9** Second provider evaluation (research only): pick one candidate AI coding tool, run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated.
 
 ### 17.7 Definition of Done
