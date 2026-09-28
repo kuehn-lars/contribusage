@@ -73,3 +73,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-09-29] refactor | T-2.3 review pass
 - `ClaudeLocator.ExecutableKind(at:)` reads header words with `UInt32(bigEndian:)`/`UInt32(littleEndian:)` instead of reversing bytes by hand
 - Dropped `Equatable` from `Found` (never compared) and the explicit one on `ExecutableKind` (enums without payloads get it)
+
+## [2026-09-29] feat | T-2.4 live process runner
+- `LiveProcessRunner` in `ContribusageCore/Support/Live`: concurrent pipe reads, SIGTERM then SIGKILL on timeout or cancellation, stdin `/dev/null`
+- One process at a time across all runner instances (NFR-18) through a shared FIFO gate; nine process tests against system tools
+- Review pass before commit: stopping asks `Process` itself (`isRunning`, `terminate()`) instead of a lock-guarded mirror of its state; the timeout verdict is the deadline task's result
