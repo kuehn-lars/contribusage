@@ -19,7 +19,7 @@ Shared test code that never ships: a fake for every support seam, the `FakeProvi
 [[modules/core]] only.
 
 ## Contract
-Built so far: `ProviderID.fake`, the ID the `FakeProvider` will carry. The target is a regular (non-test) target under `Tests/`, so test targets can depend on it while no product ships it.
+Built so far: `ProviderID.fake`, the ID the `FakeProvider` will carry, and a fake per seam protocol (`Fakes.swift`), each thread safe through `OSAllocatedUnfairLock` (macOS 14 has no `Mutex`): `FakeTimeSource` (settable, `advance(by:)`), `FakeProcessRunner` and `FakeHTTPTransport` (answer from a handler, record `requests`; a sleeping handler is the never-finishing process of SPEC §16.4), `FakeSecretStore` (in memory), `FakeFileEvents` (`send(_:)` to every open stream, `activeStreams` drops when a consumer is cancelled). `AppPaths` needs no fake: tests pass a temporary root ([[decisions/0015-app-paths-struct]]). The target is a regular (non-test) target under `Tests/`, so test targets can depend on it while no product ships it.
 
 ## Related
 [[decisions/0010-provider-abstraction-from-day-one]]
