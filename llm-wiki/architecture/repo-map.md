@@ -32,9 +32,10 @@ contribusage/
     ├── log.md              chronological change log
     ├── modules/            one page per build target
     ├── overview.md         hub: what, how the pieces fit
+    ├── research/           findings for the spec's R-items
     ├── sessions/           session files, local only (gitignored)
     ├── sources/            summaries of external sources
     └── tools/              wiki.sh and its regression test
 ```
 
-Folders named in `AGENTS.md` but not yet present (`research/`, `concepts/`, `raw/`) are created with their first file.
+Folders named in `AGENTS.md` but not yet present (`concepts/`, `raw/`) are created with their first file.

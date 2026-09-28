@@ -1,32 +1,43 @@
 import ContribusageCore
 import Foundation
 
-/// Reads the usage windows out of `claude -p /usage` output (SPEC §8.1.3 P-1 to P-9, §8.1.4).
+/// Reads `claude -p /usage` output (SPEC §8.1.3, §8.1.4).
 public enum UsageParser {
-    /// `fallbackZone` applies when the reset clause names no known zone (P-6).
-    public static func windows(in output: String, now: Date, fallbackZone: TimeZone = .current) -> [UsageWindow] {
+    /// P-1 to P-11. Whether the billing note means a subscription is the provider's call (P-10, T-2.5).
+    /// `fallbackZone` applies when a reset clause names no known zone (P-6).
+    public static func report(from output: String, now: Date, fallbackZone: TimeZone = .current) -> LimitsReport {
         let text = output.replacing(/\e\[[^A-Za-z]*[A-Za-z]/, with: "")
+        let lines = text.split(whereSeparator: \.isNewline)
+        let insights = text.firstRange(of: /^[ \t]*What['’]s contributing/.anchorsMatchLineEndings())
+        return LimitsReport(
+            provider: .claudeCode,
+            windows: lines.compactMap { window(in: $0, now: now, fallbackZone: fallbackZone) },
+            billingNote: lines.lazy.map { $0.trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty },
+            insights: insights.map { String(text[$0.lowerBound...]) },
+            rawOutput: output)
+    }
+
+    /// P-3 to P-5; nil for any other line.
+    private static func window(in line: Substring, now: Date, fallbackZone: TimeZone) -> UsageWindow? {
         // P-3, with the optional "<" captured for P-5.
         let windowLine =
             #/
             \s* (?<label>[^:]+) : \s* (?<lt><)? \s* (?<pct>\d+(?:\.\d+)?) % \s* used
             (?: .*? \b resets \s+ (?<reset>.+?) )? \s*
             /#
-        return text.split(whereSeparator: \.isNewline).compactMap { line in
-            guard
-                let match = try? windowLine.wholeMatch(in: line),
-                let percent = Double(match.pct)
-            else { return nil }
-            let label = match.label.trimmingCharacters(in: .whitespaces)
-            let isBelowOne = match.lt != nil
-            return UsageWindow(
-                label: label,
-                kind: kind(of: label),
-                usedPercent: isBelowOne ? 0.5 : percent,
-                isBelowOne: isBelowOne,
-                resetsAt: match.reset.flatMap { resetDate(String($0), now: now, fallbackZone: fallbackZone) }
-            )
-        }
+        guard
+            let match = try? windowLine.wholeMatch(in: line),
+            let percent = Double(match.pct)
+        else { return nil }
+        let label = match.label.trimmingCharacters(in: .whitespaces)
+        let isBelowOne = match.lt != nil
+        return UsageWindow(
+            label: label,
+            kind: kind(of: label),
+            usedPercent: isBelowOne ? 0.5 : percent,
+            isBelowOne: isBelowOne,
+            resetsAt: match.reset.flatMap { resetDate(String($0), now: now, fallbackZone: fallbackZone) }
+        )
     }
 
     /// SPEC §8.1.4: an unknown label is kept as `other`, never dropped.
