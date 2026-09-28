@@ -947,7 +947,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 | `providers/claude-code/statusline-limits.json` | Written by the optional bridge script | Yes |
 | `providers/claude-code/probe/` | Empty working directory for probes | Yes |
 
-Rules: all writes atomic (`Data.write(options: .atomic)`); every file has `schemaVersion`; unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
+Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
 Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `notificationThresholds`, `notifyOnReset`, `heatmapWeeks`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
@@ -1416,7 +1416,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-1.2** Create `ContribusageKit` with the targets from 15.4, link them. *(ADR-004, ADR-010)* Accept: `swift test --package-path Packages/ContribusageKit` passes with one placeholder test per test target.
 - [x] **T-1.3** Add `SPEC.md`, `AGENTS.md` (with `CLAUDE.md` importing it), `.gitignore`, `.swift-format`. Accept: lint command runs clean.
 - [x] **T-1.4** Support protocols with live implementations and fakes: `TimeSource`, `ProcessRunning`, `HTTPTransport`, `SecretStore`, `FileEvents`, `AppPaths` (a struct, ADR-015). The live `ProcessRunning`, `SecretStore` and `FileEvents` are T-2.4, T-3.1 and T-4.5. *(10.6)* Accept: fakes used in at least one test each.
-- [ ] **T-1.5** Persistence: versioned atomic JSON store, Application Support folder with `0700`, per provider folders. *(10.7)* Accept: tests for round trip, atomicity, version mismatch, provider folder deletion.
+- [x] **T-1.5** Persistence: versioned atomic JSON store, Application Support folder with `0700`, per provider folders. *(10.7)* Accept: tests for round trip, atomicity, version mismatch, provider folder deletion.
 - [ ] **T-1.6** Provider framework: `UsageProvider`, `LimitsSource`, `ActivitySource`, `ProviderDescriptor`, `ProviderRegistry`, `FakeProvider`, `ProviderConformance`. *(FR-1 to FR-5, US-11, 16.4)* Accept: `FakeProvider` passes the conformance suite; registry tests for order, enablement and availability caching.
 - [ ] **T-1.7** Popover shell with mock `AppState`: provider groups, GitHub, footer, all states from 11.3 as SwiftUI previews, with one and with two providers. *(FR-4, FR-31)* Accept: every state renders in previews in light and dark mode.
 
@@ -1661,7 +1661,7 @@ Level mapping: `NONE` → 0, `FIRST_QUARTILE` → 1, `SECOND_QUARTILE` → 2, `T
 #   "statusLine": { "type": "command", "command": "~/.claude/contribusage-statusline.sh" }
 input=$(cat)
 out="$HOME/Library/Application Support/contribusage/providers/claude-code/statusline-limits.json"
-mkdir -p "$(dirname "$out")"
+(umask 077 && mkdir -p "$(dirname "$out")")   # the app's folders are owner-only (10.7), whoever creates them first
 
 # Write only when rate_limits is present, so a fresh session never wipes good data
 if echo "$input" | jq -e '.rate_limits' > /dev/null 2>&1; then
