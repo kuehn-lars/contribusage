@@ -12,9 +12,13 @@ private func fixture(_ name: String) throws -> String {
     return try String(contentsOf: url, encoding: .utf8)
 }
 
+private func parse(_ output: String, now: Date, fallbackZone: TimeZone = .current) -> [UsageWindow] {
+    UsageParser.report(from: output, now: now, fallbackZone: fallbackZone).windows
+}
+
 /// Appendix A: the expected parse with `now` = 2026-09-27 20:00 UTC.
 @Test func parsesSubscriptionBaseline() throws {
-    let windows = UsageParser.windows(in: try fixture("subscription-basic"), now: utc("2026-09-27T20:00:00Z"))
+    let windows = parse(try fixture("subscription-basic"), now: utc("2026-09-27T20:00:00Z"))
     #expect(
         windows == [
             .init(
@@ -33,12 +37,12 @@ private func fixture(_ name: String) throws -> String {
         .map { "\u{1B}[1;32m\($0.replacingOccurrences(of: ":", with: "\u{1B}[0m:"))\u{1B}[0m" }
         .joined(separator: "\n")
     let now = utc("2026-09-27T20:00:00Z")
-    #expect(UsageParser.windows(in: colored, now: now) == UsageParser.windows(in: plain, now: now))
+    #expect(parse(colored, now: now) == parse(plain, now: now))
 }
 
 /// P-5: "<1%" is 0.5 with the flag set.
 @Test func parsesBelowOne() {
-    let windows = UsageParser.windows(in: "Current session: <1% used", now: .now)
+    let windows = parse("Current session: <1% used", now: .now)
     #expect(
         windows == [.init(label: "Current session", kind: .session, usedPercent: 0.5, isBelowOne: true, resetsAt: nil)])
 }
@@ -63,7 +67,7 @@ private func fixture(_ name: String) throws -> String {
     ("resets Sep 28 at 4:09 AM", "2026-09-27T20:00:00Z", "2026-09-28T04:09:00Z"),
 ])
 func resolvesResetTime(clause: String, now: String, expected: String) {
-    let windows = UsageParser.windows(in: "Current session: 3% used · \(clause)", now: utc(now), fallbackZone: .gmt)
+    let windows = parse("Current session: 3% used · \(clause)", now: utc(now), fallbackZone: .gmt)
     #expect(windows.first?.resetsAt == utc(expected))
 }
 
@@ -73,7 +77,7 @@ func resolvesResetTime(clause: String, now: String, expected: String) {
     "Current week (all models): 42.5% used",
 ])
 func keepsWindowWithoutResetTime(line: String) {
-    let windows = UsageParser.windows(in: line, now: .now)
+    let windows = parse(line, now: .now)
     let expected = UsageWindow(
         label: "Current week (all models)", kind: .weekly, usedPercent: 42.5, isBelowOne: false, resetsAt: nil)
     #expect(windows == [expected])
@@ -87,7 +91,7 @@ func keepsWindowWithoutResetTime(line: String) {
     ("Extra usage", .other),
 ])
 func classifiesWindow(label: String, kind: WindowKind) {
-    #expect(UsageParser.windows(in: "\(label): 42% used", now: .now).map(\.kind) == [kind])
+    #expect(parse("\(label): 42% used", now: .now).map(\.kind) == [kind])
 }
 
 /// P-3: lines that only look similar are not windows.
@@ -97,5 +101,27 @@ func classifiesWindow(label: String, kind: WindowKind) {
           80% of your usage was at >150k context
         Last 24h · 668 requests
         """
-    #expect(UsageParser.windows(in: text, now: .now).isEmpty)
+    #expect(parse(text, now: .now).isEmpty)
+}
+
+/// P-10, P-11: the billing line, the insights block verbatim from its heading, the untouched output.
+@Test func buildsSubscriptionReport() throws {
+    let output = try fixture("subscription-basic")
+    let now = utc("2026-09-27T20:00:00Z")
+    let report = UsageParser.report(from: "\u{1B}[1m\(output)", now: now)
+    #expect(report.provider == .claudeCode)
+    #expect(report.windows == parse(output, now: now))
+    #expect(report.billingNote == "You are currently using your subscription to power your Claude Code usage")
+    #expect(report.insights?.hasPrefix("What's contributing to your limits usage?\n") == true)
+    #expect(report.insights?.hasSuffix("\n  Top plugins: plugin-a 29%\n") == true)
+    #expect(report.rawOutput == "\u{1B}[1m\(output)")
+}
+
+/// R-2 (Claude Code 2.1.284): API key billing and logged out both print the same cost summary, exit 0.
+@Test(arguments: ["not-subscription", "logged-out"])
+func buildsReportWithoutSubscription(name: String) throws {
+    let report = UsageParser.report(from: try fixture(name), now: .now)
+    #expect(report.windows.isEmpty)
+    #expect(report.billingNote == "Total cost:            $0.0000")
+    #expect(report.insights == nil)
 }

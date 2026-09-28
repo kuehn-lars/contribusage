@@ -460,10 +460,10 @@ A real sample (September 2026, subscription plan) is in [Appendix A](#appendix-a
 | P-7 | Reset formats tried in order: `MMM d 'at' h:mm a`, `MMM d 'at' h a`, `MMM d`, `h:mm a`, `h a` (after normalizing `am`/`pm` to `AM`/`PM`, locale `en_US_POSIX`). |
 | P-8 | Year inference: the output has no year. Use the current year; if the result lies more than 24 h in the past, use next year. Time only formats resolve to the next occurrence after `now`. |
 | P-9 | Unparseable reset clause: window still valid, `resetsAt = nil`, UI shows "reset time unknown". |
-| P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", availability becomes `unsupportedPlan` and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription" (exact variants captured in research R-2). |
+| P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", availability becomes `unsupportedPlan` and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription". R-2 (Claude Code 2.1.284): API key billing and a logged out CLI both exit 0 and print the same cost summary, first line `Total cost:            $0.0000`, no windows (fixtures `not-subscription.txt`, `logged-out.txt`). |
 | P-11 | Insights block: everything from the line starting with "What's contributing" to the end, kept verbatim with indentation (FR-38). |
 
-P-1 to P-9 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/` (task T-2.1).
+P-1 to P-11 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/` (tasks T-2.1, T-2.2); its one entry point `UsageParser.report` returns the `LimitsReport`, and the provider decides P-10's `unsupportedPlan` from its `billingNote` (T-2.5).
 
 #### 8.1.4 Window classification and token categories
 
@@ -1067,7 +1067,7 @@ Global rules:
 | Condition | Detection | State | User facing message | Recovery |
 |---|---|---|---|---|
 | `claude` not found | FR-6 resolution fails | `notConfigured(.toolNotInstalled)` | "Claude Code wasn't found. Install it or locate it in Settings." | Re-resolve on each popover open (max once per minute) |
-| Not logged in | Non-zero exit or output mentions login (exact text from R-2) | `failed(.notLoggedIn)` | "Claude Code isn't logged in. Run `claude` in Terminal and log in." | Normal schedule |
+| Not logged in | Non-zero exit or output mentions login. R-2: Claude Code 2.1.284 prints no login text; logged out looks like API key billing and lands in the next row | `failed(.notLoggedIn)` | "Claude Code isn't logged in. Run `claude` in Terminal and log in." | Normal schedule |
 | API key billing, no subscription | P-10 | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
 | Probe timeout | 30 s elapsed | `failed(.timedOut)` | "Claude Code didn't answer in time." | Backoff |
 | Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output and diagnostics |
@@ -1321,12 +1321,8 @@ Use the Swift Testing framework (`import Testing`, `@Test`, `#expect`) for new t
 | Fixture | Target | Origin | Purpose |
 |---|---|---|---|
 | `usage/subscription-basic.txt` | Claude Code | Real (Appendix A), captured byte for byte | Baseline parsing |
-| `usage/with-model-window.txt` | Claude Code | Synthetic: adds `Current week (<model>): 42% used · resets …` | Generic label handling, kind `weekly` |
-| `usage/unknown-window.txt` | Claude Code | Synthetic: adds a window with an unfamiliar label | Kind `other`, never dropped |
-| `usage/below-one.txt` | Claude Code | Synthetic: `Current session: <1% used · resets 4:09am (Europe/Berlin)` | P-5, time only reset |
-| `usage/ansi.txt` | Claude Code | Synthetic: baseline wrapped in color codes | P-1 |
-| `usage/not-subscription.txt` | Claude Code | Real, from R-2 | P-10 |
-| `usage/logged-out.txt` | Claude Code | Real, from R-2 | Error mapping |
+| `usage/not-subscription.txt` | Claude Code | Real, from R-2 (2.1.284) | P-10 |
+| `usage/logged-out.txt` | Claude Code | Real, from R-2 (2.1.284) | Error mapping; same bytes as `not-subscription.txt` |
 | `jsonl/basic.jsonl` | Claude Code | Real, scrubbed (R-3) | Field decoding |
 | `jsonl/duplicate-blocks.jsonl` | Claude Code | Real or synthetic | De-duplication |
 | `jsonl/malformed.jsonl` | Claude Code | Synthetic | Skipped lines counter |
@@ -1334,6 +1330,8 @@ Use the Swift Testing framework (`import Testing`, `@Test`, `#expect`) for new t
 | `jsonl/cross-midnight.jsonl` | Claude Code | Synthetic | Local day bucketing |
 | `github/calendar.json` | GitHub | Real, login replaced | Stats and heatmap |
 | `github/graphql-errors.json` | GitHub | Synthetic | Error handling |
+
+The synthetic `/usage` cases (a model specific week, an unknown label, `<1%` with a time only reset, ANSI color codes) are inline strings in `UsageParserTests`, not fixture files.
 
 Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids with neutral placeholders; keep structure and numbers.
 
@@ -1404,7 +1402,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 ### 17.0 Phase 0: Research (do first, each updates the spec)
 
 - [ ] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry.
-- [ ] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13.
+- [x] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13. Answered 2026-09-29: `llm-wiki/research/r-2-usage-output-variants.md`.
 - [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures.
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
@@ -1422,7 +1420,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 ### 17.2 Phase 2: Claude Code limits (M1)
 
 - [x] **T-2.1** `UsageParser` in `ContribusageClaudeCode/Limits/` returning classified `UsageWindow`s (8.1.4), Swift Testing tests, fixtures loaded via `Bundle.module`. The earlier app-side `UsageParser.swift` never reached this repository, so the parser was written from the rules. *(FR-8, P-1 to P-9, 8.1.4)* Accept: tests cover P-1 to P-9, classification, Appendix A and the reset cases in 16.3.
-- [ ] **T-2.2** Extend the parser to `LimitsReport`: `billingNote`, `insights`, `rawOutput`; add fixtures from R-2 and 16.2. *(FR-5, FR-8, P-10, P-11)* Depends: R-2.
+- [x] **T-2.2** Extend the parser to `LimitsReport`: `billingNote`, `insights`, `rawOutput`; add fixtures from R-2 and 16.2. *(FR-5, FR-8, P-10, P-11)* Depends: R-2.
 - [ ] **T-2.3** `ClaudeLocator` implementing FR-6 against `ProcessRunning`, including executable type detection for diagnostics. *(FR-6, FR-36)* Accept: tests for override, login shell result, fallback list, invalid candidates.
 - [ ] **T-2.4** `LiveProcessRunner` in the core: reads stdout and stderr concurrently (no pipe deadlock), timeout with SIGTERM then SIGKILL, terminates on task cancellation, stdin `/dev/null`, global single flight. Replaces the polling `UsageProbe`. *(FR-7, NFR-18)* Accept: process tests from 16.1.
 - [ ] **T-2.5** `ClaudeCodeProvider` with descriptor, detection and its `LimitsSource`: locate, probe (single flight), parse, classify, map errors (section 13). *(FR-3, FR-6 to FR-11)* Depends: T-1.6, T-2.2 to T-2.4. Accept: conformance suite passes.
@@ -1501,7 +1499,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | ID | Question | Blocks | Status |
 |---|---|---|---|
 | R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values | Open |
-| R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Open |
+| R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
 | R-4 | GitHub private contributions and day boundaries | T-3.4 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |

@@ -38,6 +38,9 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0015-app-paths-struct]]: ADR-015, `AppPaths` is a struct with a root, not a seam
 - [[decisions/0016-activity-source-stream-lifetime]]: ADR-016, `ActivitySource` watches while its `reports()` stream is consumed
 
+## Research
+- [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary
+
 ## Guides
 - [[guides/llm-wiki-tooling]]: `wiki.sh`, Claude Code hooks, lint findings, reuse in another repository
 

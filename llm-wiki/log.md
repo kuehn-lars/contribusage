@@ -56,3 +56,11 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `UsageParser` in `ContribusageClaudeCode/Limits/` implements SPEC §8.1.3 P-1 to P-9 and the §8.1.4 classification, returning core `UsageWindow`s; written from the rules because no earlier parser existed in the repository.
 - Swift Testing tests with the Appendix A fixture via `Bundle.module`, covering every P-7 format, year rollover, the Berlin DST change, New Year and the unknown zone fallback.
 - Review pass: the parser returns core `UsageWindow` instead of its own window type, P-7 formats carry an explicit `dated` flag, and an unused test constant is gone.
+
+## [2026-09-29] research | R-2 usage output variants
+- Logged out and API key billing both exit 0 with the same cost summary and no windows; captured as fixtures ([[research/r-2-usage-output-variants]]).
+- SPEC P-10 and §13 name the exact text; logged out lands in `unsupportedPlan`.
+
+## [2026-09-29] feat | T-2.2 limits report
+- `UsageParser.report` returns the `LimitsReport` with `billingNote`, `insights` and `rawOutput` (SPEC §8.1.3 P-10, P-11); it is the parser's only public entry point; `windows(in:)` is gone, a private `window(in:)` reads one line.
+- SPEC §16.2 synthetic fixtures stay inline strings in the tests.
