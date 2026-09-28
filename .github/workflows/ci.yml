@@ -1,0 +1,46 @@
+# SPEC §16.1 levels that run in CI, on an Apple Silicon runner (T-6.8).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package tests and format
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - run: swift format lint --strict --recursive App Packages
+      # Unit, integration and conformance tests, plus the NFR-17 import check (ArchitectureTests).
+      - run: swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors
+
+  app:
+    name: App build (arm64 only)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - run: xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Release -derivedDataPath .build/xcode build
+      - name: Architecture and deployment target (NFR-16)
+        run: |
+          app=.build/xcode/Build/Products/Release/contribusage.app
+          test "$(lipo -archs "$app/Contents/MacOS/contribusage")" = arm64
+          test "$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 14.0
+
+  wiki:
+    name: Wiki lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the stale-page check compares commit times
+      - run: llm-wiki/tools/wiki.sh lint
+      - run: llm-wiki/tools/test-wiki.sh

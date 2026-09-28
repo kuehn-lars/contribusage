@@ -34,6 +34,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0011-product-name-contribusage]]: ADR-011, the name
 - [[decisions/0012-llm-wiki-as-project-memory]]: ADR-012, this vault as agent memory, sessions local
 - [[decisions/0013-spec-standalone-contract]]: ADR-013, SPEC.md stays the contract; overlaps moved to one owner
+- [[decisions/0014-build-and-ci-foundation]]: ADR-014, project file, zero warnings, NFR-17 as a test, CI jobs
 
 ## Guides
 - [[guides/llm-wiki-tooling]]: `wiki.sh`, Claude Code hooks, lint findings, reuse in another repository

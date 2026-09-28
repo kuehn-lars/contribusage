@@ -1,8 +1,8 @@
 ---
 type: module
-status: planned
+status: active
 updated: 2026-09-28
-tracks: []
+tracks: [Packages/ContribusageKit/Sources/ContribusageClaudeCode, Packages/ContribusageKit/Tests/ContribusageClaudeCodeTests]
 tags: [provider, claude-code]
 ---
 # ContribusageClaudeCode
@@ -18,6 +18,9 @@ The v1 provider (`claude-code`). Limits come from the `/usage` probe (locator, p
 
 ## Depends on
 [[modules/core]] only.
+
+## Contract
+Built so far: `ProviderID.claudeCode` (`claude-code`), pinned by a test because persistence folders and settings keys derive from it (SPEC §10.7).
 
 ## Things that bite
 - SPEC §8.1.3 and T-2.1 describe an existing `UsageParser.swift` with tests; that code is not in this repository yet, so T-2.1 either adds it or writes the parser from scratch.

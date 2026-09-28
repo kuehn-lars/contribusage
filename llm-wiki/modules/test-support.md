@@ -1,8 +1,8 @@
 ---
 type: module
-status: planned
+status: active
 updated: 2026-09-28
-tracks: []
+tracks: [Packages/ContribusageKit/Tests/ContribusageTestSupport]
 tags: [testing]
 ---
 # ContribusageTestSupport
@@ -17,6 +17,9 @@ Shared test code that never ships: a fake for every support seam, the `FakeProvi
 
 ## Depends on
 [[modules/core]] only.
+
+## Contract
+Built so far: `ProviderID.fake`, the ID the `FakeProvider` will carry. The target is a regular (non-test) target under `Tests/`, so test targets can depend on it while no product ships it.
 
 ## Related
 [[decisions/0010-provider-abstraction-from-day-one]]

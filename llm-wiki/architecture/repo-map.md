@@ -2,19 +2,24 @@
 type: architecture
 status: active
 updated: 2026-09-28
-tracks: []
+tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift]
 tags: [structure]
 ---
 # Repository map
 
-Every top-level entry of the repository and of the vault, and what it is for. `wiki.sh lint` compares the first code block below with the files on disk (the repository root and the vault's top level), so the tree cannot drift unnoticed. The planned source layout (`App/`, `Packages/ContribusageKit/`, `scripts/`) is in SPEC §15.2; entries join this tree when they are created, and each build target gets its page under `modules/`.
+Every top-level entry of the repository and of the vault, and what it is for. `wiki.sh lint` compares the first code block below with the files on disk (the repository root and the vault's top level), so the tree cannot drift unnoticed. The full source layout, including what is still planned (`scripts/`), is in SPEC §15.2; entries join this tree when they are created, and each build target has its page under `modules/`.
 
 ```text
 contribusage/
 ├── .claude/settings.json   Claude Code hooks that run the wiki protocol
+├── .github/workflows/      CI: package tests (warnings as errors), app build, architecture checks, wiki lint
 ├── .gitignore
+├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules
+├── App/                    the app target's sources, a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
+├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
+├── Packages/               ContribusageKit: every target but the app
 ├── README.md
 ├── SPEC.md                 the contract: requirements, tasks, research items
 └── llm-wiki/               the memory: this Obsidian vault

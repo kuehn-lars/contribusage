@@ -344,7 +344,7 @@ Priorities: **P1** = MVP (Milestones M1 and M2), **P2** = v1.0, **P3** = later /
 | NFR-14 | Energy | Periodic work uses `NSBackgroundActivityScheduler` or timers with at least 10 % tolerance; nothing runs while the Mac sleeps; Low Power Mode doubles all automatic intervals. | Energy tab in Activity Monitor |
 | NFR-15 | Tests | Line coverage of at least 80 % for parsing, statistics and scheduling code in every package target. | `swift test --enable-code-coverage` |
 | NFR-16 | Architecture | The shipped executable contains only an arm64 slice. `LSMinimumSystemVersion` is 14.0. | `lipo -archs` on the built executable prints `arm64` (CI check) |
-| NFR-17 | Provider isolation | `ContribusageCore` has no dependency on any provider or on the GitHub target. Provider targets do not depend on each other. | `Package.swift` target graph; CI check that `ContribusageCore` sources contain no `import Contribusage…` of other targets |
+| NFR-17 | Provider isolation | `ContribusageCore` has no dependency on any provider or on the GitHub target. Provider targets do not depend on each other. | `Package.swift` target graph; `ArchitectureTests` (run by `swift test` locally and in CI) fails when `ContribusageCore` imports any other target or another target imports anything but the core |
 | NFR-18 | Process budget | Across all providers, at most one background child process started by the app runs at a time (global process single flight). | Unit tests on the coordinator |
 
 ---
@@ -1113,11 +1113,12 @@ contribusage/
 ├── AGENTS.md                       ← agent instructions (replaces Appendix B)
 ├── CLAUDE.md                       ← imports AGENTS.md for Claude Code
 ├── .claude/settings.json           ← Claude Code hooks for the llm-wiki protocol
+├── .github/workflows/ci.yml        ← CI (16.1): package tests, app build, architecture, wiki lint
 ├── llm-wiki/                       ← project memory (Obsidian vault), ADRs in decisions/
 ├── .gitignore
 ├── .swift-format
 ├── Contribusage.xcodeproj
-├── App/                            ← thin app target
+├── App/                            ← thin app target (a folder synchronised with the Xcode target)
 │   ├── ContribusageApp.swift
 │   ├── AppState.swift
 │   ├── ProviderRegistration.swift  ← the only place that lists providers
@@ -1125,8 +1126,7 @@ contribusage/
 │   ├── Popover/ (PopoverView, ProviderGroup, LimitsSection, ActivitySection, InsightsSection, GitHubSection, FooterView)
 │   ├── Settings/ (SettingsView, GeneralTab, ProvidersTab, ClaudeCodeSettingsPane, GitHubTab, AdvancedTab)
 │   ├── Notifications/NotificationDelivery.swift
-│   ├── Resources/ (Assets.xcassets, Localizable.xcstrings)
-│   └── Info.plist
+│   └── Resources/ (Assets.xcassets, Localizable.xcstrings)
 ├── Packages/
 │   └── ContribusageKit/
 │       ├── Package.swift
@@ -1163,9 +1163,10 @@ contribusage/
    - `PRODUCT_NAME = contribusage` (bundle `contribusage.app`), `INFOPLIST_KEY_CFBundleDisplayName = contribusage`.
    - `MACOSX_DEPLOYMENT_TARGET = 14.0`.
    - **`ARCHS = arm64`** for all configurations (do not use "Standard Architectures", which adds x86_64 in Release). `ONLY_ACTIVE_ARCH = YES` in Debug.
-   - Swift 6 language mode; treat warnings as errors in Release.
+   - Swift 6 language mode; treat warnings as errors in all configurations (NFR-11).
+   - `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`: the app target holds views and wiring only.
 3. Signing & Capabilities: remove **App Sandbox**; keep **Hardened Runtime**; signing "Sign to Run Locally" for now.
-4. Info.plist: `Application is agent (UIElement)` = `YES` (`LSUIElement`).
+4. Info.plist: generated from build settings (`GENERATE_INFOPLIST_FILE`); `INFOPLIST_KEY_LSUIElement = YES` makes the app an agent without a Dock icon. `App/` is a synchronised folder, so files added there join the target without editing the project file.
 5. Create the local package at `Packages/ContribusageKit` (File → New → Package), add it to the project (File → Add Package Dependencies → Add Local…), link `ContribusageCore`, `ContribusageClaudeCode` and `ContribusageGitHub` to the app target.
 6. Verify after the first Release build: `lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage` prints `arm64` (NFR-16).
 
@@ -1200,19 +1201,18 @@ let package = Package(
             path: "Tests/ContribusageTestSupport"
         ),
 
+        // Test targets gain `resources: [.copy("Fixtures")]` with their first fixture (16.2).
         .testTarget(
             name: "ContribusageCoreTests",
             dependencies: ["ContribusageCore", "ContribusageTestSupport"]
         ),
         .testTarget(
             name: "ContribusageClaudeCodeTests",
-            dependencies: ["ContribusageClaudeCode", "ContribusageTestSupport"],
-            resources: [.copy("Fixtures")]
+            dependencies: ["ContribusageClaudeCode", "ContribusageTestSupport"]
         ),
         .testTarget(
             name: "ContribusageGitHubTests",
-            dependencies: ["ContribusageGitHub", "ContribusageTestSupport"],
-            resources: [.copy("Fixtures")]
+            dependencies: ["ContribusageGitHub", "ContribusageTestSupport"]
         ),
     ]
 )
@@ -1270,13 +1270,13 @@ enum ProviderRegistration {
 
 ```bash
 # All package tests (fast, no Xcode UI needed)
-swift test --package-path Packages/ContribusageKit
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors
 
 # Only the Claude Code provider tests
-swift test --package-path Packages/ContribusageKit --filter ContribusageClaudeCodeTests
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors --filter ContribusageClaudeCodeTests
 
 # With coverage
-swift test --package-path Packages/ContribusageKit --enable-code-coverage
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors --enable-code-coverage
 
 # Build the app
 xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug \
@@ -1289,7 +1289,7 @@ open .build/xcode/Build/Products/Debug/contribusage.app
 lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage
 
 # Format and lint (swift-format ships with the Swift 6 toolchain)
-swift format lint -r App Packages
+swift format lint --strict -r App Packages
 ```
 
 ### 15.7 Git conventions
@@ -1310,7 +1310,7 @@ swift format lint -r App Packages
 | Integration | Providers and services wired to fakes (`ProcessRunning`, `HTTPTransport`, `FileEvents`, `TimeSource`) | Per target test suites | Yes |
 | Provider conformance | Shared suite run against every provider and `FakeProvider` | `ContribusageTestSupport`, invoked from each provider's tests | Yes |
 | Process | `LiveProcessRunner` against `/bin/echo`, `/bin/sleep`, `/usr/bin/false` | `ContribusageCoreTests` | Yes |
-| Architecture | `lipo -archs` of the Release build prints `arm64`; core imports no other target | CI script | Yes |
+| Architecture | `lipo -archs` of the Release build prints `arm64`; core imports no other target | `lipo` step in CI; `ArchitectureTests` in `ContribusageCoreTests` scans the sources | Yes |
 | Live smoke | Real `claude` probe, real GitHub call | Only when `CONTRIBUSAGE_LIVE_TESTS=1` (token from env var `CONTRIBUSAGE_GITHUB_TOKEN`) | No |
 | UI | SwiftUI previews for every section state, with one and with two providers; manual matrix below | App target | No |
 
@@ -1411,9 +1411,9 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.1 Phase 1: Foundation
 
-- [ ] **T-1.1** Create the Xcode project per 15.3, arm64 only. *(FR-30, NFR-16)* Accept: app launches, menu bar icon visible, no Dock icon, Quit works, `lipo -archs` prints `arm64`.
-- [ ] **T-1.2** Create `ContribusageKit` with the targets from 15.4, link them. *(ADR-004, ADR-010)* Accept: `swift test --package-path Packages/ContribusageKit` passes with one placeholder test per test target.
-- [ ] **T-1.3** Add `SPEC.md`, `AGENTS.md` (with `CLAUDE.md` importing it), `.gitignore`, `.swift-format`. Accept: lint command runs clean.
+- [x] **T-1.1** Create the Xcode project per 15.3, arm64 only. *(FR-30, NFR-16)* Accept: app launches, menu bar icon visible, no Dock icon, Quit works, `lipo -archs` prints `arm64`.
+- [x] **T-1.2** Create `ContribusageKit` with the targets from 15.4, link them. *(ADR-004, ADR-010)* Accept: `swift test --package-path Packages/ContribusageKit` passes with one placeholder test per test target.
+- [x] **T-1.3** Add `SPEC.md`, `AGENTS.md` (with `CLAUDE.md` importing it), `.gitignore`, `.swift-format`. Accept: lint command runs clean.
 - [ ] **T-1.4** Support protocols with live implementations and fakes: `TimeSource`, `ProcessRunning`, `HTTPTransport`, `SecretStore`, `FileEvents`, `AppPaths`. *(10.6)* Accept: fakes used in at least one test each.
 - [ ] **T-1.5** Persistence: versioned atomic JSON store, Application Support folder with `0700`, per provider folders. *(10.7)* Accept: tests for round trip, atomicity, version mismatch, provider folder deletion.
 - [ ] **T-1.6** Provider framework: `UsageProvider`, `LimitsSource`, `ActivitySource`, `ProviderDescriptor`, `ProviderRegistry`, `FakeProvider`, `ProviderConformance`. *(FR-1 to FR-5, US-11, 16.4)* Accept: `FakeProvider` passes the conformance suite; registry tests for order, enablement and availability caching.
@@ -1474,7 +1474,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
 - [ ] **T-6.7** Distribution: name availability check (Q-6), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
-- [ ] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push.
+- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
 - [ ] **T-6.9** Second provider evaluation (research only): pick one candidate AI coding tool, run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated.
 
 ### 17.7 Definition of Done

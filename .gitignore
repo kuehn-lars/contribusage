@@ -6,6 +6,7 @@
 
 # Swift and Xcode (SPEC §15.7)
 .build/
+.swiftpm/
 DerivedData/
 xcuserdata/
 *.xcuserstate
