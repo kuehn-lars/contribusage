@@ -20,7 +20,7 @@ GitHub contributions: the GraphQL client, token validation and contribution stat
 [[modules/core]] only.
 
 ## Contract
-Built so far: `gitHubGraphQLEndpoint`, the app's only network destination (NFR-13), pinned by a test.
+`GitHubReport.swift` holds the SPEC §10.5 types (`ContributionLevel`, `ContributionDay`, `ContributionStats`, `GitHubReport`), added for the popover shell (T-1.7), plus `GitHubReport.staleAfter` (2 h, SPEC §12). Built so far: `gitHubGraphQLEndpoint`, the app's only network destination (NFR-13), pinned by a test.
 
 ## Related
 [[modules/app]] (heatmap and GitHub settings tab)
