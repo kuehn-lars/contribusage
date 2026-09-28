@@ -709,10 +709,11 @@ public struct Origin: RawRepresentable, Hashable, Sendable, Codable {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
     public static let cache = Origin(rawValue: "cache")
+    public static let poll = Origin(rawValue: "poll")     // a limits source's fetch(), run by the coordinator (ADR-018)
     public static let github = Origin(rawValue: "github")
 }
 // In ContribusageClaudeCode:
-// extension Origin { static let claudeProbe, claudeStatusLineBridge, claudeTranscripts }
+// Providers add constants for what the coordinator cannot name, e.g. a status line bridge.
 
 public enum SourceState<Value: Sendable & Codable>: Sendable {
     case notConfigured(NotConfiguredReason)
@@ -773,6 +774,7 @@ public struct SchedulePolicy: Sendable, Equatable {
     public let maximumInterval: Duration
     public let staleAfter: Duration
     public let manualFloor: Duration
+    public let needsNetwork: Bool               // skipped while offline (section 12 rule 2, ADR-018)
 }
 
 public struct ProviderDescriptor: Sendable {
@@ -1059,7 +1061,7 @@ Global rules:
 4. Manual refresh ignores intervals and backoff, but never runs a polled source more often than its `manualFloor` (Claude Code probe: 30 s).
 5. At most one child process runs at a time across all providers (NFR-18). When several are due, they run in registry order.
 6. Disabled providers are never scheduled.
-7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:) -> Date?`, fully unit tested and provider neutral.
+7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:manual:) -> Date?`, fully unit tested and provider neutral. `conditions` carries online, Low Power Mode, asleep and the last wake; `nil` means not scheduled (asleep, or offline for a source that needs the network). The coordinator runs the unsupported-plan recheck (section 13) through it as a 6 h policy (ADR-018).
 
 ---
 
@@ -1425,8 +1427,8 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-2.3** `ClaudeLocator` implementing FR-6 against `ProcessRunning`, including executable type detection for diagnostics. Stateless: it also returns PATH from the login shell (8.1.1), and the cache belongs to T-2.5. *(FR-6, FR-36)* Accept: tests for override, login shell result, fallback list, invalid candidates.
 - [x] **T-2.4** `LiveProcessRunner` in the core: reads stdout and stderr concurrently (no pipe deadlock), timeout with SIGTERM then SIGKILL, terminates on task cancellation, stdin `/dev/null`, global single flight (a FIFO queue shared by every instance; timeout throws `SourceError.timedOut`, cancellation `CancellationError`). FR-7's "concurrent requests await the running probe" is the provider's join (T-2.5), not this queue. *(FR-7, NFR-18)* Accept: process tests from 16.1.
 - [x] **T-2.5** `ClaudeCodeProvider` with descriptor, detection and its `LimitsSource`: locate (caching path, version and environment, re-resolving when the path stops working, FR-6), probe (single flight), parse, classify, map errors (section 13). Capabilities are `limits` and `insights` until T-4 adds the `ActivitySource`; P-10 surfaces as `SourceError.unsupportedPlan` (ADR-017). A launch failure re-resolves once, then maps to `toolNotFound`. *(FR-3, FR-6 to FR-11)* Depends: T-1.6, T-2.2 to T-2.4. Accept: conformance suite passes.
-- [ ] **T-2.6** `Schedule` pure function and `RefreshCoordinator` for polled limits sources: intervals from `SchedulePolicy`, backoff, wake, offline, Low Power Mode, manual floor, persistence of snapshots. *(FR-10, section 12, NFR-5, NFR-14, NFR-18)* Accept: scheduler tests from 16.3.
-- [ ] **T-2.7** Limits section UI with bars, countdowns, all states, accessibility labels. *(US-1, US-2, 11.2 to 11.7)*
+- [x] **T-2.6** `Schedule` pure function and `RefreshCoordinator` for polled limits sources: intervals from `SchedulePolicy`, backoff, wake, offline, Low Power Mode, manual floor, persistence of snapshots. The coordinator takes conditions through `update(_:)`; the app feeds them and registers providers in T-2.7, which also adds the popover-open and reset-reached triggers (ADR-018). *(FR-10, section 12, NFR-5, NFR-14, NFR-18)* Accept: scheduler tests from 16.3.
+- [ ] **T-2.7** Limits section UI with bars, countdowns, all states, accessibility labels. Wires `ClaudeCodeProvider` and `RefreshCoordinator` into `AppState`: conditions from wake and sleep notifications, `NWPathMonitor` and Low Power Mode; the section 12 triggers "popover opened" and "a window's reset time reached" (FR-11). *(US-1, US-2, FR-11, 11.2 to 11.7)*
 - [ ] **T-2.8** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules. *(FR-12, 11.1)*
 - [ ] **M1 check:** US-1 and US-2 acceptance criteria hold on your Mac for 24 h; NFR-1 and NFR-2 measured.
 

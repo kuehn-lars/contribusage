@@ -87,3 +87,13 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `UsageProbe` folded into `ClaudeCodeProvider`, now one actor that is its own `LimitsSource`; the launch retry is a two-pass loop
 - Detection no longer reports `unsupportedPlan` from a cached probe note, which the registry could never read; P-10 and ADR-017 updated
 - Second pass: the login check also matches "logged in" (whole words only); tests for an override change and each probe result mapping
+
+## [2026-09-29] feat | T-2.6 refresh coordinator
+- `Schedule.nextRun` (pure: bounds, backoff, Low Power Mode, offline, sleep, wake delay, manual floor) and `RefreshCoordinator` (serialized passes in registry order, SPEC §13 mapping, `state.json` persistence and restore)
+- `SchedulePolicy.needsNetwork` and `Origin.poll` added; ADR-018 settles the coordinator shape and the GitHub seam
+- App wiring and the popover/reset triggers moved into T-2.7
+
+## [2026-09-29] refactor | T-2.6 review pass
+- `RefreshCoordinator.refresh` separates the SPEC §13 mapping (a pure function) from bookkeeping; failures derive from the state
+- `ProviderID` is `CodingKeyRepresentable`, so `state.json` keys need no conversion; one `Duration.timeInterval` replaces three conversions
+- Third pass: `restore()` no longer relabels an in-memory snapshot as `cache` when `start()` runs again; the backoff drops a redundant branch

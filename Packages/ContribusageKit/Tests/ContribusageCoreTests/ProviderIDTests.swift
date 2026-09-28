@@ -8,4 +8,6 @@ import Testing
     let json = try JSONEncoder().encode([ProviderID.fake])
     #expect(String(decoding: json, as: UTF8.self) == #"["fake"]"#)
     #expect(try JSONDecoder().decode([ProviderID].self, from: json) == [.fake])
+    let keyed = try JSONEncoder().encode([ProviderID.fake: 1])
+    #expect(String(decoding: keyed, as: UTF8.self) == #"{"fake":1}"#)
 }
