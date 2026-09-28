@@ -82,6 +82,7 @@ struct ErrorLine: View {
         switch error {
         case .toolNotFound: "Tool not found"
         case .notLoggedIn: "Not logged in"
+        case .unsupportedPlan(let note): note
         case .timedOut: "Timed out"
         case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
         case .unparseable: "Couldn't read the usage output"

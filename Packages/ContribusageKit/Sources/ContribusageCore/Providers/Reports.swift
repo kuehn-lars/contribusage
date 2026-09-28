@@ -5,6 +5,8 @@ import Foundation
 public enum SourceError: Error, Sendable, Equatable {
     case toolNotFound
     case notLoggedIn
+    /// The tool runs but its plan exposes no limits; shown as `NotConfiguredReason.unsupportedPlan` (ADR-017).
+    case unsupportedPlan(note: String)
     case timedOut
     case processFailed(exitCode: Int32, stderrTail: String)
     case unparseable(rawOutput: String)
