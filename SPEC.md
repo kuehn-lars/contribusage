@@ -460,7 +460,7 @@ A real sample (September 2026, subscription plan) is in [Appendix A](#appendix-a
 | P-7 | Reset formats tried in order: `MMM d 'at' h:mm a`, `MMM d 'at' h a`, `MMM d`, `h:mm a`, `h a` (after normalizing `am`/`pm` to `AM`/`PM`, locale `en_US_POSIX`). |
 | P-8 | Year inference: the output has no year. Use the current year; if the result lies more than 24 h in the past, use next year. Time only formats resolve to the next occurrence after `now`. |
 | P-9 | Unparseable reset clause: window still valid, `resetsAt = nil`, UI shows "reset time unknown". |
-| P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", availability becomes `unsupportedPlan` and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription". R-2 (Claude Code 2.1.284): API key billing and a logged out CLI both exit 0 and print the same cost summary, first line `Total cost:            $0.0000`, no windows (fixtures `not-subscription.txt`, `logged-out.txt`). |
+| P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", `fetch()` throws `SourceError.unsupportedPlan` (ADR-017) and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription". R-2 (Claude Code 2.1.284): API key billing and a logged out CLI both exit 0 and print the same cost summary, first line `Total cost:            $0.0000`, no windows (fixtures `not-subscription.txt`, `logged-out.txt`). |
 | P-11 | Insights block: everything from the line starting with "What's contributing" to the end, kept verbatim with indentation (FR-38). |
 
 P-1 to P-11 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/` (tasks T-2.1, T-2.2); its one entry point `UsageParser.report` returns the `LimitsReport`, and the provider decides P-10's `unsupportedPlan` from its `billingNote` (T-2.5).
@@ -732,6 +732,7 @@ public enum NotConfiguredReason: Sendable, Equatable {
 public enum SourceError: Error, Sendable, Equatable {
     case toolNotFound
     case notLoggedIn
+    case unsupportedPlan(note: String)   // shown as notConfigured(.unsupportedPlan) (ADR-017)
     case timedOut
     case processFailed(exitCode: Int32, stderrTail: String)
     case unparseable(rawOutput: String)
@@ -1067,8 +1068,8 @@ Global rules:
 | Condition | Detection | State | User facing message | Recovery |
 |---|---|---|---|---|
 | `claude` not found | FR-6 resolution fails | `notConfigured(.toolNotInstalled)` | "Claude Code wasn't found. Install it or locate it in Settings." | Re-resolve on each popover open (max once per minute) |
-| Not logged in | Non-zero exit or output mentions login. R-2: Claude Code 2.1.284 prints no login text; logged out looks like API key billing and lands in the next row | `failed(.notLoggedIn)` | "Claude Code isn't logged in. Run `claude` in Terminal and log in." | Normal schedule |
-| API key billing, no subscription | P-10 | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
+| Not logged in | Non-zero exit and the output says "login", "log in" or "logged in" (other non-zero exits: `processFailed` with the last 500 characters of stderr). R-2: Claude Code 2.1.284 prints no login text; logged out looks like API key billing and lands in the next row | `failed(.notLoggedIn)` | "Claude Code isn't logged in. Run `claude` in Terminal and log in." | Normal schedule |
+| API key billing, no subscription | P-10; `fetch()` throws `SourceError.unsupportedPlan` | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
 | Probe timeout | 30 s elapsed | `failed(.timedOut)` | "Claude Code didn't answer in time." | Backoff |
 | Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output and diagnostics |
 | `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
@@ -1140,8 +1141,8 @@ contribusage/
 │       │   │   ├── Persistence/
 │       │   │   └── Support/          (protocols + Live/ implementations)
 │       │   ├── ContribusageClaudeCode/
-│       │   │   ├── ClaudeCodeProvider.swift
-│       │   │   ├── Limits/           (ClaudeLocator, UsageProbe, UsageParser, WindowClassifier, StatusLineBridgeReader)
+│       │   │   ├── ClaudeCodeProvider.swift   (descriptor, detection and the probe as its LimitsSource: locate cache, error mapping)
+│       │   │   ├── Limits/           (ClaudeLocator, UsageParser with window classification, StatusLineBridgeReader)
 │       │   │   └── Activity/         (TranscriptLine, TranscriptAggregator, TranscriptRoots)
 │       │   └── ContribusageGitHub/
 │       │       └── (GitHubClient, ContributionStatsCalculator, GitHubService)
@@ -1423,7 +1424,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-2.2** Extend the parser to `LimitsReport`: `billingNote`, `insights`, `rawOutput`; add fixtures from R-2 and 16.2. *(FR-5, FR-8, P-10, P-11)* Depends: R-2.
 - [x] **T-2.3** `ClaudeLocator` implementing FR-6 against `ProcessRunning`, including executable type detection for diagnostics. Stateless: it also returns PATH from the login shell (8.1.1), and the cache belongs to T-2.5. *(FR-6, FR-36)* Accept: tests for override, login shell result, fallback list, invalid candidates.
 - [x] **T-2.4** `LiveProcessRunner` in the core: reads stdout and stderr concurrently (no pipe deadlock), timeout with SIGTERM then SIGKILL, terminates on task cancellation, stdin `/dev/null`, global single flight (a FIFO queue shared by every instance; timeout throws `SourceError.timedOut`, cancellation `CancellationError`). FR-7's "concurrent requests await the running probe" is the provider's join (T-2.5), not this queue. *(FR-7, NFR-18)* Accept: process tests from 16.1.
-- [ ] **T-2.5** `ClaudeCodeProvider` with descriptor, detection and its `LimitsSource`: locate (caching path, version and environment, re-resolving when the path stops working, FR-6), probe (single flight), parse, classify, map errors (section 13). *(FR-3, FR-6 to FR-11)* Depends: T-1.6, T-2.2 to T-2.4. Accept: conformance suite passes.
+- [x] **T-2.5** `ClaudeCodeProvider` with descriptor, detection and its `LimitsSource`: locate (caching path, version and environment, re-resolving when the path stops working, FR-6), probe (single flight), parse, classify, map errors (section 13). Capabilities are `limits` and `insights` until T-4 adds the `ActivitySource`; P-10 surfaces as `SourceError.unsupportedPlan` (ADR-017). A launch failure re-resolves once, then maps to `toolNotFound`. *(FR-3, FR-6 to FR-11)* Depends: T-1.6, T-2.2 to T-2.4. Accept: conformance suite passes.
 - [ ] **T-2.6** `Schedule` pure function and `RefreshCoordinator` for polled limits sources: intervals from `SchedulePolicy`, backoff, wake, offline, Low Power Mode, manual floor, persistence of snapshots. *(FR-10, section 12, NFR-5, NFR-14, NFR-18)* Accept: scheduler tests from 16.3.
 - [ ] **T-2.7** Limits section UI with bars, countdowns, all states, accessibility labels. *(US-1, US-2, 11.2 to 11.7)*
 - [ ] **T-2.8** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules. *(FR-12, 11.1)*

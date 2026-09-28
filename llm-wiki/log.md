@@ -78,3 +78,12 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `LiveProcessRunner` in `ContribusageCore/Support/Live`: concurrent pipe reads, SIGTERM then SIGKILL on timeout or cancellation, stdin `/dev/null`
 - One process at a time across all runner instances (NFR-18) through a shared FIFO gate; nine process tests against system tools
 - Review pass before commit: stopping asks `Process` itself (`isRunning`, `terminate()`) instead of a lock-guarded mirror of its state; the timeout verdict is the deadline task's result
+
+## [2026-09-29] feat | T-2.5 Claude Code provider
+- `ClaudeCodeProvider` with descriptor, detection and the `UsageProbe` limits source: cached locate with re-resolution, single flight join, SPEC §13 error mapping; passes the conformance suite
+- `SourceError.unsupportedPlan(note:)` added to the core for P-10 ([[decisions/0017-unsupported-plan-source-error]])
+
+## [2026-09-29] refactor | T-2.5 review pass
+- `UsageProbe` folded into `ClaudeCodeProvider`, now one actor that is its own `LimitsSource`; the launch retry is a two-pass loop
+- Detection no longer reports `unsupportedPlan` from a cached probe note, which the registry could never read; P-10 and ADR-017 updated
+- Second pass: the login check also matches "logged in" (whole words only); tests for an override change and each probe result mapping
