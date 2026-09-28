@@ -463,7 +463,7 @@ A real sample (September 2026, subscription plan) is in [Appendix A](#appendix-a
 | P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", availability becomes `unsupportedPlan` and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription" (exact variants captured in research R-2). |
 | P-11 | Insights block: everything from the line starting with "What's contributing" to the end, kept verbatim with indentation (FR-38). |
 
-A starting implementation of P-1 to P-9 already exists: `UsageParser.swift` and `UsageParserTests.swift` (see task T-2.1).
+P-1 to P-9 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/` (task T-2.1).
 
 #### 8.1.4 Window classification and token categories
 
@@ -1314,7 +1314,7 @@ swift format lint --strict -r App Packages
 | Live smoke | Real `claude` probe, real GitHub call | Only when `CONTRIBUSAGE_LIVE_TESTS=1` (token from env var `CONTRIBUSAGE_GITHUB_TOKEN`) | No |
 | UI | SwiftUI previews for every section state, with one and with two providers; manual matrix below | App target | No |
 
-Use the Swift Testing framework (`import Testing`, `@Test`, `#expect`) for new tests. The existing `UsageParserTests.swift` (XCTest) is converted in T-2.1.
+Use the Swift Testing framework (`import Testing`, `@Test`, `#expect`) for new tests.
 
 ### 16.2 Fixtures
 
@@ -1421,8 +1421,8 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.2 Phase 2: Claude Code limits (M1)
 
-- [ ] **T-2.1** Move `UsageParser.swift` into `ContribusageClaudeCode/Limits/`, make API `public` where needed, drop the `nonisolated` keywords (not needed in the package), convert tests to Swift Testing, load fixtures via `Bundle.module`. *(FR-8, P-1 to P-9)* Accept: existing test cases pass.
-- [ ] **T-2.2** Extend the parser to `LimitsReport`: `isBelowOne`, `billingNote`, `insights`, `rawOutput`; add `WindowClassifier`; add fixtures from R-2 and 16.2. *(FR-5, FR-8, P-5, P-10, P-11, 8.1.4)* Depends: R-2.
+- [x] **T-2.1** `UsageParser` in `ContribusageClaudeCode/Limits/` returning classified `UsageWindow`s (8.1.4), Swift Testing tests, fixtures loaded via `Bundle.module`. The earlier app-side `UsageParser.swift` never reached this repository, so the parser was written from the rules. *(FR-8, P-1 to P-9, 8.1.4)* Accept: tests cover P-1 to P-9, classification, Appendix A and the reset cases in 16.3.
+- [ ] **T-2.2** Extend the parser to `LimitsReport`: `billingNote`, `insights`, `rawOutput`; add fixtures from R-2 and 16.2. *(FR-5, FR-8, P-10, P-11)* Depends: R-2.
 - [ ] **T-2.3** `ClaudeLocator` implementing FR-6 against `ProcessRunning`, including executable type detection for diagnostics. *(FR-6, FR-36)* Accept: tests for override, login shell result, fallback list, invalid candidates.
 - [ ] **T-2.4** `LiveProcessRunner` in the core: reads stdout and stderr concurrently (no pipe deadlock), timeout with SIGTERM then SIGKILL, terminates on task cancellation, stdin `/dev/null`, global single flight. Replaces the polling `UsageProbe`. *(FR-7, NFR-18)* Accept: process tests from 16.1.
 - [ ] **T-2.5** `ClaudeCodeProvider` with descriptor, detection and its `LimitsSource`: locate, probe (single flight), parse, classify, map errors (section 13). *(FR-3, FR-6 to FR-11)* Depends: T-1.6, T-2.2 to T-2.4. Accept: conformance suite passes.
