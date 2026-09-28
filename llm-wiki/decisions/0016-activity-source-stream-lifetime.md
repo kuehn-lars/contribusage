@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-28
+updated: 2026-09-29
 aliases: [ADR-016]
 tags: [core, providers, concurrency]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Provider.swift]

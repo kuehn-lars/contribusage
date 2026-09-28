@@ -18,16 +18,19 @@ public struct SchedulePolicy: Sendable, Equatable {
     public let maximumInterval: Duration
     public let staleAfter: Duration
     public let manualFloor: Duration
+    /// Skipped while offline (SPEC §12 rule 2).
+    public let needsNetwork: Bool
 
     public init(
         defaultInterval: Duration, minimumInterval: Duration, maximumInterval: Duration, staleAfter: Duration,
-        manualFloor: Duration
+        manualFloor: Duration, needsNetwork: Bool
     ) {
         self.defaultInterval = defaultInterval
         self.minimumInterval = minimumInterval
         self.maximumInterval = maximumInterval
         self.staleAfter = staleAfter
         self.manualFloor = manualFloor
+        self.needsNetwork = needsNetwork
     }
 }
 

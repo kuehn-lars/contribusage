@@ -14,7 +14,7 @@ public struct Snapshot<Value: Sendable & Codable>: Sendable, Codable {
 
     /// SPEC §12 "stale after".
     public func isStale(at now: Date, after limit: Duration) -> Bool {
-        now.timeIntervalSince(fetchedAt) > Double(limit.components.seconds)
+        now.timeIntervalSince(fetchedAt) > limit.timeInterval
     }
 }
 
@@ -25,6 +25,8 @@ public struct Origin: RawRepresentable, Hashable, Sendable, Codable {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
     public static let cache = Origin(rawValue: "cache")
+    /// A limits source's `fetch()`, run by `RefreshCoordinator`.
+    public static let poll = Origin(rawValue: "poll")
     public static let github = Origin(rawValue: "github")
 }
 

@@ -36,7 +36,7 @@ extension ProviderDescriptor {
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
             defaultInterval: .seconds(900), minimumInterval: .seconds(300), maximumInterval: .seconds(3600),
-            staleAfter: .seconds(1800), manualFloor: .seconds(60)))
+            staleAfter: .seconds(1800), manualFloor: .seconds(60), needsNetwork: true))
     static let mockOther = ProviderDescriptor(
         id: ProviderID(rawValue: "other-tool"), displayName: "Other Tool", symbolName: "terminal",
         capabilities: .limits,

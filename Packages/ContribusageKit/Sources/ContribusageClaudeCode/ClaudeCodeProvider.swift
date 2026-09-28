@@ -111,5 +111,5 @@ extension ProviderDescriptor {
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
             defaultInterval: .seconds(15 * 60), minimumInterval: .seconds(5 * 60), maximumInterval: .seconds(60 * 60),
-            staleAfter: .seconds(30 * 60), manualFloor: .seconds(30)))
+            staleAfter: .seconds(30 * 60), manualFloor: .seconds(30), needsNetwork: true))
 }
