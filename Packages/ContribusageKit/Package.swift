@@ -33,7 +33,8 @@ let package = Package(
         ),
         .testTarget(
             name: "ContribusageClaudeCodeTests",
-            dependencies: ["ContribusageClaudeCode", "ContribusageTestSupport"]
+            dependencies: ["ContribusageClaudeCode", "ContribusageTestSupport"],
+            resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "ContribusageGitHubTests",

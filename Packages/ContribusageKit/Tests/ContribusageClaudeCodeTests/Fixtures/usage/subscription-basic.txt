@@ -1,0 +1,21 @@
+You are currently using your subscription to power your Claude Code usage
+
+Current session: 3% used · resets Sep 28 at 4:09am (Europe/Berlin)
+Current week (all models): 5% used · resets Oct 4 at 6:59pm (Europe/Berlin)
+
+What's contributing to your limits usage?
+Approximate, based on local sessions on this machine; does not include other devices or claude.ai. Behaviors are independent characteristics, not a breakdown.
+
+Last 24h · 668 requests · 8 sessions
+  80% of your usage was at >150k context
+  31% of your usage came from subagent-heavy sessions
+  Top skills: /skill-a 76%, /skill-b 9%, /skill-c 1%
+  Top plugins: plugin-a 76%
+
+Last 7d · 3002 requests · 63 sessions
+  72% of your usage was at >150k context
+  13% of your usage came from sessions active for 8+ hours
+  12% of your usage came from subagent-heavy sessions
+  Top skills: /skill-a 29%, /skill-d 18%, /skill-b 6%, /skill-e 2%, /skill-f 1%
+  Top subagents: general-purpose 1%
+  Top plugins: plugin-a 29%

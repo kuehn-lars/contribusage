@@ -19,7 +19,7 @@ contribusage/
 ├── App/                    the app target: AppState, Popover/; a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
-├── Packages/               ContribusageKit: every target but the app
+├── Packages/               ContribusageKit: every target but the app; fixtures in each test target's `Fixtures/` (SPEC §16.2)
 ├── README.md
 ├── SPEC.md                 the contract: requirements, tasks, research items
 └── llm-wiki/               the memory: this Obsidian vault
