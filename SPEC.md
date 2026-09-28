@@ -1173,7 +1173,7 @@ contribusage/
 ### 15.4 `Package.swift`
 
 ```swift
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
 import PackageDescription
 
 let package = Package(
@@ -1216,11 +1216,6 @@ let package = Package(
         ),
     ]
 )
-
-// Zero warnings on every target (NFR-11).
-for target in package.targets {
-    target.swiftSettings = (target.swiftSettings ?? []) + [.treatAllWarnings(as: .error)]
-}
 ```
 
 Adding a provider later means adding one `.target` and one `.testTarget` following the Claude Code pattern, and one line in `App/ProviderRegistration.swift`.
@@ -1275,13 +1270,13 @@ enum ProviderRegistration {
 
 ```bash
 # All package tests (fast, no Xcode UI needed)
-swift test --package-path Packages/ContribusageKit
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors
 
 # Only the Claude Code provider tests
-swift test --package-path Packages/ContribusageKit --filter ContribusageClaudeCodeTests
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors --filter ContribusageClaudeCodeTests
 
 # With coverage
-swift test --package-path Packages/ContribusageKit --enable-code-coverage
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors --enable-code-coverage
 
 # Build the app
 xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug \

@@ -12,7 +12,7 @@ Every top-level entry of the repository and of the vault, and what it is for. `w
 ```text
 contribusage/
 ├── .claude/settings.json   Claude Code hooks that run the wiki protocol
-├── .github/workflows/      CI: package tests, app build, architecture checks, wiki lint
+├── .github/workflows/      CI: package tests (warnings as errors), app build, architecture checks, wiki lint
 ├── .gitignore
 ├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules

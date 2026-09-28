@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.1
 import PackageDescription
 
 let package = Package(
@@ -41,8 +41,3 @@ let package = Package(
         ),
     ]
 )
-
-// Zero warnings on every target (NFR-11).
-for target in package.targets {
-    target.swiftSettings = (target.swiftSettings ?? []) + [.treatAllWarnings(as: .error)]
-}

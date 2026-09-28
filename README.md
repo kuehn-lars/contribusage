@@ -7,7 +7,7 @@ A native macOS menu bar app for Apple Silicon that shows the usage of your AI co
 Needs an Apple Silicon Mac with Xcode 26 or later; the app itself runs on macOS 14 and later.
 
 ```bash
-swift test --package-path Packages/ContribusageKit
+swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors
 xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug -derivedDataPath .build/xcode build
 open .build/xcode/Build/Products/Debug/contribusage.app
 ```

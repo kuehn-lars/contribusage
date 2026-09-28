@@ -105,8 +105,8 @@ A folder is created with its first page and added to the repo map. Page rules (l
 
 | Purpose | Command |
 |---|---|
-| Package tests | `swift test --package-path Packages/ContribusageKit` |
-| One target's tests | `swift test --package-path Packages/ContribusageKit --filter ContribusageClaudeCodeTests` |
+| Package tests | `swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors` |
+| One target's tests | `swift test --package-path Packages/ContribusageKit -Xswiftc -warnings-as-errors --filter ContribusageClaudeCodeTests` |
 | Build the app | `xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug -derivedDataPath .build/xcode build` |
 | Swift lint | `swift format lint --strict -r App Packages` |
 | Architecture check | `lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage` prints `arm64` |
