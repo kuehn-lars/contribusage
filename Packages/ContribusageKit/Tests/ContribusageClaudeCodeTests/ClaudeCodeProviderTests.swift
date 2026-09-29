@@ -64,6 +64,17 @@ private func fetch(_ runner: FakeProcessRunner) async throws -> LimitsReport {
     #expect(probe.timeout == .seconds(30))
 }
 
+/// The probe runs before the first snapshot write, so it creates the app folder and must make it owner-only (SPEC §10.7).
+@Test func createsTheProbeFolderOwnerOnly() async throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    _ = try await ClaudeCodeProvider(
+        runner: runner(), paths: AppPaths(root: root), home: home, shell: URL(filePath: "/bin/zsh"), time: time
+    ).fetch()
+    let attributes = try FileManager.default.attributesOfItem(atPath: root.path(percentEncoded: false))
+    #expect(attributes[.posixPermissions] as? Int == 0o700)
+}
+
 @Test func cachesTheLocatedClaude() async throws {
     let fake = runner()
     let provider = provider(fake)

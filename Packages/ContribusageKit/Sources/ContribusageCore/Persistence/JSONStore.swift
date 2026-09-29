@@ -26,11 +26,16 @@ public enum JSONStore {
         return try JSONDecoder().decode(Envelope<Value>.self, from: data).value
     }
 
-    /// Creates missing folders owner-only (`0700`), then replaces the file atomically.
-    public static func write<Value: PersistedFile>(_ value: Value, to file: URL) throws {
+    /// Creates `folder` and its missing parents owner-only (`0700`). Every folder under `AppPaths.root` is made here,
+    /// whichever write comes first. An existing folder keeps its mode.
+    public static func createFolder(_ folder: URL) throws {
         try FileManager.default.createDirectory(
-            at: file.deletingLastPathComponent(), withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700])
+            at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+    }
+
+    /// Creates missing folders owner-only, then replaces the file atomically.
+    public static func write<Value: PersistedFile>(_ value: Value, to file: URL) throws {
+        try createFolder(file.deletingLastPathComponent())
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         try encoder.encode(Envelope(schemaVersion: Value.schemaVersion, value: value)).write(to: file, options: .atomic)

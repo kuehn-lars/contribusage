@@ -1,7 +1,7 @@
 ---
 type: overview
 status: active
-updated: 2026-09-28
+updated: 2026-09-29
 tracks: []
 tags: [hub]
 ---
@@ -27,4 +27,4 @@ Dependency direction: `ContribusageClaudeCode → ContribusageCore ← Contribus
 | `ContribusageGitHub` | [[modules/github]] | Contribution calendar and statistics |
 | `ContribusageTestSupport` | [[modules/test-support]] | Fakes, `FakeProvider`, conformance suite |
 
-Milestones (SPEC §17): M1 Claude Code limits in the menu bar → M2 GitHub → M3 activity → M4 v1.0 → M5 extras and release.
+Milestones (SPEC §17): M1 Claude Code limits in the popover → M2 GitHub → M3 activity → M4 v1.0 with the menu bar label → M5 extras and release.
