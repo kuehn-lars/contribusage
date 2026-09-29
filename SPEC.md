@@ -953,7 +953,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `notificationThresholds`, `notifyOnReset`, `heatmapWeeks`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `heatmapWeeks`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ---
 
@@ -1437,7 +1437,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 ### 17.3 Phase 3: GitHub (M2)
 
 - [x] **T-3.1** `KeychainSecretStore`. *(FR-16)* Accept: live test behind `CONTRIBUSAGE_LIVE_TESTS`, unit tests with fake.
-- [ ] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
+- [x] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
 - [ ] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
 - [ ] **T-3.4** `ContributionStatsCalculator`. *(FR-19, 8.4.4)* Depends: R-4. Accept: streak and week tests.
 - [ ] **T-3.5** Heatmap view with palette, hover details, keyboard and VoiceOver support. *(FR-20, NFR-8)*

@@ -1,3 +1,4 @@
+import AppKit
 import ContribusageCore
 import SwiftUI
 
@@ -41,6 +42,7 @@ struct SectionStateView<Value: Sendable & Codable, Content: View>: View {
 struct NotConfiguredView: View {
     let reason: NotConfiguredReason
     let displayName: String
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         switch reason {
@@ -57,7 +59,11 @@ struct NotConfiguredView: View {
         case .noLocalData:
             Text("No \(displayName) sessions found on this Mac").foregroundStyle(.secondary)
         case .githubTokenMissing:
-            Button("Connect GitHub") {}  // T-3.2
+            Button("Connect GitHub") {
+                // SPEC §20: an agent app must activate itself, or Settings opens behind other apps.
+                NSApp.activate()
+                openSettings()
+            }
         }
     }
 }
@@ -69,6 +75,7 @@ struct ErrorLine: View {
 
     var body: some View {
         HStack {
+            let message = error.message(displayName: displayName)
             Label(message, systemImage: "exclamationmark.triangle").lineLimit(2).help(message)
             Spacer()
             if let retry { Button("Retry", action: retry) }
@@ -79,24 +86,6 @@ struct ErrorLine: View {
                 ScrollView { Text(raw).font(.caption.monospaced()).textSelection(.enabled) }.frame(maxHeight: 120)
             }
             .font(.caption)
-        }
-    }
-
-    /// SPEC §13.
-    private var message: String {
-        switch error {
-        case .toolNotFound: "\(displayName) wasn't found"
-        case .notLoggedIn: "\(displayName) isn't logged in"
-        case .unsupportedPlan(let note): note
-        case .timedOut: "\(displayName) didn't answer in time"
-        case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
-        case .unparseable: "Couldn't read the usage output"
-        case .offline: "Offline"
-        case .unauthorized: "Token rejected"
-        case .rateLimited(let until): "Rate limited until \(until.formatted(date: .omitted, time: .shortened))"
-        case .http(let status): "Server error \(status)"
-        case .decoding(let message), .io(let message): message
-        case .providerSpecific: "Something went wrong with \(displayName)"
         }
     }
 }
@@ -131,6 +120,26 @@ struct AgeText: View {
             let units = Duration.seconds(age).formatted(
                 .units(allowed: [.days, .hours, .minutes], width: .abbreviated, maximumUnitCount: 1))
             Text("updated \(units) ago")
+        }
+    }
+}
+
+extension SourceError {
+    /// SPEC §13, shared by the popover's error lines and Settings.
+    func message(displayName: String) -> String {
+        switch self {
+        case .toolNotFound: "\(displayName) wasn't found"
+        case .notLoggedIn: "\(displayName) isn't logged in"
+        case .unsupportedPlan(let note): note
+        case .timedOut: "\(displayName) didn't answer in time"
+        case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
+        case .unparseable: "Couldn't read the usage output"
+        case .offline: "Offline"
+        case .unauthorized: "\(displayName) token is invalid or expired"
+        case .rateLimited(let until): "Rate limited until \(until.formatted(date: .omitted, time: .shortened))"
+        case .http(let status): "Server error \(status)"
+        case .decoding(let message), .io(let message): message
+        case .providerSpecific: "Something went wrong with \(displayName)"
         }
     }
 }

@@ -16,7 +16,7 @@ contribusage/
 ├── .gitignore
 ├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules
-├── App/                    the app target: AppState and its live wiring, ProviderRegistration, SystemConditions, Popover/ (views and their mock data); a folder synchronised with Xcode
+├── App/                    the app target: AppState and its live wiring, ProviderRegistration, SystemConditions, Popover/ (views and their mock data), Settings/ (the Settings scene and its tabs); a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
 ├── Packages/               ContribusageKit: every target but the app; fixtures in each test target's `Fixtures/` (SPEC §16.2)
