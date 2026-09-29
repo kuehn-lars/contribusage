@@ -123,3 +123,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-09-29] test | M1 check
 - US-1's popover criteria and US-2 hold over a day of uptime without sleep; SPEC §17.2's M1 check is ticked.
 - Release build sampled once a minute (`ps` CPU time, `footprint`): quiet minutes cost at most 0.01 s CPU (NFR-1), memory footprint 15 to 25 MB (NFR-2). Opening the popover adds about 8 MB and 0.5 s; a probe about 0.3 s.
+
+## [2026-09-29] feat | T-3.1 KeychainSecretStore
+- `KeychainSecretStore(service:)` in the core's `Support/Live` is the live `SecretStore`: generic passwords, key as account, after first unlock and this device only (FR-16, SPEC §14).
+- `keychainSecretStoreRoundTrips` runs against the real Keychain under a throwaway service only with `CONTRIBUSAGE_LIVE_TESTS=1`; `FakeSecretStore` keeps its unit test.
