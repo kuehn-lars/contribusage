@@ -127,3 +127,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-09-29] feat | T-3.1 KeychainSecretStore
 - `KeychainSecretStore(service:)` in the core's `Support/Live` is the live `SecretStore`: generic passwords, key as account, after first unlock and this device only (FR-16, SPEC §14).
 - `keychainSecretStoreRoundTrips` runs against the real Keychain under a throwaway service only with `CONTRIBUSAGE_LIVE_TESTS=1`; `FakeSecretStore` keeps its unit test.
+
+## [2026-09-29] feat | T-3.2 GitHub settings tab
+- `GitHubClient.viewerLogin(token:)` validates a token with `viewer { login }` (FR-17); fake-transport tests cover the request, 401, HTTP errors and GraphQL errors.
+- `GitHubAccount` owns the token: only a validated token is saved, tested with fakes. New Settings scene with the GitHub tab (validate, "Connected as @login", remove); Connect GitHub in the popover opens it.
+- `SourceError.message(displayName:)` is shared by popover and Settings; `unauthorized` now reads "GitHub token is invalid or expired" (SPEC §13). SPEC §10.7 gains the `githubLogin` default; T-3.2 ticked.
