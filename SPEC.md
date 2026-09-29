@@ -1436,7 +1436,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.3 Phase 3: GitHub (M2)
 
-- [ ] **T-3.1** `KeychainSecretStore`. *(FR-16)* Accept: live test behind `CONTRIBUSAGE_LIVE_TESTS`, unit tests with fake.
+- [x] **T-3.1** `KeychainSecretStore`. *(FR-16)* Accept: live test behind `CONTRIBUSAGE_LIVE_TESTS`, unit tests with fake.
 - [ ] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
 - [ ] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
 - [ ] **T-3.4** `ContributionStatsCalculator`. *(FR-19, 8.4.4)* Depends: R-4. Accept: streak and week tests.
