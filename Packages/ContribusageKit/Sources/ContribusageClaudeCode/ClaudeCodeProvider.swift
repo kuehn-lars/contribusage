@@ -66,7 +66,7 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
 
     private func probe() async throws -> LimitsReport {
         do {
-            try FileManager.default.createDirectory(at: probeFolder, withIntermediateDirectories: true)
+            try JSONStore.createFolder(probeFolder)
         } catch {
             throw SourceError.io(error.localizedDescription)
         }

@@ -111,3 +111,15 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-09-29] refactor | SystemConditions keeps no observer tokens
 - `NotificationCenter` holds each block until it is removed, and `SystemConditions` lives as long as the app, so the stored token array is gone.
+
+## [2026-09-29] spec | Menu bar label moves to M4
+- T-2.8 becomes T-5.10: the menu bar label (FR-12, SPEC §11.1) follows the GitHub wiring and the display mode setting; M1 is now "limits live in the popover".
+- FR-12 drops to P2; US-1 notes that its menu bar criteria arrive with T-5.10, and the M1 check covers only its popover criteria.
+
+## [2026-09-29] fix | Probe folder created owner-only
+- The first probe created `~/Library/Application Support/contribusage/` with the default `0755` before `JSONStore` could create it as `0700` (SPEC §10.7). Found during the M1 check.
+- `JSONStore.createFolder` is now the one place that creates folders under the root; `JSONStore.write` and the probe both use it, and `createsTheProbeFolderOwnerOnly` covers the probe path.
+
+## [2026-09-29] test | M1 check
+- US-1's popover criteria and US-2 hold over a day of uptime without sleep; SPEC §17.2's M1 check is ticked.
+- Release build sampled once a minute (`ps` CPU time, `footprint`): quiet minutes cost at most 0.01 s CPU (NFR-1), memory footprint 15 to 25 MB (NFR-2). Opening the popover adds about 8 MB and 0.5 s; a probe about 0.3 s.

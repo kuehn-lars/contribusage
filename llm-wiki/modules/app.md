@@ -12,7 +12,7 @@ The thin SwiftUI shell: menu bar label, popover, Settings, `AppState`, provider 
 ## Spec
 - **Sections:** SPEC §9.2 (responsibilities), §9.3 (concurrency), §11 (UI), §15.3 and §15.5 (project and entry point), §20 (pitfalls: Settings activation, `MenuBarExtra`, template labels, the notch, notifications, `SMAppService`)
 - **Requirements:** FR-4, FR-12, FR-30 to FR-37; NFR-3, NFR-8 to NFR-10, NFR-16
-- **Tasks:** T-1.1, T-1.7, T-2.7, T-2.8, T-3.2, T-3.5, T-4.6 (UI), T-5.2 to T-5.5, T-5.7
+- **Tasks:** T-1.1, T-1.7, T-2.7, T-3.2, T-3.5, T-4.6 (UI), T-5.2 to T-5.5, T-5.7, T-5.10
 - **Path:** `App/` and `Contribusage.xcodeproj`
 
 ## Depends on
