@@ -81,13 +81,23 @@ public actor RefreshCoordinator {
         if loop != nil { reschedule() }
     }
 
+    /// SPEC §12 extra trigger: the popover opened, so data older than its source's minimum interval is refreshed now.
+    /// Only this pass sees the trigger, so data younger than the minimum interval is left alone rather than refreshed later.
+    public func popoverOpened() async {
+        await runDue(openedAt: time.now)
+        if loop != nil { reschedule() }
+    }
+
     /// Runs every due source after any pass still running; returns when the next one is due, `nil` if none is scheduled.
     @discardableResult
-    public func runDue() async -> Date? {
+    public func runDue() async -> Date? { await runDue(openedAt: nil) }
+
+    @discardableResult
+    private func runDue(openedAt: Date?) async -> Date? {
         let previous = pass
         let next = Task {
             _ = await previous?.value
-            return await runPass()
+            return await runPass(openedAt: openedAt)
         }
         pass = next
         return await next.value
@@ -103,7 +113,7 @@ public actor RefreshCoordinator {
         }
     }
 
-    private func runPass() async -> Date? {
+    private func runPass(openedAt: Date?) async -> Date? {
         var earliest: Date?
         for provider in await registry.enabledProviders() {
             guard let source = provider.limits, let policy = provider.descriptor.limitsPolicy else { continue }
@@ -112,13 +122,13 @@ public actor RefreshCoordinator {
                 await publish(id, .failed(.offline, previous: records[id]?.snapshot))
                 continue
             }
-            if let due = nextRun(id, policy), due <= time.now { await refresh(id, source) }
+            if let due = nextRun(id, policy, openedAt: openedAt), due <= time.now { await refresh(id, source) }
             if let next = nextRun(id, policy) { earliest = min(earliest ?? next, next) }
         }
         return earliest
     }
 
-    private func nextRun(_ id: ProviderID, _ policy: SchedulePolicy) -> Date? {
+    private func nextRun(_ id: ProviderID, _ policy: SchedulePolicy, openedAt: Date? = nil) -> Date? {
         let record = records[id, default: Record()]
         var policy = policy
         if case .notConfigured(.unsupportedPlan)? = record.state {
@@ -127,9 +137,12 @@ public actor RefreshCoordinator {
                 defaultInterval: recheck, minimumInterval: recheck, maximumInterval: recheck,
                 staleAfter: policy.staleAfter, manualFloor: policy.manualFloor, needsNetwork: policy.needsNetwork)
         }
+        // FR-11: a window's reset triggers a refresh; `Schedule` counts only triggers after the last run.
+        let resets = record.snapshot?.value.windows.compactMap(\.resetsAt) ?? []
         return Schedule.nextRun(
             policy: policy, lastSuccess: record.snapshot?.fetchedAt, lastAttempt: record.lastAttempt,
-            failures: record.failures, now: time.now, conditions: conditions, manual: record.manual)
+            failures: record.failures, now: time.now, conditions: conditions, manual: record.manual,
+            triggers: resets + [openedAt].compactMap(\.self))
     }
 
     private func refresh(_ id: ProviderID, _ source: any LimitsSource) async {

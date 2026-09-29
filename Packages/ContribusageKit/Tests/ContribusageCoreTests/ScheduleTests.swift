@@ -14,11 +14,11 @@ private let probe = SchedulePolicy(
 
 private func next(
     _ policy: SchedulePolicy = probe, lastAttempt: Date? = now, failures: Int = 0,
-    conditions: ScheduleConditions = ScheduleConditions(), manual: Bool = false
+    conditions: ScheduleConditions = ScheduleConditions(), manual: Bool = false, triggers: [Date] = []
 ) -> Date? {
     Schedule.nextRun(
         policy: policy, lastSuccess: nil, lastAttempt: lastAttempt, failures: failures, now: now,
-        conditions: conditions, manual: manual)
+        conditions: conditions, manual: manual, triggers: triggers)
 }
 
 @Test func aSourceThatNeverRanIsDueNow() {
@@ -84,4 +84,15 @@ func backoffGrowsAndIsCapped(failures: Int, minutes: Double) {
 @Test func manualRefreshRespectsOnlyTheFloor() {
     #expect(next(lastAttempt: now - 10, failures: 3, manual: true) == now + 20)
     #expect(next(lastAttempt: now - 20 * minute, manual: true) == now - 20 * minute + 30)
+}
+
+/// SPEC §12 extra triggers (popover opened, a window's reset): they skip interval and backoff but wait out the minimum
+/// interval, never delay a run the interval brings sooner, and count only after the last run.
+@Test func aTriggerWaitsOnlyForTheMinimumInterval() {
+    #expect(next(lastAttempt: now - 10 * minute, failures: 2, triggers: [now + minute]) == now + minute)
+    #expect(next(lastAttempt: now - 2 * minute, triggers: [now]) == now + 3 * minute)
+    #expect(next(lastAttempt: now - 14 * minute, triggers: [now + 5 * minute]) == now + minute)
+    #expect(
+        next(lastAttempt: now - 10 * minute, conditions: ScheduleConditions(isAsleep: true), triggers: [now]) == nil)
+    #expect(next(lastAttempt: now - 10 * minute, triggers: [now - 11 * minute, now + 2 * minute]) == now + 2 * minute)
 }

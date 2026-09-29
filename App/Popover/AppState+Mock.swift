@@ -3,7 +3,7 @@ import ContribusageCore
 import ContribusageGitHub
 import SwiftUI
 
-/// Mock data for the popover shell until the coordinator feeds `AppState` (T-2.6); also drives the previews.
+/// Mock data for the previews; the running app uses `AppState.live()`.
 extension AppState {
     static func mock(
         limits: SourceState<LimitsReport> = .loaded(.fresh(.mockLimits)),
@@ -140,6 +140,20 @@ private let unparseable = "Weird output\n  ▌▌▌ 23% ???"
         state: .mock(
             limits: .notConfigured(
                 .unsupportedPlan(note: "Plan limits need a Claude subscription login in Claude Code"))))
+}
+#Preview("Reset passed (FR-11)") {
+    let passed = LimitsReport(
+        provider: .claudeCode,
+        windows: [
+            UsageWindow(
+                label: "Current session", kind: .session, usedPercent: 97, isBelowOne: false,
+                resetsAt: .now.addingTimeInterval(-60)),
+            UsageWindow(
+                label: "Current week (all models)", kind: .weekly, usedPercent: 41, isBelowOne: false,
+                resetsAt: .now.addingTimeInterval(1500)),
+        ],
+        billingNote: nil, insights: nil, rawOutput: nil)
+    BothSchemes(state: .mock(limits: .loading(previous: .fresh(passed))))
 }
 #Preview("Unparseable") {
     BothSchemes(state: .mock(limits: .failed(.unparseable(rawOutput: unparseable), previous: .fresh(.mockLimits))))

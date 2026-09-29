@@ -5,6 +5,7 @@ import SwiftUI
 /// One provider: header, then limits, activity and insights (FR-4, FR-31).
 struct ProviderGroup: View {
     let group: AppState.ProviderGroupState
+    @Environment(AppState.self) private var appState
 
     var body: some View {
         let descriptor = group.descriptor
@@ -16,7 +17,8 @@ struct ProviderGroup: View {
                 SectionStateView(
                     state: limits, displayName: descriptor.displayName,
                     staleAfter: descriptor.limitsPolicy?.staleAfter, placeholder: .placeholder(descriptor.id),
-                    content: LimitsSection.init)
+                    retry: appState.refresh,
+                    content: { LimitsSection(report: $0, providerName: descriptor.displayName) })
             }
             if let activity = group.activity {
                 SectionStateView(
@@ -34,28 +36,33 @@ struct ProviderGroup: View {
 
 struct LimitsSection: View {
     let report: LimitsReport
+    let providerName: String
     @Environment(\.now) private var now
 
     var body: some View {
         ForEach(report.windows, id: \.label) { window in
+            let reset = window.isReset(at: now)
+            let percent = reset ? 0 : window.usedPercent  // FR-11: unknown, drawn empty
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(window.label)
                     Spacer()
-                    Text(window.isBelowOne ? "<1%" : "\(Int(window.usedPercent))%").monospacedDigit()
+                    Text(window.percentText(at: now)).monospacedDigit()
                 }
                 Capsule().fill(.quaternary).frame(height: 6)
                     .overlay(alignment: .leading) {
                         GeometryReader { proxy in
-                            Capsule().fill(color(window.usedPercent))
-                                .frame(width: proxy.size.width * min(window.usedPercent, 100) / 100)
+                            Capsule().fill(color(percent)).frame(width: proxy.size.width * min(percent, 100) / 100)
                         }
                     }
-                if let resetsAt = window.resetsAt {
-                    Text(resetText(resetsAt)).font(.caption).foregroundStyle(.secondary)
+                if let resetsAt = window.resetsAt, let resetText = window.resetText(at: now) {
+                    Text(resetText).font(.caption).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .trailing)
+                        .help(resetsAt.formatted(.dateTime.weekday().day().month().hour().minute()))  // US-2
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel(window, reset: reset))
         }
     }
 
@@ -64,13 +71,12 @@ struct LimitsSection: View {
         percent >= 90 ? .red : percent >= 70 ? .orange : .accentColor
     }
 
-    // ponytail: rough SPEC §11.5 wording; T-2.7 owns the exact reset formatting and its tests.
-    private func resetText(_ resetsAt: Date) -> String {
-        let remaining = resetsAt.timeIntervalSince(now)
-        if remaining <= 0 { return "reset" }
-        if remaining > 24 * 3600 { return "resets \(resetsAt.formatted(.dateTime.weekday().hour().minute()))" }
-        return
-            "resets in \(Duration.seconds(remaining).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated)))"
+    /// SPEC §11.7: "Claude Code, Current session, 23 percent used, resets in 2 hours 10 minutes".
+    private func accessibilityLabel(_ window: UsageWindow, reset: Bool) -> String {
+        let used =
+            reset ? nil : window.isBelowOne ? "less than 1 percent used" : "\(Int(window.usedPercent)) percent used"
+        return [providerName, window.label, used, window.resetText(at: now, width: .wide)].compactMap(\.self)
+            .joined(separator: ", ")
     }
 }
 
