@@ -1,4 +1,5 @@
 import ContribusageCore
+import Foundation
 
 /// SPEC §10.5.
 public enum ContributionLevel: Int, Sendable, Codable { case none, first, second, third, fourth }
@@ -29,6 +30,25 @@ public struct ContributionStats: Sendable, Codable, Equatable {
         self.currentStreak = currentStreak
         self.streakNeedsToday = streakNeedsToday
         self.longestStreak = longestStreak
+    }
+
+    /// FR-19, SPEC §8.4.4, over consecutive `days` in API order. `calendar` sets the day boundary (its time zone,
+    /// R-4) and the week start (its first weekday, ADR-021). Days after today (GitHub's day ahead of
+    /// `calendar`'s) count nowhere.
+    public init(days: [ContributionDay], now: Date, calendar: Calendar) {
+        let format = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
+        let today = DayKey(rawValue: now.formatted(format))
+        let weekStart = DayKey(rawValue: calendar.dateInterval(of: .weekOfYear, for: now)!.start.formatted(format))
+        let past = days.filter { $0.date <= today }
+        let todayCount = past.last(where: { $0.date == today })?.count ?? 0
+        // Today at 0 so far (or not in the calendar yet) leaves the streak ending yesterday.
+        let current = past.reversed().drop(while: { $0.date == today && $0.count == 0 }).prefix { $0.count > 0 }.count
+        self.init(
+            today: todayCount,
+            thisWeek: past.filter { $0.date >= weekStart }.reduce(0) { $0 + $1.count },
+            currentStreak: current,
+            streakNeedsToday: todayCount == 0 && current > 0,
+            longestStreak: past.split { $0.count == 0 }.map(\.count).max() ?? 0)
     }
 }
 
