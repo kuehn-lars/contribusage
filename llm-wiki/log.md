@@ -97,3 +97,17 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `RefreshCoordinator.refresh` separates the SPEC §13 mapping (a pure function) from bookkeeping; failures derive from the state
 - `ProviderID` is `CodingKeyRepresentable`, so `state.json` keys need no conversion; one `Duration.timeInterval` replaces three conversions
 - Third pass: `restore()` no longer relabels an in-memory snapshot as `cache` when `start()` runs again; the backoff drops a redundant branch
+
+## [2026-09-29] feat | T-2.7 limits UI and app wiring
+- The app runs live: `AppState.live()` registers `ClaudeCodeProvider`, starts `RefreshCoordinator` and feeds it sleep, wake, network and Low Power Mode through `SystemConditions`; Refresh, Retry and popover open reach the coordinator.
+- Extra triggers as `Schedule.nextRun(trigger:)`: popover open and a window's reset, floored at the minimum interval (SPEC §12 rule 8, [[decisions/0019-extra-refresh-triggers]]).
+- Limits section: §11.5 reset wording with hover date, "reset, refreshing…" after a reset (FR-11), §11.7 VoiceOver labels, §13 error wording.
+- Fix: provider groups were invisible in the live popover (`ViewThatFits` fell back to a zero-height `ScrollView`); the scroll view now takes the groups' measured height.
+
+## [2026-09-29] refactor | T-2.7 review pass
+- `Schedule.nextRun(triggers:)` filters triggers by the last run itself; `popoverOpened()` hands `now` to its one pass instead of storing and clearing it per record ([[decisions/0019-extra-refresh-triggers]]).
+- The §11.5 and FR-11 window texts moved from `LimitsSection` into the core (`UsageWindow+Display`) with tests, ready for the menu bar label (T-2.8).
+- Retry is an optional closure per section (limits only for now); condition changes reach the coordinator in order through one stream.
+
+## [2026-09-29] refactor | SystemConditions keeps no observer tokens
+- `NotificationCenter` holds each block until it is removed, and `SystemConditions` lives as long as the app, so the stored token array is gone.

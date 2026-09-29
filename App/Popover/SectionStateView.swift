@@ -14,6 +14,8 @@ struct SectionStateView<Value: Sendable & Codable, Content: View>: View {
     var staleAfter: Duration?
     /// The skeleton of the first load is this value, redacted.
     let placeholder: Value
+    /// `nil` hides Retry, for sources nothing refreshes yet.
+    var retry: (() -> Void)?
     @ViewBuilder let content: (Value) -> Content
     @Environment(\.now) private var now
 
@@ -31,7 +33,7 @@ struct SectionStateView<Value: Sendable & Codable, Content: View>: View {
             content(snapshot.value).opacity(stale ? 0.5 : 1)
         case .failed(let error, let previous):
             if let previous { content(previous.value).opacity(0.5) }
-            ErrorLine(error: error)
+            ErrorLine(error: error, displayName: displayName, retry: retry)
         }
     }
 }
@@ -62,12 +64,14 @@ struct NotConfiguredView: View {
 
 struct ErrorLine: View {
     let error: SourceError
+    let displayName: String
+    let retry: (() -> Void)?
 
     var body: some View {
         HStack {
-            Label(message, systemImage: "exclamationmark.triangle").lineLimit(1)
+            Label(message, systemImage: "exclamationmark.triangle").lineLimit(2).help(message)
             Spacer()
-            Button("Retry") {}  // wired with the coordinator (T-2.6)
+            if let retry { Button("Retry", action: retry) }
         }
         .font(.caption)
         if case .unparseable(let raw) = error {
@@ -78,19 +82,21 @@ struct ErrorLine: View {
         }
     }
 
+    /// SPEC §13.
     private var message: String {
         switch error {
-        case .toolNotFound: "Tool not found"
-        case .notLoggedIn: "Not logged in"
+        case .toolNotFound: "\(displayName) wasn't found"
+        case .notLoggedIn: "\(displayName) isn't logged in"
         case .unsupportedPlan(let note): note
-        case .timedOut: "Timed out"
+        case .timedOut: "\(displayName) didn't answer in time"
         case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
         case .unparseable: "Couldn't read the usage output"
         case .offline: "Offline"
         case .unauthorized: "Token rejected"
         case .rateLimited(let until): "Rate limited until \(until.formatted(date: .omitted, time: .shortened))"
         case .http(let status): "Server error \(status)"
-        case .decoding(let message), .io(let message), .providerSpecific(_, let message): message
+        case .decoding(let message), .io(let message): message
+        case .providerSpecific: "Something went wrong with \(displayName)"
         }
     }
 }

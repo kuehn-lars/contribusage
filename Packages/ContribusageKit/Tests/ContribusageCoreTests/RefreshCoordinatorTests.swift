@@ -29,10 +29,10 @@ private struct PolledProvider: UsageProvider, LimitsSource {
     func pushedUpdates() -> AsyncStream<LimitsReport> { AsyncStream { $0.finish() } }
 }
 
-private func report(_ id: ProviderID) -> LimitsReport {
+private func report(_ id: ProviderID, resetsAt: Date? = nil) -> LimitsReport {
     LimitsReport(
         provider: id,
-        windows: [UsageWindow(label: "Week", kind: .weekly, usedPercent: 5, isBelowOne: false, resetsAt: nil)],
+        windows: [UsageWindow(label: "Week", kind: .weekly, usedPercent: 5, isBelowOne: false, resetsAt: resetsAt)],
         billingNote: nil, insights: nil, rawOutput: nil)
 }
 
@@ -47,7 +47,7 @@ private final class Log: Sendable {
     var maxRunning: Int { state.withLock { $0.maxRunning } }
     var updates: [(ProviderID, SourceState<LimitsReport>)] { state.withLock { $0.updates } }
 
-    func fetch(_ id: ProviderID, pause: Duration = .zero) async throws -> LimitsReport {
+    func fetch(_ id: ProviderID, pause: Duration = .zero, resetsAt: Date? = nil) async throws -> LimitsReport {
         state.withLock {
             $0.fetches.append(id)
             $0.running += 1
@@ -55,7 +55,7 @@ private final class Log: Sendable {
         }
         try? await Task.sleep(for: pause)
         state.withLock { $0.running -= 1 }
-        return report(id)
+        return report(id, resetsAt: resetsAt)
     }
 
     func record(_ id: ProviderID, _ update: SourceState<LimitsReport>) {
@@ -233,6 +233,41 @@ private func temporaryPaths() -> AppPaths {
         return
     }
     #expect(next == start + 1800)
+}
+
+/// SPEC §12 "popover opened and data older than 5 min": younger data is left alone, and the trigger does not linger.
+@Test func openingThePopoverRefreshesDataOlderThanTheMinimumInterval() async {
+    let time = FakeTimeSource(now: start)
+    let log = Log()
+    let coordinator = coordinator([PolledProvider(id: a) { try await log.fetch($0) }], time: time, log: log)
+    _ = await coordinator.runDue()
+
+    time.advance(by: .seconds(240))
+    await coordinator.popoverOpened()
+    time.advance(by: .seconds(120))
+    _ = await coordinator.runDue()
+    #expect(log.fetches == [a])
+
+    await coordinator.popoverOpened()
+    #expect(log.fetches == [a, a])
+}
+
+/// FR-11: a window's reset brings the next refresh forward once, but not within the minimum interval.
+@Test func aWindowsResetSchedulesOneRefresh() async {
+    let time = FakeTimeSource(now: start)
+    let log = Log()
+    let coordinator = coordinator(
+        [
+            PolledProvider(id: a) { try await log.fetch($0, resetsAt: start + 600) },
+            PolledProvider(id: b) { try await log.fetch($0, resetsAt: start + 60) },
+        ], time: time, log: log)
+
+    #expect(await coordinator.runDue() == start + 300)
+    time.advance(by: .seconds(300))
+    #expect(await coordinator.runDue() == start + 600)
+    time.advance(by: .seconds(300))
+    #expect(await coordinator.runDue() == start + 300 + 900)
+    #expect(log.fetches == [a, b, b, a])
 }
 
 private func isLoading(_ state: SourceState<LimitsReport>) -> Bool {
