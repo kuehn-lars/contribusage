@@ -81,14 +81,15 @@ extension ActivityReport {
 
 extension GitHubReport {
     static let mockGitHub = GitHubReport(
-        login: "octocat",
-        days: (0..<182).map { index in
-            let count = (index * 7 + index / 3) % 9
-            return ContributionDay(
-                date: DayKey(rawValue: "d\(index)"), count: count,
-                level: ContributionLevel(rawValue: count / 2) ?? .fourth)
-        },
-        totalContributions: 1234,
+        calendar: ContributionCalendar(
+            login: "octocat",
+            days: (0..<182).map { index in
+                let count = (index * 7 + index / 3) % 9
+                return ContributionDay(
+                    date: DayKey(rawValue: "d\(index)"), count: count,
+                    level: ContributionLevel(rawValue: count / 2) ?? .fourth)
+            },
+            totalContributions: 1234),
         stats: ContributionStats(today: 5, thisWeek: 21, currentStreak: 12, streakNeedsToday: false, longestStreak: 30))
 }
 

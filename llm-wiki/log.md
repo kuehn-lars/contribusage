@@ -132,3 +132,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `GitHubClient.viewerLogin(token:)` validates a token with `viewer { login }` (FR-17); fake-transport tests cover the request, 401, HTTP errors and GraphQL errors.
 - `GitHubAccount` owns the token: only a validated token is saved, tested with fakes. New Settings scene with the GitHub tab (validate, "Connected as @login", remove); Connect GitHub in the popover opens it.
 - `SourceError.message(displayName:)` is shared by popover and Settings; `unauthorized` now reads "GitHub token is invalid or expired" (SPEC §13). SPEC §10.7 gains the `githubLogin` default; T-3.2 ticked.
+
+## [2026-09-29] feat | T-3.3 GitHubClient contributions
+- `GitHubClient.contributions(token:from:to:)` returns a `ContributionCalendar`, which `GitHubReport` now carries with the stats (SPEC §10.5); one generic `send` serves it and `viewerLogin`. The query drops the unused `weekday` (Appendix C).
+- Rate limits follow GitHub's GraphQL docs: remaining 0 on a failed response pauses until the reset; SPEC §8.4.3 and §13 corrected ([[decisions/0020-github-rate-limit-detection]]).
+- Fixtures `github/calendar.json` and `github/graphql-errors.json`, both synthetic; SPEC §16.2 no longer asks for a real calendar, whose counts are personal data.
