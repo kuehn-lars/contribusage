@@ -602,9 +602,9 @@ Query and a sample response: [Appendix C](#appendix-c-github-graphql). Variables
 
 #### 8.4.4 Statistics rules
 
-- **Today** = the calendar day entry whose `date` equals today's date (time zone behaviour verified in R-4).
-- **Current streak** = number of consecutive days with `count > 0` ending today; if today is 0 so far, the streak ending yesterday is shown and marked "extend today".
-- **Longest streak** = longest run within the fetched range.
+- **Today** = the calendar day entry whose `date` equals today's date, 0 when there is none yet. The statistics take a `Calendar`: its time zone sets the day boundary (which zone: R-4, chosen by the caller in T-3.6), its first weekday the week start (ADR-021). Entries after today (GitHub's day ahead of the local one) count toward no statistic.
+- **Current streak** = number of consecutive days with `count > 0` ending today; if today is 0 so far, the streak ending yesterday is shown and, when it is not 0, marked "extend today".
+- **Longest streak** = longest run within the fetched range, up to today.
 - **This week** = sum from the locale's first weekday to today.
 - **Total** = `totalContributions` from the API (not recomputed).
 
@@ -1154,7 +1154,7 @@ contribusage/
 │       │   │   ├── Limits/           (ClaudeLocator, UsageParser with window classification, StatusLineBridgeReader)
 │       │   │   └── Activity/         (TranscriptLine, TranscriptAggregator, TranscriptRoots)
 │       │   └── ContribusageGitHub/
-│       │       └── (GitHubClient, ContributionStatsCalculator, GitHubService)
+│       │       └── (GitHubClient, GitHubService; statistics in `ContributionStats`)
 │       └── Tests/
 │           ├── ContribusageTestSupport/   (fakes, FakeProvider, ProviderConformance)
 │           ├── ContribusageCoreTests/
@@ -1443,9 +1443,9 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-3.1** `KeychainSecretStore`. *(FR-16)* Accept: live test behind `CONTRIBUSAGE_LIVE_TESTS`, unit tests with fake.
 - [x] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
 - [x] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. `contributions(token:from:to:)` returns a `ContributionCalendar` (10.5), which `GitHubReport` carries next to the stats; the caller computes `from` and `to` (T-3.6). *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
-- [ ] **T-3.4** `ContributionStatsCalculator`. *(FR-19, 8.4.4)* Depends: R-4. Accept: streak and week tests.
+- [x] **T-3.4** Contribution statistics: `ContributionStats(days:now:calendar:)`, pure; the R-4 time zone is the caller's `calendar` (ADR-021). *(FR-19, 8.4.4)* Accept: streak and week tests.
 - [ ] **T-3.5** Heatmap view with palette, hover details, keyboard and VoiceOver support. *(FR-20, NFR-8)*
-- [ ] **T-3.6** Wire GitHub into `RefreshCoordinator`. *(section 12)*
+- [ ] **T-3.6** Wire GitHub into `RefreshCoordinator`. *(section 12)* Depends: R-4 for the time zone of the calendar passed to `ContributionStats(days:now:calendar:)`.
 - [ ] **M2 check:** US-4 acceptance holds.
 
 ### 17.4 Phase 4: Claude Code activity (M3)
@@ -1511,7 +1511,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values | Open |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
-| R-4 | GitHub private contributions and day boundaries | T-3.4 | Open |
+| R-4 | GitHub private contributions and day boundaries | T-3.6, 8.4.2 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
 | Q-6 | Availability of the name "contribusage" and final icon | T-6.7 | Open |
 | Q-7 | Which AI coding tool becomes the second provider | T-6.9 | Open |
