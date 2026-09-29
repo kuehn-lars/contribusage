@@ -16,29 +16,106 @@ public struct GitHubClient: Sendable {
 
     /// FR-17: the login the token belongs to.
     public func viewerLogin(token: String) async throws -> String {
-        struct Response: Decodable {
-            struct Viewer: Decodable { let login: String }
-            struct Payload: Decodable { let viewer: Viewer }
-            struct Message: Decodable { let message: String }
-            let data: Payload?
-            let errors: [Message]?
+        struct Viewer: Decodable { let login: String }
+        struct Payload: Decodable { let viewer: Viewer }
+        let payload: Payload = try await send("query { viewer { login } }", token: token)
+        return payload.viewer.login
+    }
+
+    /// FR-18: the calendar from `from` to `to` (Appendix C; GitHub accepts at most one year).
+    public func contributions(token: String, from: Date, to: Date) async throws -> ContributionCalendar {
+        struct Day: Decodable {
+            let date: String
+            let contributionCount: Int
+            let contributionLevel: String
         }
+        struct Week: Decodable { let contributionDays: [Day] }
+        struct Calendar: Decodable {
+            let totalContributions: Int
+            let weeks: [Week]
+        }
+        struct Collection: Decodable { let contributionCalendar: Calendar }
+        struct Viewer: Decodable {
+            let login: String
+            let contributionsCollection: Collection
+        }
+        struct Payload: Decodable { let viewer: Viewer }
+        // SPEC §8.4.1: local time with its offset, as in Appendix C.
+        let format = Date.ISO8601FormatStyle(timeZoneSeparator: .colon, timeZone: .current)
+        let payload: Payload = try await send(
+            Self.contributionsQuery, variables: ["from": from.formatted(format), "to": to.formatted(format)],
+            token: token)
+        let calendar = payload.viewer.contributionsCollection.contributionCalendar
+        let days = try calendar.weeks.flatMap(\.contributionDays).map { day in
+            guard let level = Self.levelNames.firstIndex(of: day.contributionLevel).flatMap(ContributionLevel.init)
+            else {
+                throw SourceError.decoding("Unknown contribution level \(day.contributionLevel)")
+            }
+            return ContributionDay(date: DayKey(rawValue: day.date), count: day.contributionCount, level: level)
+        }
+        return ContributionCalendar(
+            login: payload.viewer.login, days: days, totalContributions: calendar.totalContributions)
+    }
+
+    /// Appendix C. `restrictedContributionsCount` is fetched but not decoded until R-4 settles its meaning.
+    private static let contributionsQuery = """
+        query Contributions($from: DateTime!, $to: DateTime!) {
+          viewer {
+            login
+            contributionsCollection(from: $from, to: $to) {
+              restrictedContributionsCount
+              contributionCalendar {
+                totalContributions
+                weeks { contributionDays { date contributionCount contributionLevel } }
+              }
+            }
+          }
+        }
+        """
+
+    /// Appendix C level names, in `ContributionLevel` raw value order.
+    private static let levelNames = ["NONE", "FIRST_QUARTILE", "SECOND_QUARTILE", "THIRD_QUARTILE", "FOURTH_QUARTILE"]
+
+    /// Sends one query and returns its `data`, mapping failures per SPEC §8.4.3.
+    private func send<Payload: Decodable>(
+        _ query: String, variables: [String: String] = [:], token: String
+    ) async throws -> Payload {
         var request = URLRequest(url: gitHubGraphQLEndpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(["query": "query { viewer { login } }"])
-        let (data, response) = try await transport.send(request)
+        request.httpBody = try JSONEncoder().encode(GraphQLBody(query: query, variables: variables))
+        let (body, response) = try await transport.send(request)
         if response.statusCode == 401 { throw SourceError.unauthorized }
-        guard (200..<300).contains(response.statusCode) else { throw SourceError.http(status: response.statusCode) }
-        let decoded: Response
-        do { decoded = try JSONDecoder().decode(Response.self, from: data) } catch {
-            throw SourceError.decoding(error.localizedDescription)
+        let failure: SourceError
+        if (200..<300).contains(response.statusCode) {
+            let envelope: GraphQLEnvelope<Payload>
+            do { envelope = try JSONDecoder().decode(GraphQLEnvelope<Payload>.self, from: body) } catch {
+                throw SourceError.decoding(error.localizedDescription)
+            }
+            if let data = envelope.data, envelope.errors == nil { return data }
+            failure = .decoding(envelope.errors?.first?.message ?? "No data in response")
+        } else {
+            failure = .http(status: response.statusCode)
         }
-        // SPEC §8.4.3: an `errors` array with HTTP 200 is a failure.
-        if let message = decoded.errors?.first?.message { throw SourceError.decoding(message) }
-        guard let login = decoded.data?.viewer.login else { throw SourceError.decoding("No viewer in response") }
-        return login
+        // ADR-020: any failure with an exhausted budget (200 with `errors`, 403, 429) waits for the reset.
+        if response.value(forHTTPHeaderField: "x-ratelimit-remaining") == "0",
+            let reset = response.value(forHTTPHeaderField: "x-ratelimit-reset").flatMap(TimeInterval.init)
+        {
+            throw SourceError.rateLimited(until: Date(timeIntervalSince1970: reset))
+        }
+        throw failure
     }
+}
+
+private struct GraphQLBody: Encodable {
+    let query: String
+    let variables: [String: String]
+}
+
+private struct GraphQLEnvelope<Payload: Decodable>: Decodable {
+    struct Message: Decodable { let message: String }
+    let data: Payload?
+    let errors: [Message]?
 }

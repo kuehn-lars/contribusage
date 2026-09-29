@@ -32,16 +32,25 @@ public struct ContributionStats: Sendable, Codable, Equatable {
     }
 }
 
-public struct GitHubReport: Sendable, Codable {
+/// The calendar as GitHub returns it (FR-18).
+public struct ContributionCalendar: Sendable, Codable, Equatable {
     public let login: String
     public let days: [ContributionDay]
     public let totalContributions: Int
-    public let stats: ContributionStats
 
-    public init(login: String, days: [ContributionDay], totalContributions: Int, stats: ContributionStats) {
+    public init(login: String, days: [ContributionDay], totalContributions: Int) {
         self.login = login
         self.days = days
         self.totalContributions = totalContributions
+    }
+}
+
+public struct GitHubReport: Sendable, Codable {
+    public let calendar: ContributionCalendar
+    public let stats: ContributionStats
+
+    public init(calendar: ContributionCalendar, stats: ContributionStats) {
+        self.calendar = calendar
         self.stats = stats
     }
 

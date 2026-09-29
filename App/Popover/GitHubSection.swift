@@ -9,8 +9,8 @@ struct GitHubSection: View {
         let snapshot = state.snapshot
         VStack(alignment: .leading, spacing: 6) {
             SectionHeader(
-                title: "GitHub", symbolName: "square.grid.3x3.fill", subtitle: snapshot.map { "@\($0.value.login)" },
-                fetchedAt: snapshot?.fetchedAt)
+                title: "GitHub", symbolName: "square.grid.3x3.fill",
+                subtitle: snapshot.map { "@\($0.value.calendar.login)" }, fetchedAt: snapshot?.fetchedAt)
             SectionStateView(
                 state: state, displayName: "GitHub", staleAfter: GitHubReport.staleAfter, placeholder: .placeholder,
                 content: GitHubContent.init)
@@ -22,9 +22,9 @@ private struct GitHubContent: View {
     let report: GitHubReport
 
     var body: some View {
-        Heatmap(days: report.days)
+        Heatmap(days: report.calendar.days)
         Text(
-            "Today \(report.stats.today) · Streak \(report.stats.currentStreak) days · Year \(report.totalContributions.formatted())"
+            "Today \(report.stats.today) · Streak \(report.stats.currentStreak) days · Year \(report.calendar.totalContributions.formatted())"
         )
         .font(.caption)
     }
@@ -57,8 +57,9 @@ private struct Heatmap: View {
 
 extension GitHubReport {
     static let placeholder = GitHubReport(
-        login: "octocat",
-        days: (0..<182).map { ContributionDay(date: DayKey(rawValue: "\($0)"), count: 0, level: .none) },
-        totalContributions: 0,
+        calendar: ContributionCalendar(
+            login: "octocat",
+            days: (0..<182).map { ContributionDay(date: DayKey(rawValue: "\($0)"), count: 0, level: .none) },
+            totalContributions: 0),
         stats: ContributionStats(today: 0, thisWeek: 0, currentStreak: 0, streakNeedsToday: false, longestStreak: 0))
 }

@@ -40,6 +40,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0017-unsupported-plan-source-error]]: ADR-017, `SourceError.unsupportedPlan` carries P-10 out of `fetch()`
 - [[decisions/0018-refresh-coordinator-shape]]: ADR-018, serialized refresh passes, conditions fed by the app, `needsNetwork` in the policy
 - [[decisions/0019-extra-refresh-triggers]]: ADR-019, popover-open and reset triggers as a `trigger` date in `Schedule.nextRun`
+- [[decisions/0020-github-rate-limit-detection]]: ADR-020, GitHub rate limit = remaining 0 on a failed response; other 403/429 back off
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

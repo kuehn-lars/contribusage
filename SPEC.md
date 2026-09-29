@@ -596,7 +596,7 @@ Query and a sample response: [Appendix C](#appendix-c-github-graphql). Variables
 #### 8.4.3 Rate limits and errors
 
 - GraphQL has a points based hourly limit (5,000 points per hour for a user token); this query costs about 1 point.
-- Read `x-ratelimit-remaining` and `x-ratelimit-reset`. When remaining is 0 or a 403/429 arrives, pause GitHub fetches until the reset time.
+- Read `x-ratelimit-remaining` and `x-ratelimit-reset`. A failed response (HTTP 200 with `errors`, 403 or 429) with remaining 0 is `rateLimited(until:)` the reset time, and GitHub fetches pause until then. GitHub reports an exhausted primary limit as HTTP 200 with an error and remaining 0; a successful response that spends the last point is used as is. Other 403 or 429 responses (secondary limits) are `http(status:)` and fall under the backoff, which waits longer than GitHub's one minute minimum (ADR-020).
 - 401: token invalid, state `unauthorized`, no automatic retries until the token changes.
 - GraphQL `errors` array with HTTP 200: treat as failure, keep previous snapshot.
 
@@ -887,10 +887,14 @@ public struct ContributionStats: Sendable, Codable, Equatable {
     public let longestStreak: Int
 }
 
-public struct GitHubReport: Sendable, Codable {
+public struct ContributionCalendar: Sendable, Codable, Equatable {   // as GitHub returns it
     public let login: String
     public let days: [ContributionDay]
     public let totalContributions: Int
+}
+
+public struct GitHubReport: Sendable, Codable {
+    public let calendar: ContributionCalendar
     public let stats: ContributionStats
 }
 ```
@@ -1080,7 +1084,7 @@ Global rules:
 | `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
 | Offline | `NWPathMonitor` | `failed(.offline)` with previous | "Offline" badge | Auto on reconnect |
 | GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + Settings button | Stop until token changes |
-| GitHub rate limited | 403/429 + headers | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
+| GitHub rate limited | Failed response with `x-ratelimit-remaining: 0` (8.4.3) | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
 | Transcript root missing | Directory absent | `notConfigured(.noLocalData)` | See 11.3 | Watch parent directory for creation |
 | Malformed transcript lines | Decode failure | Loaded, `skippedLines > 0` | Only in diagnostics | none |
 | Provider throws unexpectedly | Any error not mapped | `failed(.providerSpecific)` for that provider only | "Something went wrong with <provider>." + "Copy diagnostics" | Backoff; other providers unaffected |
@@ -1334,7 +1338,7 @@ Use the Swift Testing framework (`import Testing`, `@Test`, `#expect`) for new t
 | `jsonl/malformed.jsonl` | Claude Code | Synthetic | Skipped lines counter |
 | `jsonl/partial-last-line.jsonl` | Claude Code | Synthetic | Incremental reading |
 | `jsonl/cross-midnight.jsonl` | Claude Code | Synthetic | Local day bucketing |
-| `github/calendar.json` | GitHub | Real, login replaced | Stats and heatmap |
+| `github/calendar.json` | GitHub | Synthetic, in the shape of a real 365-day response (real counts are personal data) | Stats and heatmap |
 | `github/graphql-errors.json` | GitHub | Synthetic | Error handling |
 
 The synthetic `/usage` cases (a model specific week, an unknown label, `<1%` with a time only reset, ANSI color codes) are inline strings in `UsageParserTests`, not fixture files.
@@ -1438,7 +1442,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [x] **T-3.1** `KeychainSecretStore`. *(FR-16)* Accept: live test behind `CONTRIBUSAGE_LIVE_TESTS`, unit tests with fake.
 - [x] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
-- [ ] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
+- [x] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. `contributions(token:from:to:)` returns a `ContributionCalendar` (10.5), which `GitHubReport` carries next to the stats; the caller computes `from` and `to` (T-3.6). *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
 - [ ] **T-3.4** `ContributionStatsCalculator`. *(FR-19, 8.4.4)* Depends: R-4. Accept: streak and week tests.
 - [ ] **T-3.5** Heatmap view with palette, hover details, keyboard and VoiceOver support. *(FR-20, NFR-8)*
 - [ ] **T-3.6** Wire GitHub into `RefreshCoordinator`. *(section 12)*
@@ -1607,7 +1611,6 @@ query Contributions($from: DateTime!, $to: DateTime!) {
             date
             contributionCount
             contributionLevel
-            weekday
           }
         }
       }
@@ -1639,8 +1642,8 @@ Sample response (shortened):
           "weeks": [
             {
               "contributionDays": [
-                { "date": "2026-09-20", "contributionCount": 0, "contributionLevel": "NONE", "weekday": 0 },
-                { "date": "2026-09-21", "contributionCount": 7, "contributionLevel": "SECOND_QUARTILE", "weekday": 1 }
+                { "date": "2026-09-20", "contributionCount": 0, "contributionLevel": "NONE" },
+                { "date": "2026-09-21", "contributionCount": 7, "contributionLevel": "SECOND_QUARTILE" }
               ]
             }
           ]
