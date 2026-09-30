@@ -13,35 +13,65 @@ struct GitHubTab: View {
 
     var body: some View {
         Form {
-            if login.isEmpty {
-                SecureField("Token", text: $token)
-                HStack {
-                    Button("Validate", action: validate).disabled(trimmedToken.isEmpty || validating)
-                    if validating { ProgressView().controlSize(.small) }
-                }
-                Link(
-                    "Create a token on GitHub…",
-                    destination: URL(string: "https://github.com/settings/personal-access-tokens/new")!)
-            } else {
-                LabeledContent("Connected as @\(login)") {
-                    Button("Remove token", role: .destructive, action: remove)
+            Section("Account") {
+                if login.isEmpty {
+                    LabeledContent("Status", value: "Not connected")
+                } else {
+                    LabeledContent {
+                        Button("Disconnect", role: .destructive, action: remove)
+                    } label: {
+                        Label(
+                            "@\(login)",
+                            systemImage: tokenRejected ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                        )
+                        .symbolRenderingMode(.multicolor)
+                        Text(tokenRejected ? "Token invalid or expired" : "Connected")
+                    }
                 }
             }
-            if let error { Text(error).foregroundStyle(.red) }
+            Section {
+                // Return in a focused field never reaches the default button, hence `onSubmit` and `validate`'s guard.
+                SecureField("Token", text: $token, prompt: Text("github_pat_…"))
+                    .onSubmit(validate)
+            } header: {
+                Text("Personal access token")
+            } footer: {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Link(
+                            "Create a token on GitHub…",
+                            destination: URL(string: "https://github.com/settings/personal-access-tokens/new")!)
+                        Spacer()
+                        if validating { ProgressView().controlSize(.small) }
+                        Button(login.isEmpty ? "Connect" : "Replace", action: validate)
+                            .keyboardShortcut(.defaultAction)
+                            .disabled(trimmedToken.isEmpty || validating)
+                    }
+                    if let error { Text(error).foregroundStyle(.red) }
+                }
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: 460)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var trimmedToken: String { token.trimmingCharacters(in: .whitespacesAndNewlines) }
 
+    /// The saved token got a 401 (SPEC §13); only a new token clears it (SPEC §12).
+    private var tokenRejected: Bool {
+        if case .failed(.unauthorized, _) = appState.github { true } else { false }
+    }
+
     private func validate() {
         let token = trimmedToken
+        guard !token.isEmpty, !validating else { return }
         validating = true
         error = nil
         Task {
             defer { validating = false }
             do {
+                // Replaces the saved token only once the new one validates.
                 login = try await appState.connectGitHub(token: token)
                 self.token = ""
             } catch {

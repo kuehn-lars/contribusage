@@ -42,7 +42,6 @@ struct SectionStateView<Value: Sendable & Codable, Content: View>: View {
 struct NotConfiguredView: View {
     let reason: NotConfiguredReason
     let displayName: String
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         switch reason {
@@ -59,11 +58,20 @@ struct NotConfiguredView: View {
         case .noLocalData:
             Text("No \(displayName) sessions found on this Mac").foregroundStyle(.secondary)
         case .githubTokenMissing:
-            Button("Connect GitHub") {
-                // SPEC §20: an agent app must activate itself, or Settings opens behind other apps.
-                NSApp.activate()
-                openSettings()
-            }
+            SettingsButton(title: "Connect GitHub")
+        }
+    }
+}
+
+struct SettingsButton: View {
+    let title: LocalizedStringKey
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button(title) {
+            // SPEC §20: an agent app must activate itself, or Settings opens behind other apps.
+            NSApp.activate()
+            openSettings()
         }
     }
 }
@@ -76,11 +84,20 @@ struct ErrorLine: View {
     var body: some View {
         HStack {
             let message = error.message(displayName: displayName)
-            Label(message, systemImage: "exclamationmark.triangle").lineLimit(2).help(message)
+            Label(message, systemImage: "exclamationmark.triangle.fill")
+                .symbolRenderingMode(.multicolor)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                .help(message)
             Spacer()
-            if let retry { Button("Retry", action: retry) }
+            // A 401 repeats until the token changes (SPEC §12), so it offers the token instead of Retry.
+            if case .unauthorized = error {
+                SettingsButton(title: "Change token…")
+            } else if let retry {
+                Button("Retry", action: retry)
+            }
         }
         .font(.caption)
+        .controlSize(.small)
         if case .unparseable(let raw) = error {
             DisclosureGroup("Show raw output") {
                 ScrollView { Text(raw).font(.caption.monospaced()).textSelection(.enabled) }.frame(maxHeight: 120)
