@@ -193,9 +193,9 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 ### US-4 (P1): See my GitHub contributions
 
-- **Given** a valid GitHub token is stored, **then** the popover shows a contribution heatmap (default: last 26 weeks, setting: full year), today's count, the current streak and the total for the last year.
+- **Given** a valid GitHub token is stored, **then** the popover shows a contribution heatmap of the last 26 weeks, today's count, the current streak and the total for the last year.
 - **Given** no token is configured, **then** the GitHub section shows a "Connect GitHub" button that opens Settings.
-- **Given** the token is invalid or revoked, **then** the section says so and links to Settings. Other sections keep working.
+- **Given** the token is invalid or revoked, **then** the section says so and offers "Change token…", which opens Settings. Other sections keep working.
 
 ### US-5 (P2): See my Claude Code activity on this Mac
 
@@ -283,10 +283,10 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | ID | Pri | Requirement |
 |---|---|---|
 | FR-16 | P1 | Store the GitHub token only in the Keychain (generic password, service `<bundle id>.github`, account `token`). Never in UserDefaults, files or logs. |
-| FR-17 | P1 | Validate a token by querying `viewer { login }`. Show the resolved login in Settings ("Connected as @login"). |
+| FR-17 | P1 | Validate a token by querying `viewer { login }`. Show the resolved login in Settings ("@login", "Connected"). |
 | FR-18 | P1 | Fetch the contribution calendar for the last 365 days via GraphQL ([8.4](#84-github-contributions)). |
 | FR-19 | P1 | Compute: today's count, this week's count (week starts per user locale), total for the range, current streak, longest streak within the range ([8.4.4](#844-statistics-rules)). |
-| FR-20 | P1 | Render a heatmap from `contributionLevel` (5 levels) using the app's own palette that adapts to light and dark mode. Default range 26 weeks, setting for 52 weeks. |
+| FR-20 | P1 | Render a heatmap from `contributionLevel` (5 levels) using the app's own palette that adapts to light and dark mode. Range 26 weeks, not configurable. |
 | FR-21 | P3 | Optional import of the token from the GitHub CLI (`gh auth token`), only after an explicit button press, showing which account will be used. |
 
 ### 5.6 Claude Code: activity
@@ -959,7 +959,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `heatmapWeeks`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ---
 
@@ -997,7 +997,7 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 
 - Each provider group has a header with its symbol, display name and the age of its limits data. Additional providers appear as further groups above GitHub, separated by dividers.
 - Countdowns and ages update once per minute, only while the popover is visible (`TimelineView(.periodic(from: .now, by: 60))`).
-- Hovering a heatmap cell shows "Sep 27: 5 contributions". Hovering a reset text shows the absolute local date and time.
+- Hovering a heatmap cell shows "2026-09-27: 5 contributions". Hovering a reset text shows the absolute local date and time. Both are tooltips that appear after 0.2 s.
 - The 7 day chart uses Swift Charts, total tokens per day, with an accessibility summary.
 - If the popover content exceeds the screen height (many providers), the provider groups scroll; the footer stays pinned.
 
@@ -1040,7 +1040,7 @@ The percentage is always shown as text next to the bar. The heatmap uses 5 steps
 |---|---|
 | General | Menu bar display mode; menu bar provider (hidden while only one provider exists); launch at login; notification thresholds; notify on reset |
 | Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider" |
-| GitHub | Token secure field; "Validate" (shows "Connected as @login"); "Remove token"; heatmap range 26/52 weeks; refresh interval (10 min to 6 h); link to GitHub's token creation page |
+| GitHub | Account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
 | Advanced | Open data folder; reset caches (never history); copy diagnostics; show insights toggle |
 
 ### 11.7 Accessibility examples
@@ -1085,7 +1085,7 @@ Global rules:
 | Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output and diagnostics |
 | `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
 | Offline | `NWPathMonitor` | `failed(.offline)` with previous | "Offline" badge | Auto on reconnect |
-| GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + Settings button | Stop until token changes |
+| GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + "Change token…" button (opens Settings) | Stop until token changes |
 | GitHub rate limited | Failed response with `x-ratelimit-remaining: 0` (8.4.3) | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
 | Transcript root missing | Directory absent | `notConfigured(.noLocalData)` | See 11.3 | Watch parent directory for creation |
 | Malformed transcript lines | Decode failure | Loaded, `skippedLines > 0` | Only in diagnostics | none |
@@ -1387,7 +1387,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 | Claude Code provider disabled | Group hidden; no `claude` processes (check Activity Monitor); menu bar falls back |
 | Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider |
 | Fresh macOS user without `~/.claude` | Onboarding explains; no crash |
-| Invalid GitHub token | GitHub section error with Settings button |
+| Invalid GitHub token | GitHub section error with "Change token…", which opens Settings |
 | Dark mode, increased contrast, Reduce Motion | Readable, no animations beyond system defaults |
 | VoiceOver through popover | All values announced meaningfully |
 | Time zone changed in System Settings | Reset times and day buckets update |
@@ -1446,9 +1446,9 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-3.2** GitHub tab in Settings: secure field, validate, remove, "Connected as @login". *(FR-17, 11.6)*
 - [x] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. `contributions(token:from:to:)` returns a `ContributionCalendar` (10.5), which `GitHubReport` carries next to the stats; the caller computes `from` and `to` (T-3.6). *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
 - [x] **T-3.4** Contribution statistics: `ContributionStats(days:now:calendar:)`, pure; the R-4 time zone is the caller's `calendar` (ADR-021). *(FR-19, 8.4.4)* Accept: streak and week tests.
-- [ ] **T-3.5** Heatmap view with palette, hover details, keyboard and VoiceOver support. *(FR-20, NFR-8)*
+- [x] **T-3.5** Heatmap view with hover details (11.2). Palette, keyboard and VoiceOver moved to T-5.11. *(FR-20)*
 - [x] **T-3.6** Wire GitHub into `RefreshCoordinator` as a job the app supplies (ADR-018, ADR-022); the app passes `Calendar.current` until R-4 names GitHub's zone. *(section 12)* Accept: coordinator tests for restore, token missing, 401, token change and rate limit.
-- [ ] **M2 check:** US-4 acceptance holds.
+- [x] **M2 check:** US-4 acceptance holds. Done 2026-09-30: US-4 checked by hand in the running app with a live token.
 
 ### 17.4 Phase 4: Claude Code activity (M3)
 
@@ -1473,6 +1473,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)*
 - [ ] **T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. *(US-11)*
 - [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.2 for the display mode setting.
+- [ ] **T-5.11** Heatmap palette (11.4, light and dark), keyboard navigation and VoiceOver. Moved from Phase 3 (split from T-3.5). *(FR-20, NFR-8)*
 - [ ] **M4 check:** manual matrix 16.5 passes.
 
 ### 17.6 Phase 6: Optional and release (M5)

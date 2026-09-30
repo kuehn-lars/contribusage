@@ -23,7 +23,7 @@ private struct GitHubContent: View {
     let report: GitHubReport
 
     var body: some View {
-        Heatmap(weeks: report.calendar.weeks.suffix(26))  // FR-20 default; the `heatmapWeeks` setting is T-3.5
+        Heatmap(weeks: report.calendar.weeks.suffix(26))  // FR-20
         Text(
             "Today \(report.stats.today) · Streak \(report.stats.currentStreak) days · Year \(report.calendar.totalContributions.formatted())"
         )
@@ -31,7 +31,7 @@ private struct GitHubContent: View {
     }
 }
 
-// ponytail: plain grid of weeks; T-3.5 owns the palette, hover, keyboard and VoiceOver.
+// ponytail: plain grid of weeks; T-5.11 owns the palette, keyboard and VoiceOver.
 private struct Heatmap: View {
     let weeks: ArraySlice<[ContributionDay]>
 
