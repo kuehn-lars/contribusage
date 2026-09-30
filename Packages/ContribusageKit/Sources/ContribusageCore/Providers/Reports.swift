@@ -11,6 +11,8 @@ public enum SourceError: Error, Sendable, Equatable {
     case processFailed(exitCode: Int32, stderrTail: String)
     case unparseable(rawOutput: String)
     case offline
+    /// No token is saved; shown as `NotConfiguredReason.githubTokenMissing`.
+    case tokenMissing
     case unauthorized
     case rateLimited(until: Date)
     case http(status: Int)

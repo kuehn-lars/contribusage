@@ -46,15 +46,17 @@ public struct GitHubClient: Sendable {
             Self.contributionsQuery, variables: ["from": from.formatted(format), "to": to.formatted(format)],
             token: token)
         let calendar = payload.viewer.contributionsCollection.contributionCalendar
-        let days = try calendar.weeks.flatMap(\.contributionDays).map { day in
-            guard let level = Self.levelNames.firstIndex(of: day.contributionLevel).flatMap(ContributionLevel.init)
-            else {
-                throw SourceError.decoding("Unknown contribution level \(day.contributionLevel)")
+        let weeks = try calendar.weeks.map { week in
+            try week.contributionDays.map { day in
+                guard let level = Self.levelNames.firstIndex(of: day.contributionLevel).flatMap(ContributionLevel.init)
+                else {
+                    throw SourceError.decoding("Unknown contribution level \(day.contributionLevel)")
+                }
+                return ContributionDay(date: DayKey(rawValue: day.date), count: day.contributionCount, level: level)
             }
-            return ContributionDay(date: DayKey(rawValue: day.date), count: day.contributionCount, level: level)
         }
         return ContributionCalendar(
-            login: payload.viewer.login, days: days, totalContributions: calendar.totalContributions)
+            login: payload.viewer.login, weeks: weeks, totalContributions: calendar.totalContributions)
     }
 
     /// Appendix C. `restrictedContributionsCount` is fetched but not decoded until R-4 settles its meaning.

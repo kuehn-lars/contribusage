@@ -602,7 +602,7 @@ Query and a sample response: [Appendix C](#appendix-c-github-graphql). Variables
 
 #### 8.4.4 Statistics rules
 
-- **Today** = the calendar day entry whose `date` equals today's date, 0 when there is none yet. The statistics take a `Calendar`: its time zone sets the day boundary (which zone: R-4, chosen by the caller in T-3.6), its first weekday the week start (ADR-021). Entries after today (GitHub's day ahead of the local one) count toward no statistic.
+- **Today** = the calendar day entry whose `date` equals today's date, 0 when there is none yet. The statistics take a `Calendar`: its time zone sets the day boundary (which zone: R-4; until then the app passes the Mac's, `Calendar.current`, ADR-022), its first weekday the week start (ADR-021). Entries after today (GitHub's day ahead of the local one) count toward no statistic.
 - **Current streak** = number of consecutive days with `count > 0` ending today; if today is 0 so far, the streak ending yesterday is shown and, when it is not 0, marked "extend today".
 - **Longest streak** = longest run within the fetched range, up to today.
 - **This week** = sum from the locale's first weekday to today.
@@ -740,6 +740,7 @@ public enum SourceError: Error, Sendable, Equatable {
     case processFailed(exitCode: Int32, stderrTail: String)
     case unparseable(rawOutput: String)
     case offline
+    case tokenMissing      // no GitHub token saved: notConfigured(.githubTokenMissing)
     case unauthorized
     case rateLimited(until: Date)
     case http(status: Int)
@@ -889,7 +890,8 @@ public struct ContributionStats: Sendable, Codable, Equatable {
 
 public struct ContributionCalendar: Sendable, Codable, Equatable {   // as GitHub returns it
     public let login: String
-    public let days: [ContributionDay]
+    public let weeks: [[ContributionDay]]   // Sunday first; the first and last week can be short
+    public var days: [ContributionDay] { Array(weeks.joined()) }
     public let totalContributions: Int
 }
 
@@ -1056,7 +1058,7 @@ The percentage is always shown as text next to the bar. The heatmap uses 5 steps
 | Claude Code limits probe | 15 min / 5 min / 60 min | Popover opened and data older than 5 min; a window's reset time reached; wake (after 10 s); manual | 30 min | Exponential backoff: 2×, 4×, 8× the interval, capped at 60 min; reset on success |
 | Claude Code bridge file | Event driven (file watch) | none | 30 min | Ignore file, fall back to probe |
 | Claude Code transcripts | Event driven (FSEvents, 5 s debounce) | Popover opened; wake | not applicable | Retry on next event |
-| GitHub | 30 min / 10 min / 6 h | Popover opened and data older than 10 min; wake (after 10 s); token changed; manual | 2 h | Rate limit: wait until reset; other errors: 2× backoff capped at 6 h; 401: stop until token changes |
+| GitHub | 30 min / 10 min / 6 h | Popover opened and data older than 10 min; wake (after 10 s); token changed; manual | 2 h | Rate limit: run again at the reset, not earlier even manually; other errors: 2×, 4×, 8× backoff capped at 6 h; no token or 401: no automatic run until the token changes, manual refresh still runs (ADR-022) |
 | Future providers | From their `SchedulePolicy` | Same triggers as above for polled limits | From policy | Same backoff rules |
 
 Global rules:
@@ -1064,7 +1066,7 @@ Global rules:
 1. Nothing runs while the Mac sleeps. On wake, wait 10 s (network), then run every source that is due.
 2. When offline (`NWPathMonitor`), network dependent sources (the Claude Code probe, GitHub) are skipped and marked "offline"; they run as soon as the path is satisfied. Each provider declares in its descriptor section whether its polled source needs the network (Claude Code: yes).
 3. Low Power Mode doubles automatic intervals.
-4. Manual refresh ignores intervals and backoff, but never runs a polled source more often than its `manualFloor` (Claude Code probe: 30 s).
+4. Manual refresh ignores intervals and backoff, but never runs a polled source more often than its `manualFloor` (Claude Code probe and GitHub: 30 s).
 5. At most one child process runs at a time across all providers (NFR-18). When several are due, they run in registry order.
 6. Disabled providers are never scheduled.
 7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:manual:triggers:) -> Date?`, fully unit tested and provider neutral. `conditions` carries online, Low Power Mode, asleep and the last wake; `nil` means not scheduled (asleep, or offline for a source that needs the network). The coordinator runs the unsupported-plan recheck (section 13) through it as a 6 h policy (ADR-018).
@@ -1445,7 +1447,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-3.3** `GitHubClient`: GraphQL request, decoding, rate limit headers, error mapping. `contributions(token:from:to:)` returns a `ContributionCalendar` (10.5), which `GitHubReport` carries next to the stats; the caller computes `from` and `to` (T-3.6). *(FR-18, 8.4.3)* Accept: fixture tests incl. errors and 401.
 - [x] **T-3.4** Contribution statistics: `ContributionStats(days:now:calendar:)`, pure; the R-4 time zone is the caller's `calendar` (ADR-021). *(FR-19, 8.4.4)* Accept: streak and week tests.
 - [ ] **T-3.5** Heatmap view with palette, hover details, keyboard and VoiceOver support. *(FR-20, NFR-8)*
-- [ ] **T-3.6** Wire GitHub into `RefreshCoordinator`. *(section 12)* Depends: R-4 for the time zone of the calendar passed to `ContributionStats(days:now:calendar:)`.
+- [x] **T-3.6** Wire GitHub into `RefreshCoordinator` as a job the app supplies (ADR-018, ADR-022); the app passes `Calendar.current` until R-4 names GitHub's zone. *(section 12)* Accept: coordinator tests for restore, token missing, 401, token change and rate limit.
 - [ ] **M2 check:** US-4 acceptance holds.
 
 ### 17.4 Phase 4: Claude Code activity (M3)
@@ -1511,7 +1513,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values | Open |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
-| R-4 | GitHub private contributions and day boundaries | T-3.6, 8.4.2 | Open |
+| R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
 | Q-6 | Availability of the name "contribusage" and final icon | T-6.7 | Open |
 | Q-7 | Which AI coding tool becomes the second provider | T-6.9 | Open |

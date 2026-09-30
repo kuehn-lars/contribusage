@@ -17,7 +17,9 @@ import Observation
     var providers: [ProviderGroupState]
     var github: SourceState<GitHubReport>
     /// `nil` in previews.
-    @ObservationIgnored private var coordinator: RefreshCoordinator?
+    @ObservationIgnored private var coordinator: RefreshCoordinator<GitHubReport>?
+    /// `nil` in previews, which never open Settings.
+    @ObservationIgnored private var gitHubAccount: GitHubAccount?
     @ObservationIgnored private var conditions: SystemConditions?
 
     init(providers: [ProviderGroupState], github: SourceState<GitHubReport>) {
@@ -25,17 +27,28 @@ import Observation
         self.github = github
     }
 
-    /// The running app: the registered providers on the coordinator, fed by the Mac's conditions (SPEC §12).
+    /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
     static func live() -> AppState {
-        // ponytail: GitHub stays unconfigured until its client is wired (T-3.2, T-3.6).
-        let state = AppState(providers: [], github: .notConfigured(.githubTokenMissing))
+        let state = AppState(providers: [], github: .loading(previous: nil))
+        // FR-16: Keychain service `<bundle id>.github`. Both Info.plist keys come from the build settings.
+        let gitHubAccount = GitHubAccount(
+            secrets: KeychainSecretStore(service: Bundle.main.bundleIdentifier! + ".github"),
+            client: GitHubClient(
+                transport: URLSessionTransport(),
+                version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String))
+        state.gitHubAccount = gitHubAccount
         let time = SystemTimeSource()
         let defaults = UserDefaults.standard
         let enabledIDs = defaults.stringArray(forKey: "enabledProviders").map { Set($0.map(ProviderID.init)) }
         let registry = ProviderRegistry(
             providers: ProviderRegistration.all(time: time), enabledIDs: enabledIDs, time: time)
-        let coordinator = RefreshCoordinator(registry: registry, paths: .live, time: time) { [weak state] id, update in
-            await state?.apply(update, to: id)
+        let github = RefreshCoordinator<GitHubReport>.Job(
+            policy: GitHubReport.policy, origin: .github,
+            // ponytail: the Mac's calendar defines GitHub's today until R-4 names the zone GitHub counts in (ADR-021).
+            fetch: { try await gitHubAccount.report(now: time.now, calendar: .current) },
+            onUpdate: { [weak state] update in await state?.apply(update) })
+        let coordinator = RefreshCoordinator(registry: registry, paths: .live, time: time, github: github) {
+            [weak state] id, update in await state?.apply(update, to: id)
         }
         state.coordinator = coordinator
         // One consumer keeps the changes in order; a task per change would not.
@@ -61,6 +74,23 @@ import Observation
     /// SPEC §12 "popover opened".
     func popoverOpened() {
         Task { await coordinator?.popoverOpened() }
+    }
+
+    /// FR-17: saves a token GitHub accepts and returns its login; GitHub then starts over with it (SPEC §12).
+    func connectGitHub(token: String) async throws -> String {
+        let login = try await gitHubAccount!.connect(token: token)
+        await coordinator?.gitHubTokenChanged()
+        return login
+    }
+
+    /// Deletes the token; GitHub's data goes with it (SPEC §12 "token changed").
+    func disconnectGitHub() async throws {
+        try await gitHubAccount!.disconnect()
+        await coordinator?.gitHubTokenChanged()
+    }
+
+    private func apply(_ update: SourceState<GitHubReport>) {
+        github = update
     }
 
     private func apply(_ update: SourceState<LimitsReport>, to id: ProviderID) {

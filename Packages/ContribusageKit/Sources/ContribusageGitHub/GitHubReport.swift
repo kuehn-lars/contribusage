@@ -52,17 +52,19 @@ public struct ContributionStats: Sendable, Codable, Equatable {
     }
 }
 
-/// The calendar as GitHub returns it (FR-18).
+/// The calendar as GitHub returns it (FR-18): its weeks start on Sunday, the first and the last one can be short.
 public struct ContributionCalendar: Sendable, Codable, Equatable {
     public let login: String
-    public let days: [ContributionDay]
+    public let weeks: [[ContributionDay]]
     public let totalContributions: Int
 
-    public init(login: String, days: [ContributionDay], totalContributions: Int) {
+    public init(login: String, weeks: [[ContributionDay]], totalContributions: Int) {
         self.login = login
-        self.days = days
+        self.weeks = weeks
         self.totalContributions = totalContributions
     }
+
+    public var days: [ContributionDay] { Array(weeks.joined()) }
 }
 
 public struct GitHubReport: Sendable, Codable {
@@ -74,6 +76,8 @@ public struct GitHubReport: Sendable, Codable {
         self.stats = stats
     }
 
-    /// SPEC §12.
-    public static let staleAfter: Duration = .seconds(2 * 3600)
+    /// SPEC §12 GitHub row.
+    public static let policy = SchedulePolicy(
+        defaultInterval: .seconds(30 * 60), minimumInterval: .seconds(10 * 60), maximumInterval: .seconds(6 * 3600),
+        staleAfter: .seconds(2 * 3600), manualFloor: .seconds(30), needsNetwork: true)
 }

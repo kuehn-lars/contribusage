@@ -65,12 +65,12 @@ private final class Log: Sendable {
 
 private func coordinator(
     _ providers: [any UsageProvider], enabled: Set<ProviderID>? = nil, paths: AppPaths = temporaryPaths(),
-    time: FakeTimeSource = FakeTimeSource(now: start), log: Log
-) -> RefreshCoordinator {
+    time: FakeTimeSource = FakeTimeSource(now: start), log: Log, github: RefreshCoordinator<Int>.Job<Int>? = nil
+) -> RefreshCoordinator<Int> {
     RefreshCoordinator(
         registry: ProviderRegistry(
             providers: providers, enabledIDs: enabled ?? Set(providers.map(\.descriptor.id)), time: time),
-        paths: paths, time: time, onUpdate: { log.record($0, $1) })
+        paths: paths, time: time, github: github, onUpdate: { log.record($0, $1) })
 }
 
 private func temporaryPaths() -> AppPaths {
@@ -268,6 +268,141 @@ private func temporaryPaths() -> AppPaths {
     time.advance(by: .seconds(300))
     #expect(await coordinator.runDue() == start + 300 + 900)
     #expect(log.fetches == [a, b, b, a])
+}
+
+/// SPEC §12 GitHub row, with a value the core cannot name standing in for `GitHubReport`.
+private let gitHubPolicy = SchedulePolicy(
+    defaultInterval: .seconds(1800), minimumInterval: .seconds(600), maximumInterval: .seconds(6 * 3600),
+    staleAfter: .seconds(7200), manualFloor: .seconds(30), needsNetwork: true)
+
+/// Answers GitHub fetches with `answer` and records the states.
+private final class GitHubLog: Sendable {
+    private let state = OSAllocatedUnfairLock(
+        initialState: (answer: Result<Int, SourceError>.success(1), fetches: 0, updates: [SourceState<Int>]()))
+
+    var fetches: Int { state.withLock { $0.fetches } }
+    var last: SourceState<Int>? { state.withLock { $0.updates.last } }
+    func answer(_ answer: Result<Int, SourceError>) { state.withLock { $0.answer = answer } }
+
+    var job: RefreshCoordinator<Int>.Job<Int> {
+        RefreshCoordinator.Job(
+            policy: gitHubPolicy, origin: .github,
+            fetch: {
+                try self.state.withLock {
+                    $0.fetches += 1
+                    return $0.answer
+                }.get()
+            },
+            onUpdate: { update in self.state.withLock { $0.updates.append(update) } })
+    }
+}
+
+/// ADR-018: GitHub runs in the same passes, persists next to the limits and shows on launch as `cache`.
+@Test func gitHubRunsInThePassesAndIsRestored() async {
+    let paths = temporaryPaths()
+    let time = FakeTimeSource(now: start)
+    let github = GitHubLog()
+    let first = coordinator(
+        [PolledProvider(id: a) { try await Log().fetch($0) }], paths: paths, time: time, log: Log(), github: github.job)
+    #expect(await first.runDue() == start + 900)
+    guard case .loaded(let fresh)? = github.last else {
+        Issue.record("not loaded: \(String(describing: github.last))")
+        return
+    }
+    #expect(fresh.origin == .github)
+    #expect(fresh.value == 1)
+
+    let relaunched = GitHubLog()
+    let log = Log()
+    let second = coordinator(
+        [PolledProvider(id: a) { try await log.fetch($0) }], paths: paths, time: time, log: log,
+        github: relaunched.job)
+    await second.restore()
+    guard case .loaded(let cached)? = relaunched.last, case (a, .loaded)? = log.updates.last else {
+        Issue.record("not restored: \(String(describing: relaunched.last)), \(log.updates)")
+        return
+    }
+    #expect(cached.origin == .cache)
+    #expect(cached.fetchedAt == start)
+    #expect(await second.runDue() == start + 900)
+    #expect(relaunched.fetches == 0)
+}
+
+/// SPEC §12, §8.4.3: no token and 401 stop automatic runs, offline included; Retry and a token change run it again.
+@Test(arguments: [Result<Int, SourceError>.failure(.tokenMissing), .failure(.unauthorized)])
+func aMissingOrRejectedTokenWaitsForTheUser(answer: Result<Int, SourceError>) async {
+    let paths = temporaryPaths()
+    let time = FakeTimeSource(now: start)
+    let github = GitHubLog()
+    github.answer(answer)
+    let coordinator = coordinator([], paths: paths, time: time, log: Log(), github: github.job)
+    #expect(await coordinator.runDue() == nil)
+    #expect(isWaiting(github.last))
+
+    await coordinator.update(ScheduleConditions(isOnline: false))
+    time.advance(by: .seconds(7 * 3600))
+    #expect(await coordinator.runDue() == nil)
+    await coordinator.update(ScheduleConditions())
+    #expect(await coordinator.runDue() == nil)
+    #expect(github.fetches == 1)
+    #expect(isWaiting(github.last))
+
+    await coordinator.refreshNow()
+    #expect(github.fetches == 2)
+
+    github.answer(.success(2))
+    await coordinator.gitHubTokenChanged()
+    #expect(github.fetches == 3)
+    guard case .loaded(let snapshot)? = github.last else {
+        Issue.record("not loaded: \(String(describing: github.last))")
+        return
+    }
+    #expect(snapshot.value == 2)
+}
+
+/// A removed token drops the old account's data from memory and from `state.json`.
+@Test func removingTheTokenForgetsTheSnapshot() async {
+    let paths = temporaryPaths()
+    let github = GitHubLog()
+    let first = coordinator([], paths: paths, log: Log(), github: github.job)
+    _ = await first.runDue()
+
+    github.answer(.failure(.tokenMissing))
+    await first.gitHubTokenChanged()
+    guard case .notConfigured(.githubTokenMissing)? = github.last else {
+        Issue.record("still configured: \(String(describing: github.last))")
+        return
+    }
+
+    let relaunched = GitHubLog()
+    await coordinator([], paths: paths, log: Log(), github: relaunched.job).restore()
+    #expect(relaunched.last == nil)
+}
+
+/// SPEC §12, §13 "retrying at 15:04": a rate limit runs again at its reset, neither earlier nor later.
+@Test func aRateLimitWaitsForItsReset() async {
+    let time = FakeTimeSource(now: start)
+    let github = GitHubLog()
+    github.answer(.failure(.rateLimited(until: start + 120)))
+    let coordinator = coordinator([], time: time, log: Log(), github: github.job)
+    #expect(await coordinator.runDue() == start + 120)
+
+    time.advance(by: .seconds(60))
+    await coordinator.refreshNow()
+    await coordinator.popoverOpened()
+    #expect(github.fetches == 1)
+
+    github.answer(.success(1))
+    time.advance(by: .seconds(60))
+    #expect(await coordinator.runDue() == start + 120 + 1800)
+    #expect(github.fetches == 2)
+}
+
+private func isWaiting(_ state: SourceState<Int>?) -> Bool {
+    switch state {
+    case .notConfigured(.githubTokenMissing)?, .failed(.unauthorized, nil)?: true
+    default: false
+    }
 }
 
 private func isLoading(_ state: SourceState<LimitsReport>) -> Bool {

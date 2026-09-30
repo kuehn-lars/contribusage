@@ -135,6 +135,7 @@ extension SourceError {
         case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
         case .unparseable: "Couldn't read the usage output"
         case .offline: "Offline"
+        case .tokenMissing: "No \(displayName) token saved"
         case .unauthorized: "\(displayName) token is invalid or expired"
         case .rateLimited(let until): "Rate limited until \(until.formatted(date: .omitted, time: .shortened))"
         case .http(let status): "Server error \(status)"
