@@ -216,7 +216,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 ### US-8 (P3): See what is driving my Claude Code usage
 
-- **Given** the `/usage` output contains the "What's contributing to your limits usage?" section, **then** the popover can show it in a collapsible "Insights" area, verbatim, with the CLI's own note that it is approximate and local only.
+- **Given** the `/usage` output contains the "What's contributing to your limits usage?" section, **then** the popover can show it in a collapsible "Insights" area: one period at a time (for example last 24 h or last 7 days), its request and session summary, its shares of usage and the top three entries of each ranked list, with the CLI's own note that it is approximate and local only as the title's tooltip (ADR-023).
 
 ### US-9 (P3): Near real time Claude Code limits while working
 
@@ -259,7 +259,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 |---|---|---|
 | FR-6 | P1 | **Locate `claude`.** Resolution order: (1) user override in Settings, (2) `command -v claude` run once through the user's login shell with `-lc` (usually `/bin/zsh`), (3) known locations on Apple Silicon: `~/.local/bin/claude` (native installer), `/opt/homebrew/bin/claude` (Homebrew), `~/.npm-global/bin/claude`, `/usr/local/bin/claude` (npm with default prefix). A candidate is valid if `claude --version` exits with 0 within 10 s. Cache the resolved path and version; re-resolve when the cached path stops working. |
 | FR-7 | P1 | **Probe.** Run `claude -p "/usage" --no-session-persistence` with the probe folder as working directory, stdin connected to `/dev/null`, stdout and stderr captured, 30 s timeout. At most one probe runs at a time (single flight: concurrent requests await the running probe). |
-| FR-8 | P1 | **Parse limits.** Extract every usage window line generically (grammar in [8.1.3](#813-parsing-rules)). Keep label text exactly as printed so new windows appear without code changes. Also extract: subscription status line, insights block (verbatim), raw output. |
+| FR-8 | P1 | **Parse limits.** Extract every usage window line generically (grammar in [8.1.3](#813-parsing-rules)). Keep label text exactly as printed so new windows appear without code changes. Also extract: subscription status line, insights block (structured, P-11), raw output. |
 | FR-9 | P1 | **Unparseable output.** If a probe exits 0 but yields zero windows, the Claude Code limits state becomes `unparseable`, the previous snapshot is kept (marked stale), and the popover offers "Show raw output". |
 | FR-10 | P1 | **Persist.** The last successful limits snapshot per provider is persisted and shown immediately on app launch (marked stale if older than the threshold). |
 | FR-11 | P1 | **Reset handling.** When `now >= resetsAt` for a window, display it as "reset" (0 % is not assumed, the value is unknown until the next refresh) and schedule a refresh respecting the minimum interval. |
@@ -319,7 +319,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-38 | P3 | Insights area showing the Claude Code `/usage` "What's contributing" block verbatim (US-8). Generic: any provider with the `insights` capability can supply verbatim text. |
+| FR-38 | P3 | Insights area showing the Claude Code `/usage` "What's contributing" block, structured by period (US-8, ADR-023). Generic: any provider with the `insights` capability supplies an `Insights` value (10.3). |
 | FR-39 | P3 | Claude Code status line bridge support: watch the bridge file, merge its windows with probe data (US-9, [8.2](#82-claude-code-status-line-bridge-optional)). Guided installer that backs up `~/.claude/settings.json`, never overwrites an existing `statusLine` without showing a diff and getting consent, and can uninstall cleanly. |
 | FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
@@ -365,7 +365,7 @@ v1 ships one provider, **Claude Code** (`claude-code`). The framework is built a
 |---|---|---|---|
 | `limits` | Plan limit windows with percentage and reset time | `LimitsReport` | `/usage` probe, optional status line bridge |
 | `activity` | Per day requests, sessions, tokens (per model) on this Mac | `ActivityReport` | Local transcripts |
-| `insights` | Tool supplied explanatory text, shown verbatim | `String` inside `LimitsReport.insights` | "What's contributing" block of `/usage` |
+| `insights` | Tool supplied statistics on what drives usage: periods with shares and ranked lists | `Insights` inside `LimitsReport.insights` | "What's contributing" block of `/usage` |
 
 A provider may implement any subset. The UI renders only the sections for the capabilities a provider declares.
 
@@ -463,7 +463,7 @@ A real sample (September 2026, subscription plan) is in [Appendix A](#appendix-a
 | P-8 | Year inference: the output has no year. Use the current year; if the result lies more than 24 h in the past, use next year. Time only formats resolve to the next occurrence after `now`. |
 | P-9 | Unparseable reset clause: window still valid, `resetsAt = nil`, UI shows "reset time unknown". |
 | P-10 | Billing status: the first non-empty line is stored as `billingNote`. If it does not mention "subscription", `fetch()` throws `SourceError.unsupportedPlan` (ADR-017) and the limits section shows "Plan limits are only available when Claude Code uses a Claude subscription". R-2 (Claude Code 2.1.284): API key billing and a logged out CLI both exit 0 and print the same cost summary, first line `Total cost:            $0.0000`, no windows (fixtures `not-subscription.txt`, `logged-out.txt`). |
-| P-11 | Insights block: everything from the line starting with "What's contributing" to the end, kept verbatim with indentation (FR-38). |
+| P-11 | Insights block: everything after the line starting with "What's contributing". An unindented line containing ` · ` opens a period (`label · summary`); indented lines fill it: `Top <x>: <name> <n>%, …` is a ranking titled `<X>`, `<n>% of your usage [was \| came from] <what>` a share labelled `<What>`, any other line a share with the whole line and no percent. Remaining unindented lines form the note. Nothing is dropped; a block without a period gives `insights = nil` (FR-38, ADR-023). |
 
 P-1 to P-11 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/` (tasks T-2.1, T-2.2); its one entry point `UsageParser.report` returns the `LimitsReport`, and the provider decides P-10's `unsupportedPlan` from its `billingNote` (T-2.5).
 
@@ -835,8 +835,16 @@ public struct LimitsReport: Sendable, Codable {
     public let provider: ProviderID
     public let windows: [UsageWindow]
     public let billingNote: String?   // Claude Code: first line of the output
-    public let insights: String?      // verbatim tool supplied text (capability `insights`)
+    public let insights: Insights?    // capability `insights`: note, periods of shares and rankings (P-11)
     public let rawOutput: String?     // for "Show raw output" and diagnostics
+}
+
+public struct Insights: Sendable, Codable, Equatable {   // FR-38, P-11
+    public let note: String?          // the tool's caveat: approximate, local only
+    public let periods: [Period]      // printed order, at least one, e.g. "Last 24h", "Last 7d"
+    public struct Period { label: String; summary: String; shares: [Share]; rankings: [Ranking] }
+    public struct Share { label: String; percent: Int? }      // nil: a line the provider could not read
+    public struct Ranking { title: String; items: [Share] }   // "Skills": printed order
 }
 ```
 
@@ -1478,7 +1486,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.6 Phase 6: Optional and release (M5)
 
-- [ ] **T-6.1** Insights area. *(FR-38, US-8)*
+- [x] **T-6.1** Insights area: structured parse and period picker, done before Phase 4 (ADR-023). *(FR-38, US-8)*
 - [ ] **T-6.2** Status line bridge reader and merge, plus manual setup instructions in Settings. *(FR-39, 8.2)*
 - [ ] **T-6.3** Guided bridge installer with backup, diff and uninstall. *(FR-39)*
 - [ ] **T-6.4** API-equivalent value estimate. *(FR-40)*

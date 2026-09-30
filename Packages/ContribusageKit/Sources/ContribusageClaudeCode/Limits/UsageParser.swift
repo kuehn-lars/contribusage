@@ -13,9 +13,58 @@ public enum UsageParser {
             provider: .claudeCode,
             windows: lines.compactMap { window(in: $0, now: now, fallbackZone: fallbackZone) },
             billingNote: lines.lazy.map { $0.trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty },
-            insights: insights.map { String(text[$0.lowerBound...]) },
+            insights: insights.flatMap { self.insights(in: text[$0.lowerBound...]) },
             rawOutput: output)
     }
+
+    /// P-11: after the heading, an unindented line with " · " opens a period, indented lines fill it,
+    /// any other line joins the note. No period, no insights.
+    private static func insights(in block: Substring) -> Insights? {
+        var note: [String] = []
+        var periods: [(label: Substring, summary: Substring, lines: [String])] = []
+        for line in block.split(whereSeparator: \.isNewline).dropFirst() {
+            let text = line.trimmingCharacters(in: .whitespaces)
+            if text.isEmpty { continue }
+            if line.first?.isWhitespace == true, !periods.isEmpty {
+                periods[periods.count - 1].lines.append(text)
+            } else if let header = text.wholeMatch(of: /(?<label>.+?) · (?<summary>.+)/) {
+                periods.append((header.label, header.summary, []))
+            } else {
+                note.append(text)
+            }
+        }
+        guard !periods.isEmpty else { return nil }
+        return Insights(
+            note: note.isEmpty ? nil : note.joined(separator: " "),
+            periods: periods.map { period(label: $0.label, summary: $0.summary, lines: $0.lines) })
+    }
+
+    private static func period(label: Substring, summary: Substring, lines: [String]) -> Insights.Period {
+        var shares: [Insights.Share] = []
+        var rankings: [Insights.Ranking] = []
+        for line in lines {
+            if let top = line.wholeMatch(of: /Top (?<title>[^:]+):\s*(?<items>.*)/) {
+                let items = top.items.split(separator: ", ").map { share(String($0)) }
+                rankings.append(Insights.Ranking(title: capitalized(top.title), items: items))
+            } else {
+                shares.append(share(line))
+            }
+        }
+        return Insights.Period(label: String(label), summary: String(summary), shares: shares, rankings: rankings)
+    }
+
+    /// "72% of your usage was at >150k context", "/skill-a 29%"; anything else keeps its text and no percent.
+    private static func share(_ text: String) -> Insights.Share {
+        if let usage = text.wholeMatch(of: /(?<pct>\d+)% of your usage (?:was |came from )?(?<what>.+)/) {
+            return Insights.Share(label: capitalized(usage.what), percent: Int(usage.pct))
+        }
+        if let item = text.wholeMatch(of: /(?<name>.+) (?<pct>\d+)%/) {
+            return Insights.Share(label: String(item.name), percent: Int(item.pct))
+        }
+        return Insights.Share(label: text, percent: nil)
+    }
+
+    private static func capitalized(_ text: Substring) -> String { text.prefix(1).uppercased() + text.dropFirst() }
 
     /// P-3 to P-5; nil for any other line.
     private static func window(in line: Substring, now: Date, fallbackZone: TimeZone) -> UsageWindow? {

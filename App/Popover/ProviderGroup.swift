@@ -26,9 +26,7 @@ struct ProviderGroup: View {
                     content: ActivitySection.init)
             }
             if descriptor.capabilities.contains(.insights), let insights = group.limits?.snapshot?.value.insights {
-                DisclosureGroup("Insights") {
-                    Text(verbatim: insights).font(.caption).textSelection(.enabled)
-                }
+                InsightsSection(insights: insights)
             }
         }
     }
@@ -77,6 +75,47 @@ struct LimitsSection: View {
             reset ? nil : window.isBelowOne ? "less than 1 percent used" : "\(Int(window.usedPercent)) percent used"
         return [providerName, window.label, used, window.resetText(at: now, width: .wide)].compactMap(\.self)
             .joined(separator: ", ")
+    }
+}
+
+/// FR-38: one period at a time, its shares, then the top three of each ranking; the tool's note as the title's tooltip.
+struct InsightsSection: View {
+    let insights: Insights
+    /// A period's label, so the choice survives a refresh.
+    @State private var selected: String?
+
+    var body: some View {
+        DisclosureGroup {
+            let period = insights.periods.first { $0.label == selected } ?? insights.periods[0]
+            VStack(alignment: .leading, spacing: 6) {
+                if insights.periods.count > 1 {
+                    Picker("Period", selection: Binding(get: { period.label }, set: { selected = $0 })) {
+                        ForEach(insights.periods, id: \.label) { Text($0.label).tag($0.label) }
+                    }
+                    .pickerStyle(.segmented).labelsHidden()
+                }
+                Text(period.summary).font(.caption).foregroundStyle(.secondary)
+                Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
+                    ForEach(period.shares, id: \.label, content: row)
+                    ForEach(period.rankings, id: \.title) { ranking in
+                        Text(ranking.title).font(.caption).foregroundStyle(.secondary).padding(.top, 5)
+                        ForEach(ranking.items.prefix(3), id: \.label, content: row)
+                    }
+                }
+                .font(.callout)
+            }
+            .padding(.top, 6)
+        } label: {
+            Text("Insights").help(insights.note ?? "").accessibilityHint(insights.note ?? "")
+        }
+    }
+
+    private func row(_ share: Insights.Share) -> some View {
+        GridRow {
+            Text(share.label).lineLimit(1).truncationMode(.middle).frame(maxWidth: .infinity, alignment: .leading)
+            Text(share.percent.map { "\($0)%" } ?? "").monospacedDigit().foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -48,19 +48,71 @@ public struct LimitsReport: Equatable, Sendable, Codable {
     public let windows: [UsageWindow]
     /// Claude Code: the first line of the output.
     public let billingNote: String?
-    /// Verbatim tool supplied text (capability `insights`).
-    public let insights: String?
+    /// Capability `insights`.
+    public let insights: Insights?
     /// For "Show raw output" and diagnostics.
     public let rawOutput: String?
 
     public init(
-        provider: ProviderID, windows: [UsageWindow], billingNote: String?, insights: String?, rawOutput: String?
+        provider: ProviderID, windows: [UsageWindow], billingNote: String?, insights: Insights?, rawOutput: String?
     ) {
         self.provider = provider
         self.windows = windows
         self.billingNote = billingNote
         self.insights = insights
         self.rawOutput = rawOutput
+    }
+}
+
+/// Tool supplied, approximate statistics about what drives usage (FR-38).
+public struct Insights: Equatable, Sendable, Codable {
+    /// The tool's own caveat, e.g. that the numbers are approximate and local only.
+    public let note: String?
+    /// At least one; a provider supplies no `Insights` rather than an empty one.
+    public let periods: [Period]
+
+    public init(note: String?, periods: [Period]) {
+        self.note = note
+        self.periods = periods
+    }
+
+    public struct Period: Equatable, Sendable, Codable {
+        /// "Last 24h"
+        public let label: String
+        /// "668 requests · 8 sessions"
+        public let summary: String
+        /// Independent characteristics of the period's usage, in printed order.
+        public let shares: [Share]
+        /// Ranked lists such as "Skills", in printed order.
+        public let rankings: [Ranking]
+
+        public init(label: String, summary: String, shares: [Share], rankings: [Ranking]) {
+            self.label = label
+            self.summary = summary
+            self.shares = shares
+            self.rankings = rankings
+        }
+    }
+
+    /// `percent` is nil for a line the provider could not read; the label then holds the whole line.
+    public struct Share: Equatable, Sendable, Codable {
+        public let label: String
+        public let percent: Int?
+
+        public init(label: String, percent: Int?) {
+            self.label = label
+            self.percent = percent
+        }
+    }
+
+    public struct Ranking: Equatable, Sendable, Codable {
+        public let title: String
+        public let items: [Share]
+
+        public init(title: String, items: [Share]) {
+            self.title = title
+            self.items = items
+        }
     }
 }
 

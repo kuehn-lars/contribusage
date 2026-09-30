@@ -57,7 +57,7 @@ extension LimitsReport {
                 label: "Current week (Opus)", kind: .weekly, usedPercent: 93, isBelowOne: false,
                 resetsAt: .now.addingTimeInterval(4 * 86400)),
         ],
-        billingNote: nil, insights: "Most usage came from long sessions in one project.", rawOutput: nil)
+        billingNote: nil, insights: .mock, rawOutput: nil)
     static let mockOtherLimits = LimitsReport(
         provider: ProviderID(rawValue: "other-tool"),
         windows: [
@@ -66,6 +66,31 @@ extension LimitsReport {
                 resetsAt: .now.addingTimeInterval(600))
         ],
         billingNote: nil, insights: nil, rawOutput: nil)
+}
+
+extension Insights {
+    static let mock = Insights(
+        note: "Approximate, based on local sessions on this machine.",
+        periods: [
+            Period(
+                label: "Last 24h", summary: "206 requests · 5 sessions",
+                shares: [Share(label: "At >150k context", percent: 62)],
+                rankings: [
+                    Ranking(
+                        title: "Skills",
+                        items: [
+                            Share(label: "/skill-a", percent: 35), Share(label: "/skill-b", percent: 23),
+                            Share(label: "/skill-c", percent: 21), Share(label: "/skill-d", percent: 2),
+                        ]),
+                    Ranking(title: "Plugins", items: [Share(label: "plugin-a", percent: 56)]),
+                ]),
+            Period(
+                label: "Last 7d", summary: "3350 requests · 88 sessions",
+                shares: [
+                    Share(label: "At >150k context", percent: 54), Share(label: "Subagent-heavy sessions", percent: 13),
+                ],
+                rankings: [Ranking(title: "Skills", items: [Share(label: "/skill-a", percent: 42)])]),
+        ])
 }
 
 extension ActivityReport {

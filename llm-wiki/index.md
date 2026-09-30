@@ -43,6 +43,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0020-github-rate-limit-detection]]: ADR-020, GitHub rate limit = remaining 0 on a failed response; other 403/429 back off
 - [[decisions/0021-stats-calendar-parameter]]: ADR-021, contribution statistics take the `Calendar` that defines today; R-4 picks its zone
 - [[decisions/0022-github-job-in-the-coordinator]]: ADR-022, GitHub as a typed job in the coordinator; token, 401 and rate-limit rules
+- [[decisions/0023-structured-insights]]: ADR-023, insights parsed into periods, shares and rankings instead of verbatim text
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary
