@@ -18,18 +18,18 @@ func respond(_ status: Int, _ body: String, headers: [String: String] = [:]) -> 
     }
 }
 
-private func fixture(_ name: String) throws -> String {
+func fixture(_ name: String) throws -> String {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/github"))
     return try String(contentsOf: url, encoding: .utf8)
 }
 
 /// The GraphQL request body as sent.
-private struct Sent: Decodable {
+struct Sent: Decodable {
     let query: String
     let variables: [String: String]
 }
 
-private func sent(_ request: URLRequest) throws -> Sent {
+func sent(_ request: URLRequest) throws -> Sent {
     try JSONDecoder().decode(Sent.self, from: #require(request.httpBody))
 }
 
@@ -55,6 +55,9 @@ private func sent(_ request: URLRequest) throws -> Sent {
         token: "ghp_x", from: from, to: to)
     #expect(calendar.login == "octocat")
     #expect(calendar.totalContributions == 1917)
+    // FR-20: GitHub's weeks as sent, Sunday first; the range starts on a Tuesday and ends on one.
+    #expect(calendar.weeks.map(\.count) == [5] + Array(repeating: 7, count: 51) + [3])
+    #expect(calendar.weeks[27].first?.date == DayKey(rawValue: "2026-04-05"))
     #expect(calendar.days.count == 365)
     #expect(calendar.days.first == ContributionDay(date: DayKey(rawValue: "2025-09-30"), count: 0, level: .none))
     #expect(calendar.days.last == ContributionDay(date: DayKey(rawValue: "2026-09-29"), count: 28, level: .fourth))

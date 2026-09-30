@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-29
+updated: 2026-09-30
 aliases: [ADR-018]
 tags: [core, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]
@@ -30,5 +30,6 @@ T-2.6 builds the scheduler of SPEC §12. Four points were open: how the neutral 
 - The coordinator knows nothing it could only learn from the platform; the app wiring (T-2.7) is the untested seam, which the manual matrix (SPEC §16.5) covers.
 - `state.json` holds `limits` keyed by provider ID today; GitHub snapshots and notification keys join as optional fields, so schema version 1 stays readable.
 - Enabling a provider does not wake the loop; the app calls `start()` again.
+- GitHub joined in T-3.6 with the coordinator generic over its value ([[decisions/0022-github-job-in-the-coordinator]]).
 - The extra triggers of SPEC §12 (popover opened, a window's reset) joined the same passes in T-2.7 as `triggers` dates ([[decisions/0019-extra-refresh-triggers]]).
 - Revisit if a provider's fetch is slow enough that queueing behind it matters: then passes per provider, with the process gate as the only global lock.

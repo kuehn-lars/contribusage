@@ -1,42 +1,82 @@
 import Foundation
 import os
 
-/// Runs the polled limits sources of the enabled providers on the schedule of SPEC §12, one fetch at a time in registry
-/// order (NFR-18), and persists each success to `state.json` (FR-10). The app feeds it conditions and shows its updates.
-public actor RefreshCoordinator {
+/// SPEC §13: API key billing is checked again every 6 h.
+private let unsupportedPlanRecheck: Duration = .seconds(6 * 3600)
+private let log = Logger(subsystem: "contribusage", category: "refresh")
+
+/// Runs the polled limits sources of the enabled providers, then GitHub, on the schedule of SPEC §12, one fetch at a
+/// time in registry order (NFR-18), and persists each success to `state.json` (FR-10). The app feeds it conditions and
+/// shows its updates. `GitHubValue` is GitHub's report, which the core cannot import (NFR-17, ADR-022).
+public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     public typealias Update = @Sendable (ProviderID, SourceState<LimitsReport>) async -> Void
 
-    private struct Record {
-        var snapshot: Snapshot<LimitsReport>?
+    /// One polled source: a provider's limits, or GitHub as the app supplies it. `triggers` are the extra refresh dates
+    /// a fetched value brings (FR-11: a window's reset).
+    public struct Job<Value: Sendable & Codable>: Sendable {
+        let policy: SchedulePolicy
+        let origin: Origin
+        let fetch: @Sendable () async throws -> Value
+        let onUpdate: @Sendable (SourceState<Value>) async -> Void
+        let triggers: @Sendable (Value) -> [Date]
+
+        public init(
+            policy: SchedulePolicy, origin: Origin, fetch: @escaping @Sendable () async throws -> Value,
+            onUpdate: @escaping @Sendable (SourceState<Value>) async -> Void,
+            triggers: @escaping @Sendable (Value) -> [Date] = { _ in [] }
+        ) {
+            self.policy = policy
+            self.origin = origin
+            self.fetch = fetch
+            self.onUpdate = onUpdate
+            self.triggers = triggers
+        }
+    }
+
+    /// A job's schedule state. A class, so one `run` can update it across its `await`s; it never leaves the actor.
+    private final class Record<Value: Sendable & Codable> {
+        var snapshot: Snapshot<Value>?
         var lastAttempt: Date?
         var failures = 0
         var manual = false
-        var state: SourceState<LimitsReport>?
+        var state: SourceState<Value>?
+
+        /// No token, or the service refused it: only a token change or a manual refresh runs the source again, and
+        /// being offline does not replace the state (SPEC §12, §8.4.3).
+        var waitsForUser: Bool {
+            switch state {
+            case .notConfigured(.githubTokenMissing)?, .failed(.unauthorized, _)?: true
+            default: false
+            }
+        }
     }
 
-    /// `state.json` (SPEC §10.7); GitHub snapshots and notification keys join as optional fields.
+    /// `state.json` (SPEC §10.7); notification keys join as an optional field.
     private struct PersistedState: PersistedFile {
-        static let schemaVersion = 1
+        static var schemaVersion: Int { 1 }
         var limits: [ProviderID: Snapshot<LimitsReport>]
+        var github: Snapshot<GitHubValue>?
     }
-
-    /// SPEC §13: API key billing is checked again every 6 h.
-    private static let unsupportedPlanRecheck: Duration = .seconds(6 * 3600)
-    private static let log = Logger(subsystem: "contribusage", category: "refresh")
 
     private let registry: ProviderRegistry
     private let stateFile: URL
     private let time: any TimeSource
     private let onUpdate: Update
+    private let gitHubJob: Job<GitHubValue>?
     private var conditions = ScheduleConditions()
-    private var records: [ProviderID: Record] = [:]
+    private var records: [ProviderID: Record<LimitsReport>] = [:]
+    private var github = Record<GitHubValue>()
     private var pass: Task<Date?, Never>?
     private var loop: Task<Void, Never>?
 
-    public init(registry: ProviderRegistry, paths: AppPaths, time: any TimeSource, onUpdate: @escaping Update) {
+    public init(
+        registry: ProviderRegistry, paths: AppPaths, time: any TimeSource, github: Job<GitHubValue>?,
+        onUpdate: @escaping Update
+    ) {
         self.registry = registry
         stateFile = paths.root.appending(path: "state.json")
         self.time = time
+        gitHubJob = github
         self.onUpdate = onUpdate
     }
 
@@ -52,18 +92,22 @@ public actor RefreshCoordinator {
         pass?.cancel()
     }
 
-    /// FR-10: every enabled provider's last success shows at once, as `cache`; a snapshot already in memory stays.
-    /// An unreadable file is a lost cache.
+    /// FR-10: every enabled provider's and GitHub's last success shows at once, as `cache`; a snapshot already in
+    /// memory stays. An unreadable file is a lost cache.
     public func restore() async {
         guard let persisted = (try? JSONStore.read(PersistedState.self, from: stateFile)) ?? nil else { return }
         for (id, snapshot) in persisted.limits where records[id]?.snapshot == nil {
-            records[id, default: Record()].snapshot = Snapshot(
-                value: snapshot.value, fetchedAt: snapshot.fetchedAt, origin: .cache)
+            record(id).snapshot = snapshot.cached
         }
+        if github.snapshot == nil { github.snapshot = persisted.github?.cached }
         for provider in await registry.enabledProviders() {
-            let id = provider.descriptor.id
-            if let snapshot = records[id]?.snapshot { await publish(id, .loaded(snapshot)) }
+            if let job = job(for: provider), let record = records[provider.descriptor.id],
+                let snapshot = record.snapshot
+            {
+                await publish(job, record, .loaded(snapshot))
+            }
         }
+        if let gitHubJob, let snapshot = github.snapshot { await publish(gitHubJob, github, .loaded(snapshot)) }
     }
 
     /// Wake, sleep, network and Low Power Mode changes (SPEC §12 rules 1 to 3).
@@ -75,8 +119,18 @@ public actor RefreshCoordinator {
     /// Manual refresh (SPEC §12 rule 4): a source within its `manualFloor` runs once the floor has passed.
     public func refreshNow() async {
         for provider in await registry.enabledProviders() where provider.descriptor.limitsPolicy != nil {
-            records[provider.descriptor.id, default: Record()].manual = true
+            record(provider.descriptor.id).manual = true
         }
+        github.manual = true
+        await runDue()
+        if loop != nil { reschedule() }
+    }
+
+    /// SPEC §12 "token changed": GitHub starts over, and the old account's data leaves `state.json`. A fetch still
+    /// running with the old token finishes into the replaced record, which nothing reads.
+    public func gitHubTokenChanged() async {
+        github = Record()
+        persist()
         await runDue()
         if loop != nil { reschedule() }
     }
@@ -114,46 +168,55 @@ public actor RefreshCoordinator {
     }
 
     private func runPass(openedAt: Date?) async -> Date? {
-        var earliest: Date?
+        var next: [Date?] = []
         for provider in await registry.enabledProviders() {
-            guard let source = provider.limits, let policy = provider.descriptor.limitsPolicy else { continue }
-            let id = provider.descriptor.id
-            if policy.needsNetwork && !conditions.isOnline {
-                await publish(id, .failed(.offline, previous: records[id]?.snapshot))
-                continue
-            }
-            if let due = nextRun(id, policy, openedAt: openedAt), due <= time.now { await refresh(id, source) }
-            if let next = nextRun(id, policy) { earliest = min(earliest ?? next, next) }
+            guard let job = job(for: provider) else { continue }
+            next.append(await run(job, record(provider.descriptor.id), openedAt: openedAt))
         }
-        return earliest
+        if let gitHubJob { next.append(await run(gitHubJob, github, openedAt: openedAt)) }
+        return next.compactMap(\.self).min()
     }
 
-    private func nextRun(_ id: ProviderID, _ policy: SchedulePolicy, openedAt: Date? = nil) -> Date? {
-        let record = records[id, default: Record()]
-        var policy = policy
-        if case .notConfigured(.unsupportedPlan)? = record.state {
-            let recheck = Self.unsupportedPlanRecheck
-            policy = SchedulePolicy(
-                defaultInterval: recheck, minimumInterval: recheck, maximumInterval: recheck,
-                staleAfter: policy.staleAfter, manualFloor: policy.manualFloor, needsNetwork: policy.needsNetwork)
+    /// Marks a job offline or runs it when due; returns when it is due next.
+    private func run<Value>(_ job: Job<Value>, _ record: Record<Value>, openedAt: Date?) async -> Date? {
+        if job.policy.needsNetwork && !conditions.isOnline {
+            if !record.waitsForUser { await publish(job, record, .failed(.offline, previous: record.snapshot)) }
+            return nil
         }
-        // FR-11: a window's reset triggers a refresh; `Schedule` counts only triggers after the last run.
-        let resets = record.snapshot?.value.windows.compactMap(\.resetsAt) ?? []
+        if let due = nextRun(job, record, openedAt: openedAt), due <= time.now { await refresh(job, record) }
+        return nextRun(job, record, openedAt: nil)
+    }
+
+    private func nextRun<Value>(_ job: Job<Value>, _ record: Record<Value>, openedAt: Date?) -> Date? {
+        var policy = job.policy
+        switch record.state {
+        case .notConfigured(.unsupportedPlan)?:
+            policy = policy.fixed(unsupportedPlanRecheck, manualFloor: policy.manualFloor)
+        case .failed(.rateLimited(let until), _)?:
+            // SPEC §13 "retrying at 15:04": `Schedule` adds the wait to the last attempt, so the run lands exactly on
+            // `until`; a manual refresh or the popover cannot bring it forward.
+            let wait = Duration.seconds(max(until.timeIntervalSince(record.lastAttempt ?? time.now), 0))
+            policy = policy.fixed(wait, manualFloor: wait)
+        default:
+            if record.waitsForUser && !record.manual { return nil }
+        }
+        // `Schedule` counts only triggers after the last run.
+        let triggers = (record.snapshot.map { job.triggers($0.value) } ?? []) + [openedAt].compactMap(\.self)
         return Schedule.nextRun(
             policy: policy, lastSuccess: record.snapshot?.fetchedAt, lastAttempt: record.lastAttempt,
             failures: record.failures, now: time.now, conditions: conditions, manual: record.manual,
-            triggers: resets + [openedAt].compactMap(\.self))
+            triggers: triggers)
     }
 
-    private func refresh(_ id: ProviderID, _ source: any LimitsSource) async {
-        let previous = records[id]?.snapshot
-        records[id, default: Record()].lastAttempt = time.now
-        records[id]!.manual = false
-        await publish(id, .loading(previous: previous))
-        let state: SourceState<LimitsReport>
+    private func refresh<Value>(_ job: Job<Value>, _ record: Record<Value>) async {
+        let previous = record.snapshot
+        record.lastAttempt = time.now
+        record.manual = false
+        await publish(job, record, .loading(previous: previous))
+        let state: SourceState<Value>
         do {
-            let snapshot = Snapshot(value: try await source.fetch(), fetchedAt: time.now, origin: .poll)
-            records[id]!.snapshot = snapshot
+            let snapshot = Snapshot(value: try await job.fetch(), fetchedAt: time.now, origin: job.origin)
+            record.snapshot = snapshot
             persist()
             state = .loaded(snapshot)
         } catch is CancellationError {
@@ -162,32 +225,64 @@ public actor RefreshCoordinator {
             state = Self.state(after: error, previous: previous)
         }
         switch state {
-        case .loaded, .notConfigured(.unsupportedPlan): records[id]!.failures = 0
-        default: records[id]!.failures += 1
+        case .loaded, .notConfigured(.unsupportedPlan): record.failures = 0
+        default: record.failures += 1
         }
-        await publish(id, state)
+        await publish(job, record, state)
     }
 
     /// SPEC §13.
-    private static func state(after error: any Error, previous: Snapshot<LimitsReport>?) -> SourceState<LimitsReport> {
+    private static func state<Value>(after error: any Error, previous: Snapshot<Value>?) -> SourceState<Value> {
         switch error as? SourceError ?? .providerSpecific(code: "unexpected", message: "\(error)") {
         case .unsupportedPlan(let note): .notConfigured(.unsupportedPlan(note: note))
         case .toolNotFound: .notConfigured(.toolNotInstalled)
+        case .tokenMissing: .notConfigured(.githubTokenMissing)
         case let error: .failed(error, previous: previous)
         }
     }
 
-    private func publish(_ id: ProviderID, _ state: SourceState<LimitsReport>) async {
-        records[id, default: Record()].state = state
-        await onUpdate(id, state)
+    private func publish<Value>(_ job: Job<Value>, _ record: Record<Value>, _ state: SourceState<Value>) async {
+        record.state = state
+        await job.onUpdate(state)
+    }
+
+    /// A provider's limits as a job: snapshots from `fetch()` carry `.poll`, a window's reset triggers a refresh.
+    private func job(for provider: any UsageProvider) -> Job<LimitsReport>? {
+        guard let source = provider.limits, let policy = provider.descriptor.limitsPolicy else { return nil }
+        let id = provider.descriptor.id
+        return Job(
+            policy: policy, origin: .poll, fetch: source.fetch, onUpdate: { [onUpdate] in await onUpdate(id, $0) },
+            triggers: { $0.windows.compactMap(\.resetsAt) })
+    }
+
+    private func record(_ id: ProviderID) -> Record<LimitsReport> {
+        if let record = records[id] { return record }
+        let record = Record<LimitsReport>()
+        records[id] = record
+        return record
     }
 
     /// SPEC §13: a failed write keeps the state in memory and is retried with the next success.
     private func persist() {
         do {
-            try JSONStore.write(PersistedState(limits: records.compactMapValues(\.snapshot)), to: stateFile)
+            try JSONStore.write(
+                PersistedState(limits: records.compactMapValues(\.snapshot), github: github.snapshot), to: stateFile)
         } catch {
-            Self.log.error("state.json not written: \(error.localizedDescription, privacy: .public)")
+            log.error("state.json not written: \(error.localizedDescription, privacy: .public)")
         }
     }
+}
+
+extension SchedulePolicy {
+    /// This policy with every interval `interval`, so backoff and triggers cannot move a run.
+    fileprivate func fixed(_ interval: Duration, manualFloor: Duration) -> SchedulePolicy {
+        SchedulePolicy(
+            defaultInterval: interval, minimumInterval: interval, maximumInterval: interval, staleAfter: staleAfter,
+            manualFloor: manualFloor, needsNetwork: needsNetwork)
+    }
+}
+
+extension Snapshot {
+    /// FR-10: a persisted snapshot as the UI shows it after launch.
+    fileprivate var cached: Snapshot { Snapshot(value: value, fetchedAt: fetchedAt, origin: .cache) }
 }

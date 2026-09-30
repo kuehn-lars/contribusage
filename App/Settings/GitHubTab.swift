@@ -4,7 +4,7 @@ import SwiftUI
 
 /// SPEC §11.6 GitHub tab. After saving, the token is never shown again, only its login (SPEC §14).
 struct GitHubTab: View {
-    let account: GitHubAccount
+    @Environment(AppState.self) private var appState
     /// The login the saved token resolved to; empty while no token is saved (SPEC §10.7).
     @AppStorage("githubLogin") private var login = ""
     @State private var token = ""
@@ -42,7 +42,7 @@ struct GitHubTab: View {
         Task {
             defer { validating = false }
             do {
-                login = try await account.connect(token: token)
+                login = try await appState.connectGitHub(token: token)
                 self.token = ""
             } catch {
                 self.error = (error as? SourceError)?.message(displayName: "GitHub") ?? error.localizedDescription
@@ -53,7 +53,7 @@ struct GitHubTab: View {
     private func remove() {
         Task {
             do {
-                try await account.disconnect()
+                try await appState.disconnectGitHub()
                 login = ""
                 error = nil
             } catch {

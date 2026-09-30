@@ -24,5 +24,5 @@ T-3.4 depended on R-4, which asks which time zone GitHub uses for a calendar day
 The statistics are a pure initializer, `ContributionStats(days:now:calendar:)`, rather than the `ContributionStatsCalculator` type SPEC §9 first named: a namespace around one function adds a name and no behaviour. Today's `DayKey` is `now` in `calendar.timeZone`, and the week starts at `calendar.dateInterval(of: .weekOfYear, for: now)`. Entries after today count toward no statistic, so a GitHub day boundary ahead of the calendar's shows no future day.
 
 ## Consequences
-- T-3.4 no longer waits for R-4; T-3.6 does, for the zone of the calendar it passes (default `Calendar.current`).
+- T-3.4 no longer waits for R-4; T-3.6 passes `Calendar.current` until R-4 names another zone ([[decisions/0022-github-job-in-the-coordinator]]).
 - The time zone rule is tested with a fixed instant under two zones.

@@ -141,3 +141,16 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-09-30] feat | T-3.4 contribution statistics
 - `ContributionStats(days:now:calendar:)` computes today, this week and both streaks per SPEC §8.4.4, ignoring entries after today.
 - ADR-021: the caller's `Calendar` defines today and the week start, so R-4 now blocks T-3.6 instead of T-3.4; SPEC §8.4.4, §17, §19.1 updated.
+
+## [2026-09-30] feat | T-3.6 GitHub in the refresh coordinator
+- `RefreshCoordinator<GitHubValue>` runs an app-supplied `GitHubJob` in its passes, persists it under `github` in `state.json`; no token and 401 wait for the user, a rate limit runs at its reset, a token change resets inside a pass (ADR-022).
+- `GitHubAccount.report(now:calendar:)` fetches the year and its statistics; the app wires it with `Calendar.current` until R-4, Settings reports token changes, GitHub errors show Retry.
+
+## [2026-09-30] fix | Heatmap fits the popover
+- The live 365-day calendar drew 53 columns and widened the popover; the heatmap now draws `ContributionCalendar.weeks(last: 26)` (FR-20 default), Sunday-aligned from the last day, with top-aligned columns.
+- Mock and placeholder use real dates, so previews show the same layout as live data.
+- Cells are squares sharing the content width, placed by the `WeekColumns` layout, which derives its height from the width: `aspectRatio` cells shrank to dots under the menu bar window's small height proposal.
+
+## [2026-09-30] refactor | One job type in the refresh coordinator
+- Providers' limits and GitHub are both a `Job<Value>` run by one generic `run`; no token is `SourceError.tokenMissing`; a token change replaces GitHub's record and persists (ADR-022).
+- `ContributionCalendar` keeps GitHub's `weeks` (SPEC §10.5), the heatmap takes `weeks.suffix(26)`; `AppState` owns the GitHub account and tells the coordinator about token changes itself.
