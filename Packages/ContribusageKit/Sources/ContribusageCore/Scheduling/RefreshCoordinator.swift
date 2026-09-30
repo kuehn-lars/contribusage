@@ -51,9 +51,9 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         }
     }
 
-    /// `state.json` (SPEC §10.7); notification keys join as an optional field.
+    /// `state.json` (SPEC §10.7); notification keys join as an optional field. Version 2: structured insights.
     private struct PersistedState: PersistedFile {
-        static var schemaVersion: Int { 1 }
+        static var schemaVersion: Int { 2 }
         var limits: [ProviderID: Snapshot<LimitsReport>]
         var github: Snapshot<GitHubValue>?
     }

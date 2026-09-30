@@ -104,7 +104,7 @@ func classifiesWindow(label: String, kind: WindowKind) {
     #expect(parse(text, now: .now).isEmpty)
 }
 
-/// P-10, P-11: the billing line, the insights block verbatim from its heading, the untouched output.
+/// P-10, P-11: the billing line, the insights block by period, the untouched output.
 @Test func buildsSubscriptionReport() throws {
     let output = try fixture("subscription-basic")
     let now = utc("2026-09-27T20:00:00Z")
@@ -112,9 +112,42 @@ func classifiesWindow(label: String, kind: WindowKind) {
     #expect(report.provider == .claudeCode)
     #expect(report.windows == parse(output, now: now))
     #expect(report.billingNote == "You are currently using your subscription to power your Claude Code usage")
-    #expect(report.insights?.hasPrefix("What's contributing to your limits usage?\n") == true)
-    #expect(report.insights?.hasSuffix("\n  Top plugins: plugin-a 29%\n") == true)
     #expect(report.rawOutput == "\u{1B}[1m\(output)")
+
+    typealias Share = Insights.Share
+    let insights = try #require(report.insights)
+    #expect(insights.note?.hasPrefix("Approximate, based on local sessions on this machine;") == true)
+    #expect(insights.periods.map(\.label) == ["Last 24h", "Last 7d"])
+    #expect(insights.periods.map(\.summary) == ["668 requests · 8 sessions", "3002 requests · 63 sessions"])
+    let week = insights.periods[1]
+    #expect(
+        week.shares == [
+            Share(label: "At >150k context", percent: 72), Share(label: "Sessions active for 8+ hours", percent: 13),
+            Share(label: "Subagent-heavy sessions", percent: 12),
+        ])
+    #expect(week.rankings.map(\.title) == ["Skills", "Subagents", "Plugins"])
+    #expect(
+        week.rankings[0].items.prefix(2) == [
+            Share(label: "/skill-a", percent: 29), Share(label: "/skill-d", percent: 18),
+        ])
+    #expect(week.rankings[2].items == [Share(label: "plugin-a", percent: 29)])
+}
+
+/// P-11: lines that fit no rule are kept without a percent, never dropped; a block without a period is no insights.
+@Test func keepsUnknownInsightLines() throws {
+    let output = """
+        What's contributing to your limits usage?
+        Last 24h · 5 requests
+          Mostly one project
+          Top models: model-a <1%
+        """
+    let period = try #require(UsageParser.report(from: output, now: .now).insights?.periods.first)
+    #expect(period.shares == [Insights.Share(label: "Mostly one project", percent: nil)])
+    #expect(
+        period.rankings == [
+            Insights.Ranking(title: "Models", items: [Insights.Share(label: "model-a <1%", percent: nil)])
+        ])
+    #expect(UsageParser.report(from: "What's contributing to your limits usage?\nA note\n", now: .now).insights == nil)
 }
 
 /// R-2 (Claude Code 2.1.284): API key billing and logged out both print the same cost summary, exit 0.

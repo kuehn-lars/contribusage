@@ -159,3 +159,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - FR-20, US-4, §10.7, §11.6: the heatmap shows 26 weeks with no range setting; `heatmapWeeks` is gone (the 52-week option had no use). Hover tooltips appear after 0.2 s (`NSInitialToolTipDelay`); a heatmap cell's reads "2026-09-27: 5 contributions" (§11.2).
 - A 401's error line offers "Change token…" instead of Retry, which opens Settings (US-4, §13, §16.5); the GitHub tab is one Account row (Disconnect) and one token field (Connect, or Replace, which keeps the saved token until the new one validates; §11.6).
 - T-3.5 done with hover; its palette, keyboard and VoiceOver work moves to T-5.11 (M4). M2 checked by hand, ticked.
+
+## [2026-10-01] feat | Structured insights area (T-6.1)
+- `UsageParser` turns the "What's contributing" block into `Insights` (periods, shares, rankings; unknown lines kept); `state.json` schema 2.
+- The popover shows one period at a time with a segmented picker, the top three per ranking and the note as a tooltip.
+- SPEC FR-8, FR-38, US-8, P-11, §7.2, §10.3 updated; [[decisions/0023-structured-insights]].
