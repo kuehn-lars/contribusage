@@ -164,3 +164,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `UsageParser` turns the "What's contributing" block into `Insights` (periods, shares, rankings; unknown lines kept); `state.json` schema 2.
 - The popover shows one period at a time with a segmented picker, the top three per ranking and the note as a tooltip.
 - SPEC FR-8, FR-38, US-8, P-11, §7.2, §10.3 updated; [[decisions/0023-structured-insights]].
+
+## [2026-10-02] feat | Transcript line decoder (T-4.1)
+- `TranscriptLine.decode` reads usage-bearing lines leniently; non-usage lines give nil, malformed ones throw (FR-23, SPEC §8.3.2).
+- One `JSONDecoder` and one date format style are built once, since decode runs per line (NFR-7).
+- Field paths confirmed against real transcripts; R-3 stays open for the ccusage comparison (T-4.7).

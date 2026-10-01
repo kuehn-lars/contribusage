@@ -1,13 +1,15 @@
 ---
 type: module
 status: active
-updated: 2026-10-01
+updated: 2026-10-02
 tracks: [Packages/ContribusageKit/Sources/ContribusageClaudeCode, Packages/ContribusageKit/Tests/ContribusageClaudeCodeTests]
 tags: [provider, claude-code]
 ---
 # ContribusageClaudeCode
 
 The v1 provider (`claude-code`). Limits come from the `/usage` probe (locator, probe, parser, window classifier) and the optional status line bridge; activity comes from local transcripts (decoder, aggregation keys, roots). It never touches Claude Code's credentials and never uses the network ([[decisions/0003-official-interfaces-only]]).
+
+`TranscriptLine.decode(_:)` (`Activity/TranscriptLine.swift`, T-4.1, FR-23, SPEC §8.3.2) decodes one JSONL line with a private all-optional `Decodable`: unknown fields are ignored, missing token counts are 0. It returns `nil` for lines that carry no usage (not `assistant`, no `message.usage`, placeholder model such as `<synthetic>`) and throws for non-JSON or a missing or unparseable `timestamp`; the aggregator (T-4.2) counts the throws as malformed lines. Timestamps carry fractional seconds in real files, so both ISO 8601 forms are accepted. The `JSONDecoder` and the date format style are static: `decode` runs once per line over hundreds of MB (NFR-7). De-duplication keys stay on the line as optional IDs; building them is T-4.2.
 
 ## Spec
 - **Sections:** SPEC §2.1 (compliance note), §8.1 to §8.3 (probe, bridge, transcripts), §16.6 (update procedure), Appendices A, D, E
