@@ -126,12 +126,25 @@ public struct TokenCounts: Equatable, Sendable, Codable {
         self.cacheWrite = cacheWrite
         self.cacheRead = cacheRead
     }
+
+    public static func += (lhs: inout TokenCounts, rhs: TokenCounts) {
+        lhs.input += rhs.input
+        lhs.output += rhs.output
+        lhs.cacheWrite += rhs.cacheWrite
+        lhs.cacheRead += rhs.cacheRead
+    }
 }
 
 /// A local calendar day, "2026-09-28"; the format makes string order day order.
 public struct DayKey: RawRepresentable, Hashable, Comparable, Sendable, Codable {
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
+
+    /// The day `date` falls on in `calendar`'s time zone.
+    public init(_ date: Date, calendar: Calendar) {
+        let format = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
+        self.init(rawValue: date.formatted(format))
+    }
     public static func < (lhs: DayKey, rhs: DayKey) -> Bool { lhs.rawValue < rhs.rawValue }
 }
 

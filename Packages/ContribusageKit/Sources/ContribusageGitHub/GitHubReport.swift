@@ -36,9 +36,8 @@ public struct ContributionStats: Sendable, Codable, Equatable {
     /// R-4) and the week start (its first weekday, ADR-021). Days after today (GitHub's day ahead of
     /// `calendar`'s) count nowhere.
     public init(days: [ContributionDay], now: Date, calendar: Calendar) {
-        let format = Date.ISO8601FormatStyle(timeZone: calendar.timeZone).year().month().day()
-        let today = DayKey(rawValue: now.formatted(format))
-        let weekStart = DayKey(rawValue: calendar.dateInterval(of: .weekOfYear, for: now)!.start.formatted(format))
+        let today = DayKey(now, calendar: calendar)
+        let weekStart = DayKey(calendar.dateInterval(of: .weekOfYear, for: now)!.start, calendar: calendar)
         let past = days.filter { $0.date <= today }
         let todayCount = past.last(where: { $0.date == today })?.count ?? 0
         // Today at 0 so far (or not in the calendar yet) leaves the streak ending yesterday.

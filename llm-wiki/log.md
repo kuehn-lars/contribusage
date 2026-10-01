@@ -169,3 +169,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `TranscriptLine.decode` reads usage-bearing lines leniently; non-usage lines give nil, malformed ones throw (FR-23, SPEC §8.3.2).
 - One `JSONDecoder` and one date format style are built once, since decode runs per line (NFR-7).
 - Field paths confirmed against real transcripts; R-3 stays open for the ccusage comparison (T-4.7).
+
+## [2026-10-02] feat | Transcript aggregator (T-4.2)
+- `TranscriptAggregator` de-duplicates by `message.id:requestId` and buckets per local day and model (FR-24, FR-25); `TokenCounts` gained `+=`.
+- Per-file removal for FR-26 is left to T-4.3.
+- Review pass: `DayKey(_:calendar:)` in the core replaces two copies of the day formatting (aggregator, `ContributionStats`); the aggregator's key and token-count code shortened.
