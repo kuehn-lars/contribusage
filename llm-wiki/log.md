@@ -179,3 +179,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - Core `IncrementalJSONLReader` returns appended complete lines per file and flags a rescan on identity change or shrink; a deleted file reads as `nil` (FR-26, SPEC §8.3.5).
 - Claude Code `TranscriptFiles` lists FR-22 roots and `**/*.jsonl`, skipping the probe folder's project directory (FR-28).
 - SPEC §8.3.1: project directories encode every non-alphanumeric character as `-`, not only `/`.
+
+## [2026-10-02] feat | History store (T-4.4)
+- Core `HistoryStore` keeps a provider's frozen days in `providers/<id>/history.json`: a day freezes once it ended more than 48 h ago, is never recomputed, and is kept 365 days (FR-29, SPEC §8.3.4).
+- `merge(_:now:calendar:)` freezes, prunes, writes only on change and returns frozen days plus unfrozen live days younger than 48 h, each day once; an unreadable file throws and stays on disk.
+- Test support: `AppPaths.temporary()` replaces three private copies of the temporary root helper.

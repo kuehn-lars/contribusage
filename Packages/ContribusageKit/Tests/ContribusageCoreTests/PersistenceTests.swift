@@ -10,12 +10,8 @@ private struct Sample: PersistedFile, Equatable {
     var label: String
 }
 
-private func temporaryPaths() -> AppPaths {
-    AppPaths(root: FileManager.default.temporaryDirectory.appending(path: "contribusage-\(UUID())/root/"))
-}
-
 @Test func roundTripCreatesTheRootWithOwnerOnlyPermissions() throws {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let file = paths.providerFolder(.fake).appending(path: "history.json")
     #expect(try JSONStore.read(Sample.self, from: file) == nil)
 
@@ -29,7 +25,7 @@ private func temporaryPaths() -> AppPaths {
 
 /// An atomic write replaces the file instead of rewriting it in place: a hard link to the old file keeps the old content.
 @Test func writeReplacesTheFileAtomically() throws {
-    let file = temporaryPaths().root.appending(path: "state.json")
+    let file = AppPaths.temporary().root.appending(path: "state.json")
     try JSONStore.write(Sample(label: "old"), to: file)
     let link = file.deletingLastPathComponent().appending(path: "link.json")
     try FileManager.default.linkItem(at: file, to: link)
@@ -42,7 +38,7 @@ private func temporaryPaths() -> AppPaths {
 
 /// Any other version throws and leaves the file alone: caches discard it by ignoring the error, `history.json` never loses it.
 @Test func versionMismatchThrowsAndKeepsTheFile() throws {
-    let file = temporaryPaths().root.appending(path: "history.json")
+    let file = AppPaths.temporary().root.appending(path: "history.json")
     try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
     let newer = Data(#"{"schemaVersion":3,"value":{"label":"future"}}"#.utf8)
     try newer.write(to: file)
@@ -52,7 +48,7 @@ private func temporaryPaths() -> AppPaths {
 }
 
 @Test func deletingProviderDataRemovesOnlyThatProvidersFolder() throws {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let other = ProviderID(rawValue: "other")
     try JSONStore.write(Sample(label: "fake"), to: paths.providerFolder(.fake).appending(path: "history.json"))
     try JSONStore.write(Sample(label: "other"), to: paths.providerFolder(other).appending(path: "history.json"))
