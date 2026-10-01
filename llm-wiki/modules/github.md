@@ -1,7 +1,7 @@
 ---
 type: module
 status: active
-updated: 2026-09-30
+updated: 2026-10-02
 tracks: [Packages/ContribusageKit/Sources/ContribusageGitHub, Packages/ContribusageKit/Tests/ContribusageGitHubTests]
 tags: [github]
 ---

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-30
+updated: 2026-10-02
 aliases: [ADR-021]
 tags: [github, time]
 tracks: [Packages/ContribusageKit/Sources/ContribusageGitHub/GitHubReport.swift]

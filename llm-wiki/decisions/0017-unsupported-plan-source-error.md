@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-01
+updated: 2026-10-02
 aliases: [ADR-017]
 tags: [core, providers, errors]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Reports.swift]

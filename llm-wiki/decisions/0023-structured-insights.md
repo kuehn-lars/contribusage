@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-01
+updated: 2026-10-02
 aliases: [ADR-023]
 tags: [core, claude-code, app, insights]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Reports.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/Limits/UsageParser.swift, App/Popover/ProviderGroup.swift]
