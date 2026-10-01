@@ -174,3 +174,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `TranscriptAggregator` de-duplicates by `message.id:requestId` and buckets per local day and model (FR-24, FR-25); `TokenCounts` gained `+=`.
 - Per-file removal for FR-26 is left to T-4.3.
 - Review pass: `DayKey(_:calendar:)` in the core replaces two copies of the day formatting (aggregator, `ContributionStats`); the aggregator's key and token-count code shortened.
+
+## [2026-10-02] feat | Incremental JSONL reader and transcript files (T-4.3)
+- Core `IncrementalJSONLReader` returns appended complete lines per file and flags a rescan on identity change or shrink; a deleted file reads as `nil` (FR-26, SPEC §8.3.5).
+- Claude Code `TranscriptFiles` lists FR-22 roots and `**/*.jsonl`, skipping the probe folder's project directory (FR-28).
+- SPEC §8.3.1: project directories encode every non-alphanumeric character as `-`, not only `/`.

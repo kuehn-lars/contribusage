@@ -522,7 +522,7 @@ Claude Code runs a user configured `statusLine` command and passes session JSON 
 
 #### 8.3.1 Location
 
-`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with `/` replaced by `-` (verify in R-3).
+`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with every character outside `[a-zA-Z0-9]` replaced by `-` (observed for `/` and spaces; confirm the rest in R-3).
 
 #### 8.3.2 Fields used
 
@@ -1462,7 +1462,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [x] **T-4.1** `TranscriptLine` lenient decoder. *(FR-23, 8.3.2)* Depends: R-3 (field paths checked against real files; the ccusage comparison stays in T-4.7).
 - [x] **T-4.2** `TranscriptAggregator`: de-duplication, day buckets, per model totals. *(FR-24, FR-25, 8.3.3)*
-- [ ] **T-4.3** Generic `IncrementalJSONLReader` in the core plus Claude Code root discovery: incremental reading, identity and truncation handling, probe folder exclusion. *(FR-22, FR-26, FR-28, 8.3.5)*
+- [x] **T-4.3** Generic `IncrementalJSONLReader` in the core plus Claude Code root discovery: incremental reading, identity and truncation handling, probe folder exclusion. *(FR-22, FR-26, FR-28, 8.3.5)*
 - [ ] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [ ] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [ ] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
