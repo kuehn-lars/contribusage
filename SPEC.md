@@ -1463,7 +1463,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.1** `TranscriptLine` lenient decoder. *(FR-23, 8.3.2)* Depends: R-3 (field paths checked against real files; the ccusage comparison stays in T-4.7).
 - [x] **T-4.2** `TranscriptAggregator`: de-duplication, day buckets, per model totals. *(FR-24, FR-25, 8.3.3)*
 - [x] **T-4.3** Generic `IncrementalJSONLReader` in the core plus Claude Code root discovery: incremental reading, identity and truncation handling, probe folder exclusion. *(FR-22, FR-26, FR-28, 8.3.5)*
-- [ ] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
+- [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [ ] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [ ] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
 - [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set on an M1. *(8.3.6, NFR-7)*

@@ -64,17 +64,13 @@ private final class Log: Sendable {
 }
 
 private func coordinator(
-    _ providers: [any UsageProvider], enabled: Set<ProviderID>? = nil, paths: AppPaths = temporaryPaths(),
+    _ providers: [any UsageProvider], enabled: Set<ProviderID>? = nil, paths: AppPaths = .temporary(),
     time: FakeTimeSource = FakeTimeSource(now: start), log: Log, github: RefreshCoordinator<Int>.Job<Int>? = nil
 ) -> RefreshCoordinator<Int> {
     RefreshCoordinator(
         registry: ProviderRegistry(
             providers: providers, enabledIDs: enabled ?? Set(providers.map(\.descriptor.id)), time: time),
         paths: paths, time: time, github: github, onUpdate: { log.record($0, $1) })
-}
-
-private func temporaryPaths() -> AppPaths {
-    AppPaths(root: FileManager.default.temporaryDirectory.appending(path: "contribusage-\(UUID())/root/"))
 }
 
 /// NFR-18, SPEC §12 rule 5: two overlapping passes still run one fetch at a time, in registry order.
@@ -110,7 +106,7 @@ private func temporaryPaths() -> AppPaths {
 
 /// FR-10: the last success survives a restart, shows at once as `cache` and keeps its schedule.
 @Test func aSuccessIsPersistedAndShownOnLaunch() async {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let time = FakeTimeSource(now: start)
     let log = Log()
     let first = coordinator([PolledProvider(id: a) { try await log.fetch($0) }], paths: paths, time: time, log: log)
@@ -299,7 +295,7 @@ private final class GitHubLog: Sendable {
 
 /// ADR-018: GitHub runs in the same passes, persists next to the limits and shows on launch as `cache`.
 @Test func gitHubRunsInThePassesAndIsRestored() async {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let time = FakeTimeSource(now: start)
     let github = GitHubLog()
     let first = coordinator(
@@ -331,7 +327,7 @@ private final class GitHubLog: Sendable {
 /// SPEC §12, §8.4.3: no token and 401 stop automatic runs, offline included; Retry and a token change run it again.
 @Test(arguments: [Result<Int, SourceError>.failure(.tokenMissing), .failure(.unauthorized)])
 func aMissingOrRejectedTokenWaitsForTheUser(answer: Result<Int, SourceError>) async {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let time = FakeTimeSource(now: start)
     let github = GitHubLog()
     github.answer(answer)
@@ -362,7 +358,7 @@ func aMissingOrRejectedTokenWaitsForTheUser(answer: Result<Int, SourceError>) as
 
 /// A removed token drops the old account's data from memory and from `state.json`.
 @Test func removingTheTokenForgetsTheSnapshot() async {
-    let paths = temporaryPaths()
+    let paths = AppPaths.temporary()
     let github = GitHubLog()
     let first = coordinator([], paths: paths, log: Log(), github: github.job)
     _ = await first.runDue()
