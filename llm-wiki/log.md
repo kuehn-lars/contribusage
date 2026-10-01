@@ -184,3 +184,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - Core `HistoryStore` keeps a provider's frozen days in `providers/<id>/history.json`: a day freezes once it ended more than 48 h ago, is never recomputed, and is kept 365 days (FR-29, SPEC §8.3.4).
 - `merge(_:now:calendar:)` freezes, prunes, writes only on change and returns frozen days plus unfrozen live days younger than 48 h, each day once; an unreadable file throws and stays on disk.
 - Test support: `AppPaths.temporary()` replaces three private copies of the temporary root helper.
+
+## [2026-10-02] feat | Live file events with FSEvents (T-4.5)
+- Core `FSEventsFileEvents`: one FSEvents stream per consumer, file level events, the debounce as latency, utility queue (FR-27).
+- Batches report files only, by real path; a root created later is picked up; dropped events are left to the activity source's rescan.; a stream that cannot start finishes.
