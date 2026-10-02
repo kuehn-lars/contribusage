@@ -23,7 +23,7 @@ struct ProviderGroup: View {
             if let activity = group.activity {
                 SectionStateView(
                     state: activity, displayName: descriptor.displayName, placeholder: .placeholder(descriptor.id),
-                    content: ActivitySection.init)
+                    content: { ActivitySection(report: $0, categories: descriptor.tokenCategories) })
             }
             if descriptor.capabilities.contains(.insights), let insights = group.limits?.snapshot?.value.insights {
                 InsightsSection(insights: insights)
@@ -119,30 +119,55 @@ struct InsightsSection: View {
     }
 }
 
+/// US-5: today's numbers, then total tokens of the last 7 days; categories the provider does not report are hidden
+/// (SPEC §10.4).
 struct ActivitySection: View {
     let report: ActivityReport
+    let categories: Set<TokenCategory>
+    @Environment(\.now) private var now
 
     var body: some View {
-        let lastWeek = report.days.suffix(7)
+        let calendar = Calendar.current
+        let byDay = Dictionary(report.days.map { ($0.day, $0) }, uniquingKeysWith: { $1 })
+        // Oldest first, today last; days without activity count as 0.
+        let week = (0..<7).reversed().map { calendar.date(byAdding: .day, value: -$0, to: now)! }
+        let tokens = week.map { byDay[DayKey($0, calendar: calendar)]?.tokens.total ?? 0 }
+        let todayKey = DayKey(now, calendar: calendar)
+        let today =
+            byDay[todayKey] ?? ActivityDay(day: todayKey, requests: 0, sessions: 0, tokens: TokenCounts(), byModel: [:])
         VStack(alignment: .leading, spacing: 4) {
             Text("On this Mac").font(.subheadline).foregroundStyle(.secondary)
-            // ponytail: the newest day stands in for today; the activity task (T-4.x) matches the real date.
-            if let today = lastWeek.last {
-                Text(
-                    "Today: \(today.requests) requests · \(today.sessions) sessions · \(today.tokens.total.formatted(.number.notation(.compactName)))"
-                )
-            }
+            Text(
+                "Today: \(today.requests) requests · \(today.sessions) sessions · \(compact(today.tokens.total))"
+            )
+            let shown: [(category: TokenCategory, label: String, count: KeyPath<TokenCounts, Int>)] = [
+                (.input, "Input", \.input), (.output, "Output", \.output), (.cacheRead, "Cache read", \.cacheRead),
+                (.cacheWrite, "Cache write", \.cacheWrite),
+            ]
+            Text(
+                shown.filter { categories.contains($0.category) }
+                    .map { "\($0.label) \(compact(today.tokens[keyPath: $0.count]))" }.joined(separator: " · ")
+            )
+            .font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .bottom) {
-                Chart(Array(lastWeek), id: \.day) { day in
-                    BarMark(x: .value("Day", day.day.rawValue), y: .value("Tokens", day.tokens.total))
+                Chart(Array(zip(week, tokens)), id: \.0) { day, total in
+                    BarMark(x: .value("Day", day, unit: .day), y: .value("Tokens", total))
                 }
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
                 .frame(height: 32)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Tokens, last 7 days")
+                .accessibilityValue(
+                    zip(week, tokens).map { "\($0.formatted(.dateTime.weekday(.wide))): \(compact($1))" }
+                        .joined(separator: ", "))
                 Text("last 7 days").font(.caption).foregroundStyle(.secondary)
             }
         }
     }
+
+    /// SPEC §11.5: "4.2M", "812K".
+    private func compact(_ tokens: Int) -> String { tokens.formatted(.number.notation(.compactName)) }
 }
 
 extension LimitsReport {

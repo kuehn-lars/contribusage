@@ -21,7 +21,7 @@ FR-38 showed the `/usage` "What's contributing" block verbatim in a disclosure g
 | Neutral `Insights` type in the core, filled by the provider's parser | Testable parse, any provider can supply it, the view lays out rows | `state.json` schema bump; the parse can drift with the CLI |
 
 ## Decision
-`LimitsReport.insights` is an `Insights` value: an optional note and periods, each with a summary, shares and ranked lists (SPEC §10.3). `UsageParser` fills it by P-11; a line that fits no rule is kept as a share without a percent, so nothing is dropped, and a block without a period yields no `Insights`, so every value has at least one period and the view needs no guard. The popover shows one period at a time behind a segmented picker (selected by label, so the choice survives a refresh), the shares, the top three of each ranking, and the note as the tooltip of the "Insights" title.
+`LimitsReport.insights` is an `Insights` value: an optional note and periods, each with a summary, shares and ranked lists (SPEC §10.3). `UsageParser` fills it by P-11; a line that fits no rule is kept as a share without a percent, so nothing is dropped, and a block without a period yields no `Insights`, so every value has at least one period and the view needs no guard. The popover shows one period at a time behind a segmented picker (selected by label, so the choice survives a refresh), the shares, the top three of each ranking, and the note as the tooltip of the "Insights" title (`InsightsSection` in `App/Popover/ProviderGroup.swift`).
 
 ## Consequences
 - `state.json` moves to schema version 2; an older cache is discarded once, as SPEC §10.7 prescribes for unknown versions.

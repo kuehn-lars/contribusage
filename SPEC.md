@@ -553,7 +553,7 @@ An illustrative line is in [Appendix E](#appendix-e-illustrative-transcript-line
 
 Claude Code removes old transcripts after a retention period (setting `cleanupPeriodDays`, default believed to be 30 days; verify in R-3). The provider therefore keeps two layers:
 
-1. **Live index** (in memory, persisted for fast startup): unique keys and their usage for all entries in files that currently exist. Recent days are computed from it.
+1. **Live index** (in memory, rebuilt from the transcripts at launch, [ADR-024](llm-wiki/decisions/0024-live-index-in-memory.md)): unique keys and their usage for all entries in files that currently exist. Recent days are computed from it.
 2. **History store** (persisted): one aggregate per day. A day is **frozen** into the history store once it is more than 48 h in the past. Frozen days are never recomputed from files, so deleted transcripts do not erase history. Keep 365 days.
 
 Display rule: days younger than 48 h come from the live index, older days from the history store.
@@ -960,7 +960,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 | File | Content | Loss tolerable? |
 |---|---|---|
 | `state.json` | `schemaVersion`, last limits snapshot per provider, last GitHub snapshot, notification keys | Yes (cache) |
-| `providers/claude-code/live-index.json` | Per file read state and unique usage entries of existing transcripts | Yes (rebuilt by rescan) |
+| `providers/claude-code/live-index.json` | Reserved for the per file read state and unique usage entries of existing transcripts; not written while the live index stays in memory (ADR-024, T-4.7 decides) | Yes (rebuilt by rescan) |
 | `providers/claude-code/history.json` | Frozen daily aggregates, 365 days | **No**: back up to `history.json.bak` before migrations |
 | `providers/claude-code/statusline-limits.json` | Written by the optional bridge script | Yes |
 | `providers/claude-code/probe/` | Empty working directory for probes | Yes |
@@ -1380,7 +1380,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - `fetch()` honours cancellation within 2 s (fake process runner that never finishes).
 - Failures surface as `SourceError`, never as crashes or untyped errors.
 - Cancelling the consumer of `reports()` releases all file watching (fake `FileEvents` reports zero active streams).
-- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots (fake file system records accesses; the seam and its check come with the first provider task that reads files).
+- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots (fake file system records accesses; the seam and its check come with T-4.7, [ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
 
 `FakeProvider` intentionally differs from Claude Code: only one window of kind `weekly`, limits delivered only via `pushedUpdates()`, token categories `input` and `output` only.
 
@@ -1465,8 +1465,8 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.3** Generic `IncrementalJSONLReader` in the core plus Claude Code root discovery: incremental reading, identity and truncation handling, probe folder exclusion. *(FR-22, FR-26, FR-28, 8.3.5)*
 - [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [x] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
-- [ ] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
-- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set on an M1. *(8.3.6, NFR-7)*
+- [x] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
+- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set on an M1; persist the live index only if the launch scan misses NFR-7 (ADR-024); the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.6, NFR-7, 16.4)*
 - [ ] **M3 check:** US-5 acceptance holds.
 
 ### 17.5 Phase 5: v1.0 (M4)

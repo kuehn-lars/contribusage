@@ -2,12 +2,14 @@ import Foundation
 
 /// Where Claude Code keeps its transcripts (SPEC §8.3.1, FR-22) and which of them count (FR-28).
 public enum TranscriptFiles {
-    /// FR-22 roots that exist, in order, without duplicates. `configDir` is `CLAUDE_CONFIG_DIR` from the login shell.
+    /// FR-22 roots in order, without duplicates, whether they exist or not: a root that appears later is watched
+    /// already (SPEC §13), and `files(in:excludingProjectOf:)` finds nothing in a missing one. `configDir` is
+    /// `CLAUDE_CONFIG_DIR` from the login shell.
     public static func roots(home: URL, configDir: URL?) -> [URL] {
         var roots: [URL] = []
         for base in [configDir, home.appending(path: ".claude"), home.appending(path: ".config/claude")] {
             guard let root = base?.appending(path: "projects", directoryHint: .isDirectory).standardizedFileURL,
-                !roots.contains(root), (try? root.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+                !roots.contains(root)
             else { continue }
             roots.append(root)
         }

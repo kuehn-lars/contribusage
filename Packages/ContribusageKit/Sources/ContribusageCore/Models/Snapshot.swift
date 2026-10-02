@@ -27,6 +27,8 @@ public struct Origin: RawRepresentable, Hashable, Sendable, Codable {
     public static let cache = Origin(rawValue: "cache")
     /// A limits source's `fetch()`, run by `RefreshCoordinator`.
     public static let poll = Origin(rawValue: "poll")
+    /// An activity source's `reports()`.
+    public static let activity = Origin(rawValue: "activity")
     public static let github = Origin(rawValue: "github")
 }
 
