@@ -24,4 +24,5 @@ The live index lives in memory only (`TranscriptActivity`, [[modules/claude-code
 
 ## Consequences
 - The history store ([[decisions/0005-json-file-persistence]]) is unaffected: frozen days persist as before, so a deleted transcript still keeps its history.
-- T-4.7 decides: if the launch scan of the 500 MB set misses NFR-7, persist the index then.
+- T-4.7 measured the launch scan of a generated 520 MB set at 3.1 to 3.9 s in a release build on an M3, well inside NFR-7 by the rule of [[decisions/0026-nfr-7-on-an-m3]] ([[research/nfr-7-transcript-scan]]). The index stays in memory, and `live-index.json` is gone from SPEC §10.7.
+- Revisit if a measurement on real data, or a much larger transcript tree, gets close to the budget.
