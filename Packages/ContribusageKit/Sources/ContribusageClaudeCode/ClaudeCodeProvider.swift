@@ -15,6 +15,8 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     private let override: @Sendable () -> URL?
     private var located: (claude: ClaudeLocator.Found, override: URL?)?
     private var running: Task<LimitsReport, any Error>?
+    /// What the last probe printed, for diagnostics; `nil` until a probe finishes.
+    private var lastProbe: ProcessResult?
 
     /// `override` reads the `provider.claude-code.pathOverride` setting on every resolution. `calendar` defines the
     /// local day of activity.
@@ -69,13 +71,34 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
         return claude
     }
 
+    /// FR-36: the `claude` the probe runs, located as the Providers tab does if no probe ran yet, and the last probe.
+    public func diagnostics() async -> [String] {
+        var lines =
+            if let claude = await located() {
+                [
+                    "claude: \(claude.executable.path(percentEncoded: false))", "Version: \(claude.version)",
+                    "Type: \(claude.kind.diagnostics)",
+                ]
+            } else {
+                ["claude: not found"]
+            }
+        if let lastProbe {
+            lines += ["Last probe exit code: \(lastProbe.exitCode)", "Last /usage output:\n\(lastProbe.stdout)"]
+        } else {
+            lines.append("Last probe: none since launch")
+        }
+        return lines
+    }
+
     private func probe() async throws -> LimitsReport {
         do {
             try JSONStore.createFolder(probeFolder)
         } catch {
             throw SourceError.io(error.localizedDescription)
         }
-        return try report(from: await run())
+        let result = try await run()
+        lastProbe = result
+        return try report(from: result)
     }
 
     /// A launch failure means the path stopped working, for example after an update moved it: locate once more (FR-6).

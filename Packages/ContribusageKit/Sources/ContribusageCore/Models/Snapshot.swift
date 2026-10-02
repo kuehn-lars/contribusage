@@ -46,6 +46,18 @@ public enum SourceState<Value: Sendable & Codable>: Sendable {
         case .loaded(let snapshot): snapshot
         }
     }
+
+    /// One line for "Copy diagnostics" (FR-36): the case, the error in full and when the shown values were fetched.
+    public var diagnostics: String {
+        let state =
+            switch self {
+            case .notConfigured(let reason): "not configured: \(reason)"
+            case .loading: "loading"
+            case .loaded: "loaded"
+            case .failed(let error, _): "failed: \(error)"
+            }
+        return snapshot.map { "\(state), fetched \($0.fetchedAt.formatted(.iso8601))" } ?? state
+    }
 }
 
 public enum NotConfiguredReason: Sendable, Equatable {

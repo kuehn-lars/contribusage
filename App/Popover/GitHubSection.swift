@@ -24,10 +24,14 @@ private struct GitHubContent: View {
 
     var body: some View {
         Heatmap(weeks: report.calendar.weeks.suffix(26))  // FR-20
-        Text(
-            "Today \(report.stats.today) · Streak \(report.stats.currentStreak) days · Year \(report.calendar.totalContributions.formatted())"
-        )
-        .font(.caption)
+        Text(report.statsText).font(.caption)
+    }
+}
+
+extension GitHubReport {
+    /// Shared with Copy Statistics (FR-42).
+    var statsText: String {
+        "Today \(stats.today) · Streak \(stats.currentStreak) days · Year \(calendar.totalContributions.formatted())"
     }
 }
 

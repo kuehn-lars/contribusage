@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-02
+updated: 2026-10-03
 aliases: [ADR-022]
 tags: [core, github, scheduling]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, App/AppState.swift]

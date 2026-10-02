@@ -24,6 +24,16 @@ public struct ClaudeLocator: Sendable {
         case script
         case unknown
 
+        /// FR-36's wording.
+        var diagnostics: String {
+            switch self {
+            case .machOArm64: "Mach-O arm64"
+            case .machOIntel: "Mach-O x86_64, needs Rosetta"
+            case .script: "script"
+            case .unknown: "unknown"
+            }
+        }
+
         /// Reads the file header; symlinks are followed.
         public init(at url: URL) {
             let head = [UInt8](((try? Data(contentsOf: url, options: .alwaysMapped)) ?? Data()).prefix(512))
