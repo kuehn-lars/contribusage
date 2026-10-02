@@ -208,3 +208,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-02] fix | T-4.7 review fixes
 - Interning survives incremental appends; the reader returns a named `Outcome`; `JSONStore.read` takes its `FileReading` without a default.
 - The read check fails when nothing went through the seam and resolves symlinks; the perf test asserts ADR-026's half budget and fails if it cannot measure memory. T-4.7 ticked.
+
+## [2026-10-02] test | M3 check
+- US-5 holds in the running app, checked by hand; SPEC §17.4's M3 check is ticked. Phase 4 is complete.
