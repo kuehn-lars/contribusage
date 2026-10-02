@@ -25,6 +25,7 @@ final class Machine: Sendable {
     let home = FileManager.default.temporaryDirectory.appending(path: "home-\(UUID())", directoryHint: .isDirectory)
     let paths = AppPaths.temporary()
     let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
     let time = FakeTimeSource(now: try! Date("2026-09-28T12:00:00Z", strategy: .iso8601))
 
     deinit {
@@ -48,8 +49,8 @@ final class Machine: Sendable {
             return ProcessResult(exitCode: 0, stdout: "profile noise\n\(configDir)\n", stderr: "")
         }
         return ClaudeCodeProvider(
-            runner: shell, fileEvents: fileEvents, paths: paths, home: home, shell: URL(filePath: "/bin/zsh"),
-            time: time, calendar: utc
+            runner: shell, fileEvents: fileEvents, fileReader: fileReader, paths: paths, home: home,
+            shell: URL(filePath: "/bin/zsh"), time: time, calendar: utc
         ).activity!
     }
 }
@@ -91,6 +92,22 @@ func next(_ reports: AsyncStream<ActivityReport>, within timeout: Duration = .se
 
 /// FR-23, FR-26, SPEC §8.3.5: a change brings appended lines, a replaced file counts anew, a deleted one drops out,
 /// and lines that fail to decode are counted.
+/// SPEC §16.4: the roots, the transcripts and the history are all read through `FileReading`, so the conformance suite
+/// sees every read.
+@Test func readsThroughTheFileReader() async throws {
+    let machine = Machine()
+    try machine.write(".claude/projects/-work/s1.jsonl", entry("m1"))
+
+    _ = try #require(await next(machine.activity().reports()))
+
+    let reads = Set(machine.fileReader.reads.map(\.standardizedFileURL.path))
+    let home = machine.home.standardizedFileURL.path
+    #expect(reads.contains("\(home)/.claude/projects"))
+    #expect(reads.contains("\(home)/.config/claude/projects"))
+    #expect(reads.contains("\(home)/.claude/projects/-work/s1.jsonl"))
+    #expect(reads.contains(machine.paths.providerFolder(.claudeCode).appending(path: "history.json").path))
+}
+
 @Test func followsChanges() async throws {
     let machine = Machine()
     try machine.write(".claude/projects/-work/s1.jsonl", entry("m1") + "not json\n")

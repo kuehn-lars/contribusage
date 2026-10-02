@@ -8,6 +8,8 @@ private let log = Logger(subsystem: "contribusage", category: "activity")
 /// de-duplicated across files (FR-24) and merged with the frozen history (FR-29).
 actor TranscriptActivity: ActivitySource {
     private let fileEvents: any FileEvents
+    /// Every read goes through it, so the conformance suite sees them (SPEC §16.4).
+    private let fileReader: any FileReading
     private let runner: any ProcessRunning
     private let home: URL
     private let shell: URL
@@ -18,7 +20,7 @@ actor TranscriptActivity: ActivitySource {
 
     /// Resolved on the first subscription; the login shell's `CLAUDE_CONFIG_DIR` does not change while the app runs.
     private var roots: [URL]?
-    private var reader = IncrementalJSONLReader()
+    private var reader: IncrementalJSONLReader
     /// The live index (SPEC §8.3.4): per transcript its usage lines, one per key, and how many it could not decode. The
     /// aggregate is rebuilt from all of them, because a key repeats across files (resumed sessions) and a file can
     /// shrink or vanish.
@@ -26,7 +28,7 @@ actor TranscriptActivity: ActivitySource {
     /// `nil` when `history.json` is unreadable: it stays on disk untouched and the report shows live days only.
     private lazy var history: HistoryStore? = {
         do {
-            return try HistoryStore(provider: .claudeCode, paths: paths)
+            return try HistoryStore(provider: .claudeCode, paths: paths, fileReader: fileReader)
         } catch {
             log.error("history unreadable, left untouched: \(error.localizedDescription, privacy: .public)")
             return nil
@@ -68,10 +70,12 @@ actor TranscriptActivity: ActivitySource {
     }
 
     init(
-        fileEvents: any FileEvents, runner: any ProcessRunning, home: URL, shell: URL, probeFolder: URL,
-        paths: AppPaths, time: any TimeSource, calendar: Calendar
+        fileEvents: any FileEvents, fileReader: any FileReading, runner: any ProcessRunning, home: URL, shell: URL,
+        probeFolder: URL, paths: AppPaths, time: any TimeSource, calendar: Calendar
     ) {
         self.fileEvents = fileEvents
+        self.fileReader = fileReader
+        reader = IncrementalJSONLReader(fileReader: fileReader)
         self.runner = runner
         self.home = home
         self.shell = shell
@@ -139,7 +143,7 @@ actor TranscriptActivity: ActivitySource {
     /// Brings `files` up to date: new lines appended, rescanned files from scratch, vanished files dropped.
     // ponytail: opens every transcript on each change; read only the changed ones if T-4.7 measures it too slow.
     private func read(_ roots: [URL]) {
-        let listed = TranscriptFiles.files(in: roots, excludingProjectOf: probeFolder)
+        let listed = TranscriptFiles.files(in: roots, excludingProjectOf: probeFolder, fileReader: fileReader)
         for url in Set(listed).union(files.keys) {
             do {
                 var appended = Transcript()

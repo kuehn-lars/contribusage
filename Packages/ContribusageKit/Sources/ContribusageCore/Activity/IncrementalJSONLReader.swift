@@ -13,8 +13,9 @@ public struct IncrementalJSONLReader: Sendable {
     }
 
     private var files: [URL: State] = [:]
+    private let fileReader: any FileReading
 
-    public init() {}
+    public init(fileReader: any FileReading) { self.fileReader = fileReader }
 
     /// Calls `body` with each complete line appended since the last read, in order, without its newline; empty lines
     /// are left out. The file is streamed through a fixed buffer and each line is released after `body` returns, so
@@ -26,7 +27,7 @@ public struct IncrementalJSONLReader: Sendable {
     public mutating func read(_ url: URL, lines body: (Data) -> Void) throws -> Bool? {
         let handle: FileHandle
         do {
-            handle = try FileHandle(forReadingFrom: url)
+            handle = try fileReader.handle(forReadingFrom: url)
         } catch CocoaError.fileNoSuchFile {
             files[url] = nil
             return nil

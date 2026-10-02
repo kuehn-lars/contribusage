@@ -60,6 +60,32 @@ public final class FakeSecretStore: SecretStore {
     public func delete(_ key: String) throws { _ = secrets.withLock { $0.removeValue(forKey: key) } }
 }
 
+/// Reads the real (temporary) disk and records every URL it was asked to list or read.
+public final class FakeFileReader: FileReading {
+    private let recorded = OSAllocatedUnfairLock<[URL]>(initialState: [])
+
+    public init() {}
+
+    public var reads: [URL] { recorded.withLock { $0 } }
+
+    public func enumerator(at folder: URL) -> FileManager.DirectoryEnumerator? {
+        record(folder)
+        return LiveFileReader().enumerator(at: folder)
+    }
+
+    public func handle(forReadingFrom file: URL) throws -> FileHandle {
+        record(file)
+        return try LiveFileReader().handle(forReadingFrom: file)
+    }
+
+    public func contents(of file: URL) throws -> Data {
+        record(file)
+        return try LiveFileReader().contents(of: file)
+    }
+
+    private func record(_ url: URL) { recorded.withLock { $0.append(url) } }
+}
+
 /// `send(_:)` delivers a batch to every open stream; `roots` and `debounce` are ignored.
 public final class FakeFileEvents: FileEvents {
     private let continuations = OSAllocatedUnfairLock<[UUID: AsyncStream<Set<URL>>.Continuation]>(initialState: [:])

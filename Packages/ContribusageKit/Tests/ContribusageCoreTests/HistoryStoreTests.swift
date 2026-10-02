@@ -21,7 +21,7 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
 
 /// 09-29 ended 60 h before `now` and freezes; 09-30 ended 36 h before and stays live.
 @Test func freezesDaysMoreThan48HoursPastAndShowsYoungerDaysLive() throws {
-    var store = try HistoryStore(provider: .fake, paths: AppPaths.temporary())
+    var store = try HistoryStore(provider: .fake, paths: AppPaths.temporary(), fileReader: LiveFileReader())
     let live = [day("2026-09-29", requests: 1), day("2026-09-30", requests: 2), day("2026-10-02", requests: 3)]
 
     let shown = try store.merge(live, now: now, calendar: calendar)
@@ -33,10 +33,10 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
 /// A deleted transcript or a later recount does not change a frozen day, also after a restart.
 @Test func frozenDaysAreNeverRecomputedAndSurviveRestart() throws {
     let paths = AppPaths.temporary()
-    var store = try HistoryStore(provider: .fake, paths: paths)
+    var store = try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     _ = try store.merge([day("2026-09-20", requests: 10)], now: now, calendar: calendar)
 
-    var reloaded = try HistoryStore(provider: .fake, paths: paths)
+    var reloaded = try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     let shown = try reloaded.merge(
         [day("2026-09-20", requests: 3), day("2026-10-01", requests: 1)], now: now, calendar: calendar)
     #expect(shown == [day("2026-09-20", requests: 10), day("2026-10-01", requests: 1)])
@@ -45,7 +45,7 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
 
 /// A clock or time zone change can move a frozen day back inside the last 48 h: it still shows once, frozen.
 @Test func aFrozenDayShowsOnceWhenTheCutoffMovesBack() throws {
-    var store = try HistoryStore(provider: .fake, paths: AppPaths.temporary())
+    var store = try HistoryStore(provider: .fake, paths: AppPaths.temporary(), fileReader: LiveFileReader())
     _ = try store.merge([day("2026-09-29", requests: 1)], now: now, calendar: calendar)
 
     let shown = try store.merge(
@@ -58,7 +58,7 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
 /// 365 days: today and the 364 before it. Older days are neither frozen nor kept.
 @Test func keeps365Days() throws {
     let paths = AppPaths.temporary()
-    var store = try HistoryStore(provider: .fake, paths: paths)
+    var store = try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     let earlier = now.addingTimeInterval(-2 * 86_400)
     let frozen = try store.merge(
         [day("2025-09-30", requests: 1), day("2025-10-02", requests: 2), day("2025-10-03", requests: 3)],
@@ -69,17 +69,17 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
 
     #expect(shown == [day("2025-10-03", requests: 3)])
     // At `earlier` 2025-10-02 is still within 365 days, so only the persisted prune removes it.
-    var reloaded = try HistoryStore(provider: .fake, paths: paths)
+    var reloaded = try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     #expect(try reloaded.merge([], now: earlier, calendar: calendar) == [day("2025-10-03", requests: 3)])
 }
 
 /// Keyed by provider: each history lives in its own `providers/<id>/history.json`.
 @Test func historiesAreKeptPerProvider() throws {
     let paths = AppPaths.temporary()
-    var fake = try HistoryStore(provider: .fake, paths: paths)
+    var fake = try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     _ = try fake.merge([day("2026-09-20", requests: 1)], now: now, calendar: calendar)
 
-    var other = try HistoryStore(provider: ProviderID(rawValue: "other"), paths: paths)
+    var other = try HistoryStore(provider: ProviderID(rawValue: "other"), paths: paths, fileReader: LiveFileReader())
     #expect(try other.merge([], now: now, calendar: calendar).isEmpty)
     let file = paths.providerFolder(.fake).appending(path: "history.json").path(percentEncoded: false)
     #expect(FileManager.default.fileExists(atPath: file))
@@ -94,7 +94,7 @@ private func day(_ raw: String, requests: Int) -> ActivityDay {
     try newer.write(to: file)
 
     #expect(throws: PersistenceError.unsupportedSchemaVersion(99)) {
-        try HistoryStore(provider: .fake, paths: paths)
+        try HistoryStore(provider: .fake, paths: paths, fileReader: LiveFileReader())
     }
     #expect(try Data(contentsOf: file) == newer)
 }

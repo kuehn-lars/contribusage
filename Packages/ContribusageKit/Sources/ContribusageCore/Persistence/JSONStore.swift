@@ -13,11 +13,13 @@ public enum PersistenceError: Error, Equatable {
 
 /// Versioned, atomic JSON files (SPEC §10.7, ADR-005).
 public enum JSONStore {
-    /// `nil` when the file does not exist.
-    public static func read<Value: PersistedFile>(_: Value.Type, from file: URL) throws -> Value? {
+    /// `nil` when the file does not exist. A provider reads through its own `fileReader` (SPEC §16.4).
+    public static func read<Value: PersistedFile>(
+        _: Value.Type, from file: URL, using fileReader: any FileReading = LiveFileReader()
+    ) throws -> Value? {
         let data: Data
         do {
-            data = try Data(contentsOf: file)
+            data = try fileReader.contents(of: file)
         } catch CocoaError.fileReadNoSuchFile {
             return nil
         }

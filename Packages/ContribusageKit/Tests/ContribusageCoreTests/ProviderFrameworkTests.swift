@@ -13,7 +13,7 @@ import Testing
             throw SourceError.timedOut
         }),
         failing: FakeProvider(fetch: { throw SourceError.io("disk gone") }),
-        fileEvents: fileEvents
+        fileEvents: fileEvents, fileReader: FakeFileReader()
     )
 }
 
@@ -21,7 +21,8 @@ import Testing
 @Test func activityOnlyProviderPassesTheConformanceSuite() async {
     let fileEvents = FakeFileEvents()
     await ProviderConformance.check(
-        ActivityOnlyProvider(base: FakeProvider(fileEvents: fileEvents)), fileEvents: fileEvents)
+        ActivityOnlyProvider(base: FakeProvider(fileEvents: fileEvents)), fileEvents: fileEvents,
+        fileReader: FakeFileReader())
 }
 
 /// The suite is only worth running if it can fail.
@@ -31,6 +32,22 @@ import Testing
             FakeProvider(id: ProviderID(rawValue: "Not Valid"), fetch: { throw CancellationError() }),
             failing: FakeProvider(fetch: { throw URLError(.notConnectedToInternet) })
         )
+    }
+}
+
+/// The read check can fail on its own: a provider that is fine but for one read outside its roots.
+@Test func conformanceSuiteRejectsAReadOutsideTheRoots() async {
+    let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
+    await withKnownIssue {
+        await ProviderConformance.check(
+            ActivityOnlyProvider(
+                base: FakeProvider(
+                    fileEvents: fileEvents, fileReader: fileReader, reads: [URL(filePath: "/tmp/fake-tool-other/a")])),
+            fileEvents: fileEvents, fileReader: fileReader, readRoots: [URL(filePath: "/tmp/fake-tool")]
+        )
+    } matching: { issue in
+        issue.comments.contains { $0.rawValue.contains("outside its roots") }
     }
 }
 

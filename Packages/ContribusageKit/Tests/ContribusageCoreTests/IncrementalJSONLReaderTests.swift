@@ -27,7 +27,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     let url = temporaryFile()
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("a\n\nb\n{\"c\":".utf8).write(to: url)
-    var reader = IncrementalJSONLReader()
+    var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
 
     let first = try read(&reader, url)
     #expect(first?.lines == ["a", "b"] && first?.isRescan == false)
@@ -47,7 +47,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     let url = temporaryFile()
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("a\nb\n".utf8).write(to: url)
-    var reader = IncrementalJSONLReader()
+    var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
     _ = try read(&reader, url)
 
     try Data("c\n".utf8).write(to: url)
@@ -60,7 +60,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     let url = temporaryFile()
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("a\n".utf8).write(to: url)
-    var reader = IncrementalJSONLReader()
+    var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
     _ = try read(&reader, url)
 
     try Data("x\ny\n".utf8).write(to: url, options: .atomic)
@@ -73,7 +73,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     let url = temporaryFile()
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("a\n".utf8).write(to: url)
-    var reader = IncrementalJSONLReader()
+    var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
     _ = try read(&reader, url)
 
     try FileManager.default.removeItem(at: url)
@@ -92,7 +92,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
         String(repeating: Character(UnicodeScalar(UInt8(97 + index))), count: count)
     }
     try Data((lines.joined(separator: "\n") + "\n" + String(repeating: "z", count: 100_000)).utf8).write(to: url)
-    var reader = IncrementalJSONLReader()
+    var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
 
     #expect(try read(&reader, url)?.lines == lines)
     try append("z\n", to: url)
@@ -108,7 +108,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     let before = mallocInUse()
 
     for _ in 0..<16 {
-        var reader = IncrementalJSONLReader()
+        var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
         _ = try read(&reader, url)
     }
     // Reading through an autoreleased `Data` per file kept all 16 reads of 8 MB alive: 128 MB.

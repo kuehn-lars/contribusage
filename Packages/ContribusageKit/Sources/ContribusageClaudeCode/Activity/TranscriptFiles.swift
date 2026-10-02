@@ -1,3 +1,4 @@
+import ContribusageCore
 import Foundation
 
 /// Where Claude Code keeps its transcripts (SPEC §8.3.1, FR-22) and which of them count (FR-28).
@@ -18,7 +19,9 @@ public enum TranscriptFiles {
 
     /// `**/*.jsonl` under `roots`, without the project directory of `probeFolder`: probes should not persist sessions,
     /// but if one does, it must not count as activity (FR-28).
-    public static func files(in roots: [URL], excludingProjectOf probeFolder: URL) -> [URL] {
+    public static func files(in roots: [URL], excludingProjectOf probeFolder: URL, fileReader: any FileReading)
+        -> [URL]
+    {
         // Claude Code names a project directory after the working directory with every character outside
         // `[a-zA-Z0-9]` replaced by `-` (R-3: `/` and spaces both become `-`).
         // A directory URL's path ends in "/", which Claude Code's working directory does not.
@@ -27,9 +30,7 @@ public enum TranscriptFiles {
         let probeProject = probePath.replacing(/[^a-zA-Z0-9]/, with: "-")
         var files: [URL] = []
         for root in roots {
-            guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
-                continue
-            }
+            guard let enumerator = fileReader.enumerator(at: root) else { continue }
             for case let url as URL in enumerator {
                 if enumerator.level == 1, url.lastPathComponent == probeProject {
                     enumerator.skipDescendants()

@@ -10,7 +10,8 @@ import Testing
     let projects = machine.home.appending(path: ".claude/projects", directoryHint: .isDirectory)
     let tree = try TranscriptTree.generate(in: projects, bytes: 300_000, end: machine.time.now)
 
-    let files = TranscriptFiles.files(in: [projects], excludingProjectOf: machine.paths.root)
+    let files = TranscriptFiles.files(
+        in: [projects], excludingProjectOf: machine.paths.root, fileReader: LiveFileReader())
     #expect(files.count == tree.files)
     #expect(files.contains { $0.path.contains("/subagents/") })
     #expect(tree.bytes >= 300_000)
@@ -35,7 +36,9 @@ func scansFiveHundredMegabytesWithinNFR7() async throws {
     let machine = Machine()
     let projects = machine.home.appending(path: ".claude/projects", directoryHint: .isDirectory)
     let tree = try TranscriptTree.generate(in: projects, bytes: 500_000_000, end: machine.time.now)
-    let file = try #require(TranscriptFiles.files(in: [projects], excludingProjectOf: machine.paths.root).first)
+    let file = try #require(
+        TranscriptFiles.files(in: [projects], excludingProjectOf: machine.paths.root, fileReader: LiveFileReader())
+            .first)
     let clock = ContinuousClock()
     let before = footprint()
 

@@ -59,3 +59,12 @@ public protocol FileEvents: Sendable {
     /// Batches of changed file URLs under `roots`. Cancelling the consumer stops the watching.
     func changes(in roots: [URL], debounce: Duration) -> AsyncStream<Set<URL>>
 }
+
+/// Every file a provider's activity source lists or reads goes through here, so the conformance suite can check that it
+/// stays inside its declared roots (SPEC §16.4).
+public protocol FileReading: Sendable {
+    /// Everything under `folder`, recursively; `nil` when it cannot be listed.
+    func enumerator(at folder: URL) -> FileManager.DirectoryEnumerator?
+    func handle(forReadingFrom file: URL) throws -> FileHandle
+    func contents(of file: URL) throws -> Data
+}
