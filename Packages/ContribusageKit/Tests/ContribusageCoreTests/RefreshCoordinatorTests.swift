@@ -68,12 +68,14 @@ private final class Log: Sendable {
 private func coordinator(
     _ providers: [any UsageProvider], enabled: Set<ProviderID>? = nil, paths: AppPaths = .temporary(),
     time: FakeTimeSource = FakeTimeSource(now: start), log: Log, github: RefreshCoordinator<Int>.Job<Int>? = nil,
-    notifications: RefreshCoordinator<Int>.Notifications? = nil
+    notifications: RefreshCoordinator<Int>.Notifications? = nil,
+    limitsInterval: @escaping @Sendable (ProviderID) -> Duration? = { _ in nil }
 ) -> RefreshCoordinator<Int> {
     RefreshCoordinator(
         registry: ProviderRegistry(
             providers: providers, enabledIDs: enabled ?? Set(providers.map(\.descriptor.id)), time: time),
-        paths: paths, time: time, github: github, notifications: notifications, onUpdate: { log.record($0, $1) })
+        paths: paths, time: time, github: github, notifications: notifications, limitsInterval: limitsInterval,
+        onUpdate: { log.record($0, $1) })
 }
 
 /// NFR-18, SPEC §12 rule 5: two overlapping passes still run one fetch at a time, in registry order.
@@ -156,6 +158,47 @@ private func coordinator(
     await relaunched.restore()
     _ = await relaunched.runDue()
     #expect(sent.withLock { $0 }.count == 1)
+}
+
+/// SPEC §11.6: an interval setting replaces the default interval, clamped to the policy's bounds.
+@Test(arguments: [(Duration.seconds(600), 600.0), (.seconds(60), 300), (.seconds(7200), 3600)])
+func anIntervalSettingReplacesTheDefault(setting: Duration, expected: TimeInterval) async {
+    let coordinator = coordinator(
+        [PolledProvider(id: a) { try await Log().fetch($0) }], log: Log(), limitsInterval: { $0 == a ? setting : nil })
+    #expect(await coordinator.runDue() == start + expected)
+    #expect(await coordinator.runDue() == start + expected)  // nothing was due
+}
+
+@Test func gitHubsIntervalSettingIsClampedToo() async {
+    let github = RefreshCoordinator<Int>.Job(
+        policy: gitHubPolicy, origin: .github, fetch: { 1 }, onUpdate: { _ in }, interval: { .seconds(24 * 3600) })
+    #expect(await coordinator([], log: Log(), github: github).runDue() == start + 6 * 3600)
+}
+
+/// SPEC §11.6 "reset caches": the snapshots go and every source runs again; the notification keys stay (FR-15).
+@Test func resettingTheCachesRefetchesButSendsNothingTwice() async {
+    let paths = AppPaths.temporary()
+    let log = Log()
+    let sent = OSAllocatedUnfairLock(initialState: 0)
+    let notifications = RefreshCoordinator<Int>.Notifications(
+        settings: { NotificationPlanner.Settings(thresholds: [50]) },
+        deliver: { notes in sent.withLock { $0 += notes.count } })
+    let reset = coordinator(
+        [
+            PolledProvider(id: a) {
+                _ = try await log.fetch($0)
+                return report($0, percent: 60)
+            }
+        ], paths: paths,
+        log: log, notifications: notifications)
+    _ = await reset.runDue()
+
+    await reset.resetCaches()
+
+    #expect(log.fetches == [a, a])
+    #expect(sent.withLock { $0 } == 1)
+    let loading = log.updates.filter { if case .loading(nil) = $0.1 { true } else { false } }.map(\.0)
+    #expect(loading == [a, a])  // the first run and the one after the reset
 }
 
 /// SPEC §13: a failure keeps the previous snapshot and backs off.
@@ -376,6 +419,28 @@ func aMissingOrRejectedTokenWaitsForTheUser(answer: Result<Int, SourceError>) as
         return
     }
     #expect(snapshot.value == 2)
+}
+
+/// `start()` again (a provider was enabled) shows cached snapshots only where nothing is shown yet: a rejected token
+/// keeps waiting for the user instead of turning back into its old snapshot.
+@Test func startingAgainKeepsARejectedToken() async {
+    let time = FakeTimeSource(now: start)
+    let github = GitHubLog()
+    let coordinator = coordinator([], time: time, log: Log(), github: github.job)
+    _ = await coordinator.runDue()
+    github.answer(.failure(.unauthorized))
+    time.advance(by: .seconds(60))
+    await coordinator.refreshNow()
+
+    await coordinator.restore()
+
+    guard case .failed(.unauthorized, previous: _?)? = github.last else {
+        Issue.record("token no longer rejected: \(String(describing: github.last))")
+        return
+    }
+    time.advance(by: .seconds(3600))
+    _ = await coordinator.runDue()
+    #expect(github.fetches == 2)
 }
 
 /// A removed token drops the old account's data from memory and from `state.json`.

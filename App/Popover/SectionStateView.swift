@@ -51,28 +51,38 @@ struct NotConfiguredView: View {
             HStack {
                 Text("\(displayName) not found")
                 Spacer()
-                Button("Locate…") {}  // T-5.2
+                SettingsButton(title: "Locate…", tab: .providers)
             }
         case .unsupportedPlan(let note):
             Text(note).foregroundStyle(.secondary)
         case .noLocalData:
             Text("No \(displayName) sessions found on this Mac").foregroundStyle(.secondary)
         case .githubTokenMissing:
-            SettingsButton(title: "Connect GitHub")
+            SettingsButton(title: "Connect GitHub", tab: .github)
         }
     }
 }
 
 struct SettingsButton: View {
     let title: LocalizedStringKey
+    var systemImage: String?
+    let tab: SettingsTab
+    @AppStorage("settingsTab") private var shownTab = SettingsTab.general
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Button(title) {
-            // SPEC §20: an agent app must activate itself, or Settings opens behind other apps.
-            NSApp.activate()
-            openSettings()
+        if let systemImage {
+            Button(title, systemImage: systemImage, action: open)
+        } else {
+            Button(title, action: open)
         }
+    }
+
+    private func open() {
+        shownTab = tab
+        // SPEC §20: an agent app must activate itself, or Settings opens behind other apps.
+        NSApp.activate()
+        openSettings()
     }
 }
 
@@ -91,7 +101,7 @@ struct ErrorLine: View {
             Spacer()
             // A 401 repeats until the token changes (SPEC §12), so it offers the token instead of Retry.
             if case .unauthorized = error {
-                SettingsButton(title: "Change token…")
+                SettingsButton(title: "Change token…", tab: .github)
             } else if let retry {
                 Button("Retry", action: retry)
             }

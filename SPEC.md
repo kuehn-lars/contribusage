@@ -248,7 +248,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | ID | Pri | Requirement |
 |---|---|---|
 | FR-1 | P1 | **Registry.** The app registers providers at launch from a static list (v1: `claude-code`). Each provider supplies a `ProviderDescriptor` ([10.2](#102-provider-types)): ID, display name, SF Symbol, capabilities, token categories and schedule policies. Registration order defines display order. |
-| FR-2 | P1 | **Enablement.** Each provider can be enabled or disabled in Settings. A disabled provider starts no processes, watches no files and schedules nothing. Default on first run: enabled if its detection reports `available`. |
+| FR-2 | P1 | **Enablement.** Each provider can be enabled or disabled in Settings. A disabled provider starts no processes, watches no files and schedules nothing; only the Providers tab, while shown, may detect its availability (ADR-028). Default on first run: enabled if its detection reports `available`. |
 | FR-3 | P1 | **Detection.** Each provider reports its availability: `available(version)`, `notInstalled`, `notSignedIn`, `unsupportedPlan(note)` or `unknown`. Detection must be cheap and is re-run at most once per minute on popover open while not `available`. |
 | FR-4 | P1 | **Popover groups.** The popover shows one group per enabled provider, in registry order, each with its capability sections (limits, activity, insights). With a single provider no provider picker or extra chrome is shown. |
 | FR-5 | P1 | **Window kinds.** Every provider classifies each of its usage windows as `session`, `weekly` or `other`. Menu bar modes and settings use kinds; labels are displayed verbatim. |
@@ -974,7 +974,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`. Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ---
 
@@ -1053,10 +1053,10 @@ The percentage is always shown as text next to the bar. The heatmap uses 5 steps
 
 | Tab | Controls |
 |---|---|
-| General | Menu bar display mode; menu bar provider (hidden while only one provider exists); launch at login; notification thresholds; notify on reset |
-| Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider" |
+| General | Menu bar display mode and menu bar provider (hidden while only one provider exists), both with T-5.10 (ADR-028); launch at login; notification thresholds; notify on reset |
+| Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
 | GitHub | Account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
-| Advanced | Open data folder; reset caches (never history); copy diagnostics; show insights toggle |
+| Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics; show insights toggle |
 
 ### 11.7 Accessibility examples
 
@@ -1479,7 +1479,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 ### 17.5 Phase 5: v1.0 (M4)
 
 - [x] **T-5.1** `NotificationPlanner` plus delivery with `UNUserNotificationCenter`, planned in the coordinator (ADR-027). *(FR-13 to FR-15, US-3)*
-- [ ] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion. *(FR-2, FR-33, US-7, US-12)*
+- [x] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion; the controls of T-5.3, T-5.5, T-5.10 and T-6.2 come with those tasks (ADR-028). *(FR-2, FR-33, US-7, US-12)*
 - [ ] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
 - [ ] **T-5.4** First run onboarding. *(FR-37)*
 - [ ] **T-5.5** Copy diagnostics. *(FR-36, US-10)*
@@ -1487,7 +1487,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)*
 - [ ] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)*
 - [ ] **T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. *(US-11)*
-- [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.2 for the display mode setting.
+- [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
 - [ ] **T-5.11** Heatmap palette (11.4, light and dark), keyboard navigation and VoiceOver. Moved from Phase 3 (split from T-3.5). *(FR-20, NFR-8)*
 - [ ] **M4 check:** manual matrix 16.5 passes.
 

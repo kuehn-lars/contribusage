@@ -6,6 +6,7 @@ import SwiftUI
 struct ProviderGroup: View {
     let group: AppState.ProviderGroupState
     @Environment(AppState.self) private var appState
+    @AppStorage("showInsights") private var showInsights = true
 
     var body: some View {
         let descriptor = group.descriptor
@@ -25,7 +26,9 @@ struct ProviderGroup: View {
                     state: activity, displayName: descriptor.displayName, placeholder: .placeholder(descriptor.id),
                     content: { ActivitySection(report: $0, categories: descriptor.tokenCategories) })
             }
-            if descriptor.capabilities.contains(.insights), let insights = group.limits?.snapshot?.value.insights {
+            if showInsights, descriptor.capabilities.contains(.insights),
+                let insights = group.limits?.snapshot?.value.insights
+            {
                 InsightsSection(insights: insights)
             }
         }

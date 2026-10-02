@@ -36,7 +36,7 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     /// FR-3: only the first call runs processes. Never `notSignedIn`: a logged out CLI prints the same as API key
     /// billing (R-2). Never `unsupportedPlan`: only a probe can tell, and `fetch()` reports it (ADR-017).
     public func detectAvailability() async -> ProviderAvailability {
-        guard let claude = await locate() else { return .notInstalled }
+        guard let claude = await located() else { return .notInstalled }
         return .available(version: claude.version)
     }
 
@@ -60,8 +60,8 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     /// Empty until the status line bridge (FR-39).
     public nonisolated func pushedUpdates() -> AsyncStream<LimitsReport> { AsyncStream { $0.finish() } }
 
-    /// The cached `claude`, located again when the override setting changed.
-    private func locate() async -> ClaudeLocator.Found? {
+    /// The cached `claude` the probe runs, located again when the override setting changed; `nil` when none is found.
+    public func located() async -> ClaudeLocator.Found? {
         let override = override()
         if let located, located.override == override { return located.claude }
         guard let claude = await locator.locate(override: override) else { return nil }
@@ -81,7 +81,7 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     /// A launch failure means the path stopped working, for example after an update moved it: locate once more (FR-6).
     private func run() async throws -> ProcessResult {
         for _ in 1...2 {
-            guard let claude = await locate() else { throw SourceError.toolNotFound }
+            guard let claude = await located() else { throw SourceError.toolNotFound }
             let request = ProcessRequest(
                 executable: claude.executable, arguments: ["-p", "/usage", "--no-session-persistence"],
                 workingDirectory: probeFolder, environment: claude.environment, timeout: .seconds(30))

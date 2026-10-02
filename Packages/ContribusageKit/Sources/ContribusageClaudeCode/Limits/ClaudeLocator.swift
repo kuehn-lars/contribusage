@@ -11,6 +11,8 @@ public struct ClaudeLocator: Sendable {
         /// The app's environment with PATH from the login shell (SPEC §8.1.1); nil inherits it unchanged.
         /// An npm install is a `#!/usr/bin/env node` script, which fails without it when the app starts from Finder.
         public let environment: [String: String]?
+        /// For diagnostics (FR-36) and the Providers tab.
+        public let kind: ExecutableKind
     }
 
     /// For diagnostics (FR-36).
@@ -81,7 +83,8 @@ public struct ClaudeLocator: Sendable {
                 continue
             }
             let version = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-            return Found(executable: candidate, version: version, environment: environment)
+            return Found(
+                executable: candidate, version: version, environment: environment, kind: ExecutableKind(at: candidate))
         }
         return nil
     }

@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-09-28
+updated: 2026-10-02
 ---
 # Index
 
@@ -48,6 +48,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0025-read-roots-check-with-t-4-7]]: ADR-025, the file system seam and the declared-roots read check come with T-4.7
 - [[decisions/0026-nfr-7-on-an-m3]]: ADR-026, NFR-7 checked on an M3 against half its budget
 - [[decisions/0027-notification-planning-in-the-coordinator]]: ADR-027, the coordinator plans notifications from the persisted keys; a changed reset time re-arms
+- [[decisions/0028-settings-scope-and-wiring]]: ADR-028, T-5.2 builds only unowned Settings controls; intervals as job settings, reset keeps notification keys
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

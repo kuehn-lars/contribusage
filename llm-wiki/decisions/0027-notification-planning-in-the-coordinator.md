@@ -28,4 +28,5 @@ The limits job's `fetch` runs the planner after every fetch, so a restored snaps
 - The highest threshold stands for every lower one, so a threshold added below it mid-cycle waits for the next cycle; at 96 % a warning "at 90 %" would be late anyway. FR-15 says so.
 - A window past its `resetsAt` is skipped until the next fetch (FR-11), so a stale reading cannot warn.
 - Pushed limits (the status line bridge, T-6.2) are not planned yet; that task routes them through the same `notify`.
+- "Reset caches" keeps the keys, so the refetch after it cannot repeat a notification ([[decisions/0028-settings-scope-and-wiring]]).
 - Revisit if a provider's reset time is not stable within a cycle.
