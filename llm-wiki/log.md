@@ -248,3 +248,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - Settings' Advanced tab copies diagnostics: app, macOS, chip, per source state, skipped lines, Claude Code's located `claude` and last probe, GitHub's state; never a token.
 - The popover footer's Copy button copies what the popover shows, insights of every period included (new FR-42); its lines share the views' helpers.
 - `UsageProvider.diagnostics()` with an empty default carries provider lines ([[decisions/0030-provider-diagnostics-hook]]); SPEC §10.2, §11.2, §13 and FR-36 updated.
+
+## [2026-10-03] spec | diagnostics() may detect
+- SPEC §10.2: `UsageProvider.diagnostics()` may run detection (Claude Code runs `claude --version`), never a fetch; the earlier "no process" contradicted [[decisions/0030-provider-diagnostics-hook]].
