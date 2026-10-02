@@ -336,7 +336,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-4 | Main thread | App code never blocks the main thread longer than 16 ms. Process execution, file IO and parsing run off the main actor. | Thread Performance Checker, code review |
 | NFR-5 | Probe budget | Automatic Claude Code probes at most every 15 min by default, never more often than every 5 min. Manual refresh at most every 30 s. | Unit tests on the scheduler |
 | NFR-6 | GitHub budget | Automatic GitHub fetches at most every 30 min by default, never more often than every 10 min. Rate limit headers respected. | Unit tests |
-| NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures |
+| NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
 | NFR-9 | Appearance | Correct in light and dark mode; respects Reduce Motion and Reduce Transparency; uses system fonts and semantic colors. | Manual checklist |
 | NFR-10 | Localization | All user facing strings in a String Catalog. English first. Dates, numbers and relative times formatted with the user's locale. | Build check, pseudo-localization run |
@@ -962,7 +962,6 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 | File | Content | Loss tolerable? |
 |---|---|---|
 | `state.json` | `schemaVersion`, last limits snapshot per provider, last GitHub snapshot, notification keys | Yes (cache) |
-| `providers/claude-code/live-index.json` | Reserved for the per file read state and unique usage entries of existing transcripts; not written while the live index stays in memory (ADR-024, T-4.7 decides) | Yes (rebuilt by rescan) |
 | `providers/claude-code/history.json` | Frozen daily aggregates, 365 days | **No**: back up to `history.json.bak` before migrations |
 | `providers/claude-code/statusline-limits.json` | Written by the optional bridge script | Yes |
 | `providers/claude-code/probe/` | Empty working directory for probes | Yes |
@@ -1468,7 +1467,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [x] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [x] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
-- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set on an M1; persist the live index only if the launch scan misses NFR-7 (ADR-024); the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.6, NFR-7, 16.4)*
+- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024); the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.6, NFR-7, 16.4)*
 - [ ] **M3 check:** US-5 acceptance holds.
 
 ### 17.5 Phase 5: v1.0 (M4)
