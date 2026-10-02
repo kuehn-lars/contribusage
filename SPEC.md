@@ -276,7 +276,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 |---|---|---|
 | FR-13 | P2 | Notify when a window's percentage crosses a threshold upward. Defaults: 80 and 95. Configurable list of up to 3 values between 50 and 99, shared by all providers. |
 | FR-14 | P2 | Optional notification when a window that had crossed a threshold resets. Off by default. |
-| FR-15 | P2 | De-duplication key: `providerID + label + resetsAt + threshold`. Keys are persisted so an app restart does not repeat notifications. Keys older than 8 days are pruned. |
+| FR-15 | P2 | De-duplication key: `providerID + label + resetsAt + threshold`; once a threshold is sent, every lower threshold of the same cycle counts as sent (ADR-027). Keys are persisted so an app restart does not repeat notifications. Keys older than 8 days are pruned. |
 
 ### 5.5 GitHub
 
@@ -678,7 +678,7 @@ Dependency direction: `ContribusageClaudeCode → ContribusageCore ← Contribus
 | `AppState` | app | `@MainActor @Observable` view model. Holds one `SourceState` per provider capability and one for GitHub, plus settings. Receives updates from the coordinator. | Do IO or run processes. |
 | `ProviderRegistry` | core | Ordered list of registered providers, enablement, availability cache. | Know any concrete provider type. |
 | `RefreshCoordinator` | core | Decides when each source refreshes ([section 12](#12-refresh-policy)), enforces budgets, single flight (per source and global for processes), backoff, reacts to wake, offline and Low Power Mode. | Know anything about parsing or any concrete provider. |
-| `NotificationPlanner` | core | Pure logic: given old and new limits plus persisted keys, returns notifications to send. | Deliver notifications itself (the app does). |
+| `NotificationPlanner` | core | Pure logic: given a fetched limits report and the persisted keys, returns notifications to send; the coordinator runs it (ADR-027). | Deliver notifications itself (the app does). |
 | `HistoryStore`, `IncrementalJSONLReader` | core | Generic history freezing and incremental line reading, reusable by any provider. | Decode tool specific lines. |
 | `Persistence` | core | Versioned, atomic JSON files in Application Support, one folder per provider. | Store secrets. |
 | Support | core | Protocols with live implementations for time, processes, HTTP, Keychain, file events and paths. | Contain business rules. |
@@ -1478,7 +1478,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.5 Phase 5: v1.0 (M4)
 
-- [ ] **T-5.1** `NotificationPlanner` plus delivery with `UNUserNotificationCenter`. *(FR-13 to FR-15, US-3)*
+- [x] **T-5.1** `NotificationPlanner` plus delivery with `UNUserNotificationCenter`, planned in the coordinator (ADR-027). *(FR-13 to FR-15, US-3)*
 - [ ] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion. *(FR-2, FR-33, US-7, US-12)*
 - [ ] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
 - [ ] **T-5.4** First run onboarding. *(FR-37)*

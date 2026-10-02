@@ -33,6 +33,20 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         }
     }
 
+    /// FR-13 to FR-15: the settings, read before every plan, and the app's delivery.
+    public struct Notifications: Sendable {
+        let settings: @Sendable () -> NotificationPlanner.Settings
+        let deliver: @Sendable ([NotificationPlanner.Note]) async -> Void
+
+        public init(
+            settings: @escaping @Sendable () -> NotificationPlanner.Settings,
+            deliver: @escaping @Sendable ([NotificationPlanner.Note]) async -> Void
+        ) {
+            self.settings = settings
+            self.deliver = deliver
+        }
+    }
+
     /// A job's schedule state. A class, so one `run` can update it across its `await`s; it never leaves the actor.
     private final class Record<Value: Sendable & Codable> {
         var snapshot: Snapshot<Value>?
@@ -51,11 +65,12 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         }
     }
 
-    /// `state.json` (SPEC §10.7); notification keys join as an optional field. Version 2: structured insights.
+    /// `state.json` (SPEC §10.7). Version 2: structured insights; the notification keys are optional, so no version.
     private struct PersistedState: PersistedFile {
         static var schemaVersion: Int { 2 }
         var limits: [ProviderID: Snapshot<LimitsReport>]
         var github: Snapshot<GitHubValue>?
+        var notificationKeys: NotificationPlanner.Sent?
     }
 
     private let registry: ProviderRegistry
@@ -63,6 +78,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private let time: any TimeSource
     private let onUpdate: Update
     private let gitHubJob: Job<GitHubValue>?
+    private let notifications: Notifications?
+    private var notificationKeys: NotificationPlanner.Sent = [:]
     private var conditions = ScheduleConditions()
     private var records: [ProviderID: Record<LimitsReport>] = [:]
     private var github = Record<GitHubValue>()
@@ -71,12 +88,13 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
 
     public init(
         registry: ProviderRegistry, paths: AppPaths, time: any TimeSource, github: Job<GitHubValue>?,
-        onUpdate: @escaping Update
+        notifications: Notifications? = nil, onUpdate: @escaping Update
     ) {
         self.registry = registry
         stateFile = paths.root.appending(path: "state.json")
         self.time = time
         gitHubJob = github
+        self.notifications = notifications
         self.onUpdate = onUpdate
     }
 
@@ -102,6 +120,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             record(id).snapshot = snapshot.cached
         }
         if github.snapshot == nil { github.snapshot = persisted.github?.cached }
+        if notificationKeys.isEmpty { notificationKeys = persisted.notificationKeys ?? [:] }
         for provider in await registry.enabledProviders() {
             if let job = job(for: provider), let record = records[provider.descriptor.id],
                 let snapshot = record.snapshot
@@ -252,9 +271,27 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private func job(for provider: any UsageProvider) -> Job<LimitsReport>? {
         guard let source = provider.limits, let policy = provider.descriptor.limitsPolicy else { return nil }
         let id = provider.descriptor.id
+        let name = provider.descriptor.displayName
         return Job(
-            policy: policy, origin: .poll, fetch: source.fetch, onUpdate: { [onUpdate] in await onUpdate(id, $0) },
-            triggers: { $0.windows.compactMap(\.resetsAt) })
+            policy: policy, origin: .poll,
+            fetch: {
+                let report = try await source.fetch()
+                await self.notify(report, name)
+                return report
+            },
+            onUpdate: { [onUpdate] in await onUpdate(id, $0) }, triggers: { $0.windows.compactMap(\.resetsAt) })
+    }
+
+    /// FR-15: the keys are persisted before delivery, so a restart cannot repeat a notification. Runs only on a fetch,
+    /// never on a restored snapshot.
+    private func notify(_ report: LimitsReport, _ displayName: String) async {
+        guard let notifications else { return }
+        let before = notificationKeys
+        let notes = NotificationPlanner.plan(
+            report, displayName: displayName, settings: notifications.settings(), sent: &notificationKeys, now: time.now
+        )
+        if notificationKeys != before { persist() }
+        if !notes.isEmpty { await notifications.deliver(notes) }
     }
 
     private func record(_ id: ProviderID) -> Record<LimitsReport> {
@@ -268,7 +305,10 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private func persist() {
         do {
             try JSONStore.write(
-                PersistedState(limits: records.compactMapValues(\.snapshot), github: github.snapshot), to: stateFile)
+                PersistedState(
+                    limits: records.compactMapValues(\.snapshot), github: github.snapshot,
+                    notificationKeys: notificationKeys),
+                to: stateFile)
         } catch {
             log.error("state.json not written: \(error.localizedDescription, privacy: .public)")
         }
