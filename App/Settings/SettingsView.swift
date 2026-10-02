@@ -1,8 +1,9 @@
 import ContribusageCore
 import ContribusageGitHub
+import ServiceManagement
 import SwiftUI
 
-/// SPEC §11.6. Launch at login (T-5.3), the menu bar settings (T-5.10), diagnostics (T-5.5) and the status line bridge
+/// SPEC §11.6. The menu bar settings (T-5.10), diagnostics (T-5.5) and the status line bridge
 /// (T-6.2) join their tabs with their tasks.
 struct SettingsView: View {
     /// Shared with `SettingsButton`, which opens a given tab.
@@ -23,8 +24,10 @@ enum SettingsTab: String {
     case general, providers, github, advanced
 }
 
-/// FR-13, FR-14.
+/// FR-13, FR-14, FR-34.
 private struct GeneralTab: View {
+    /// Read from `SMAppService`, never stored (SPEC §10.7); re-read on appear, since System Settings can change it.
+    @State private var loginStatus = SMAppService.mainApp.status
     @AppStorage("notifyOnReset") private var notifyOnReset = false
     /// Saved on edits only, so an untouched field keeps the planner's defaults.
     @State private var thresholds = NotificationPlanner.Settings.stored.thresholds.map(String.init)
@@ -32,6 +35,15 @@ private struct GeneralTab: View {
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Launch at login", isOn: launchAtLogin)
+                if loginStatus == .requiresApproval {
+                    LabeledContent("Allow contribusage in Login Items.") {
+                        Button("Open System Settings") { SMAppService.openSystemSettingsLoginItems() }
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
             Section {
                 TextField("Notify at", text: $thresholds, prompt: Text("80, 95"))
                 Toggle("Notify when a window resets", isOn: $notifyOnReset)
@@ -44,9 +56,20 @@ private struct GeneralTab: View {
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear { loginStatus = SMAppService.mainApp.status }
         .onChange(of: thresholds) {
             // The planner applies the bounds (FR-13), so the field may hold what it ignores.
             NotificationPlanner.Settings.stored.thresholds = thresholds.split { !$0.isNumber }.compactMap { Int($0) }
+        }
+    }
+
+    /// On while registered, including while it waits for approval. A failed call leaves the toggle at the real status.
+    private var launchAtLogin: Binding<Bool> {
+        Binding {
+            loginStatus == .enabled || loginStatus == .requiresApproval
+        } set: { on in
+            try? on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
+            loginStatus = SMAppService.mainApp.status
         }
     }
 }

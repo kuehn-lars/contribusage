@@ -1,7 +1,7 @@
 ---
 type: architecture
 status: active
-updated: 2026-10-02
+updated: 2026-10-03
 tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift]
 tags: [structure]
 ---
@@ -16,7 +16,7 @@ contribusage/
 ├── .gitignore
 ├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules
-├── App/                    the app target: AppState and its live wiring, ProviderRegistration (each provider with its live seams), SystemConditions, Popover/ (sections, the shared state views and buttons, mock data), Settings/ (the Settings scene: General and Advanced in `SettingsView`, `ProvidersTab`, `GitHubTab`), Notifications/ (delivery); a folder synchronised with Xcode
+├── App/                    the app target: AppState and its live wiring, ProviderRegistration (each provider with its live seams), SystemConditions, Popover/ (sections, the shared state views and buttons, mock data), Settings/ (the Settings scene: General (with launch at login) and Advanced in `SettingsView`, `ProvidersTab`, `GitHubTab`), Notifications/ (delivery); a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
 ├── Packages/               ContribusageKit: every target but the app; fixtures in a test target's `Fixtures/` (SPEC §16.2; so far Claude Code and GitHub)

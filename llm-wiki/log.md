@@ -231,3 +231,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-02] test | Notifications and Settings checked by hand
 - US-3 notifications (threshold crossing on a fetch, permission prompt, banner) and the T-5.2 Settings window verified in the built `.app` from `/Applications`.
 - How to repeat the check: [[modules/app#Things that bite]].
+
+## [2026-10-03] feat | Launch at login (T-5.3)
+- General tab: launch at login toggle through `SMAppService.mainApp`, status read back after each call and on appear, Open System Settings while approval is pending.
+- SPEC T-5.3 ticked; [[modules/app]] updated.
