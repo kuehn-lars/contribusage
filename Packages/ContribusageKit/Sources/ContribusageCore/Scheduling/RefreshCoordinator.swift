@@ -95,7 +95,9 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     /// FR-10: every enabled provider's and GitHub's last success shows at once, as `cache`; a snapshot already in
     /// memory stays. An unreadable file is a lost cache.
     public func restore() async {
-        guard let persisted = (try? JSONStore.read(PersistedState.self, from: stateFile)) ?? nil else { return }
+        guard
+            let persisted = (try? JSONStore.read(PersistedState.self, from: stateFile, using: LiveFileReader())) ?? nil
+        else { return }
         for (id, snapshot) in persisted.limits where records[id]?.snapshot == nil {
             record(id).snapshot = snapshot.cached
         }

@@ -7,9 +7,12 @@ import os
 /// The shared checks of SPEC §16.4, run from every provider's test target against the provider wired to fakes.
 /// Violations are recorded as test issues at the caller's line.
 ///
-/// "No reads outside the declared roots" covers what the activity source lists or reads through `FileReading`, up to
-/// its first report. Not checked here: "no HTTP" holds by construction (a provider receives no `HTTPTransport`), and
-/// child processes (`claude`, the login shell) read what they like.
+/// "No reads outside the declared roots" covers what the activity source opens, lists or reads through `FileReading`
+/// up to its first report: an enumerated folder counts when it is opened, an entry when it is read. An activity source
+/// that records no read at all fails, so bypassing the seam cannot pass. Paths are compared whole component by whole
+/// component after resolving symlinks on both sides. Not covered: child processes (`claude`, the login shell) read
+/// what they like, writes, and the limits side's reads (the locator's executable header read, FR-36). "No HTTP" holds
+/// by construction: a provider receives no `HTTPTransport`.
 public enum ProviderConformance {
     /// - Parameters:
     ///   - provider: wired to fakes that answer normally.
@@ -107,10 +110,11 @@ public enum ProviderConformance {
         let report = await withTimeout(.seconds(2)) { await stream.first { _ in true } }
         #expect(report?.provider == id, "no initial activity report of its own", sourceLocation: location)
 
-        let roots = readRoots.map(\.standardizedFileURL.pathComponents)
-        let outside = fileReader.reads.filter { read in
-            !roots.contains { read.standardizedFileURL.pathComponents.starts(with: $0) }
-        }
+        let reads = fileReader.reads
+        #expect(!reads.isEmpty, "no reads through FileReading before the first report", sourceLocation: location)
+        func components(_ url: URL) -> [String] { url.standardizedFileURL.resolvingSymlinksInPath().pathComponents }
+        let roots = readRoots.map(components)
+        let outside = reads.filter { read in !roots.contains { components(read).starts(with: $0) } }
         #expect(outside.isEmpty, "read outside its roots: \(outside.map(\.path))", sourceLocation: location)
 
         let consumer = Task { for await _ in stream {} }

@@ -13,11 +13,11 @@ private struct Sample: PersistedFile, Equatable {
 @Test func roundTripCreatesTheRootWithOwnerOnlyPermissions() throws {
     let paths = AppPaths.temporary()
     let file = paths.providerFolder(.fake).appending(path: "history.json")
-    #expect(try JSONStore.read(Sample.self, from: file) == nil)
+    #expect(try JSONStore.read(Sample.self, from: file, using: LiveFileReader()) == nil)
 
     try JSONStore.write(Sample(label: "a"), to: file)
 
-    #expect(try JSONStore.read(Sample.self, from: file) == Sample(label: "a"))
+    #expect(try JSONStore.read(Sample.self, from: file, using: LiveFileReader()) == Sample(label: "a"))
     #expect(try String(contentsOf: file, encoding: .utf8) == #"{"schemaVersion":2,"value":{"label":"a"}}"#)
     let root = try FileManager.default.attributesOfItem(atPath: paths.root.path(percentEncoded: false))
     #expect(root[.posixPermissions] as? Int == 0o700)
@@ -32,8 +32,8 @@ private struct Sample: PersistedFile, Equatable {
 
     try JSONStore.write(Sample(label: "new"), to: file)
 
-    #expect(try JSONStore.read(Sample.self, from: file) == Sample(label: "new"))
-    #expect(try JSONStore.read(Sample.self, from: link) == Sample(label: "old"))
+    #expect(try JSONStore.read(Sample.self, from: file, using: LiveFileReader()) == Sample(label: "new"))
+    #expect(try JSONStore.read(Sample.self, from: link, using: LiveFileReader()) == Sample(label: "old"))
 }
 
 /// Any other version throws and leaves the file alone: caches discard it by ignoring the error, `history.json` never loses it.
@@ -43,7 +43,9 @@ private struct Sample: PersistedFile, Equatable {
     let newer = Data(#"{"schemaVersion":3,"value":{"label":"future"}}"#.utf8)
     try newer.write(to: file)
 
-    #expect(throws: PersistenceError.unsupportedSchemaVersion(3)) { try JSONStore.read(Sample.self, from: file) }
+    #expect(throws: PersistenceError.unsupportedSchemaVersion(3)) {
+        try JSONStore.read(Sample.self, from: file, using: LiveFileReader())
+    }
     #expect(try Data(contentsOf: file) == newer)
 }
 

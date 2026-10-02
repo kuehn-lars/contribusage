@@ -13,13 +13,13 @@ private func append(_ text: String, to url: URL) throws {
     try handle.write(contentsOf: Data(text.utf8))
 }
 
-/// The lines one read hands over and whether it was a rescan; `nil` for a missing file.
-private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> (lines: [String], isRescan: Bool)? {
+/// The lines one read hands over and its outcome.
+private func read(
+    _ reader: inout IncrementalJSONLReader, _ url: URL
+) throws -> (lines: [String], outcome: IncrementalJSONLReader.Outcome) {
     var lines: [String] = []
-    guard let isRescan = try reader.read(url, lines: { lines.append(String(decoding: $0, as: UTF8.self)) }) else {
-        return nil
-    }
-    return (lines, isRescan)
+    let outcome = try reader.read(url, lines: { lines.append(String(decoding: $0, as: UTF8.self)) })
+    return (lines, outcome)
 }
 
 /// FR-26: only appended complete lines; an incomplete last line waits for its newline.
@@ -30,16 +30,16 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
 
     let first = try read(&reader, url)
-    #expect(first?.lines == ["a", "b"] && first?.isRescan == false)
+    #expect(first.lines == ["a", "b"] && first.outcome == .appended)
 
     let unchanged = try read(&reader, url)
-    #expect(unchanged?.lines == [])
+    #expect(unchanged.lines == [] && unchanged.outcome == .appended)
     try append("1}\nd", to: url)
     let completed = try read(&reader, url)
-    #expect(completed?.lines == ["{\"c\":1}"])
+    #expect(completed.lines == ["{\"c\":1}"])
     try append("\n", to: url)
     let last = try read(&reader, url)
-    #expect(last?.lines == ["d"])
+    #expect(last.lines == ["d"])
 }
 
 /// SPEC 8.3.5: a shrunk file is read again from 0.
@@ -52,7 +52,7 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
 
     try Data("c\n".utf8).write(to: url)
     let lines = try read(&reader, url)
-    #expect(lines?.lines == ["c"] && lines?.isRescan == true)
+    #expect(lines.lines == ["c"] && lines.outcome == .rescanned)
 }
 
 /// SPEC 8.3.5: a replaced file (new inode, for example an atomic rewrite) is read again from 0, even when it grew.
@@ -65,11 +65,11 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
 
     try Data("x\ny\n".utf8).write(to: url, options: .atomic)
     let lines = try read(&reader, url)
-    #expect(lines?.lines == ["x", "y"] && lines?.isRescan == true)
+    #expect(lines.lines == ["x", "y"] && lines.outcome == .rescanned)
 }
 
-/// SPEC 8.3.5: a deleted file reads as nil and its state is dropped, so a new file at the path starts fresh.
-@Test func deletedFileReadsNil() throws {
+/// SPEC 8.3.5: a deleted file reads as gone and its state is dropped, so a new file at the path starts fresh.
+@Test func deletedFileReadsGone() throws {
     let url = temporaryFile()
     defer { try? FileManager.default.removeItem(at: url) }
     try Data("a\n".utf8).write(to: url)
@@ -78,10 +78,10 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
 
     try FileManager.default.removeItem(at: url)
     let gone = try read(&reader, url)
-    #expect(gone == nil)
+    #expect(gone.lines == [] && gone.outcome == .gone)
     try Data("b\n".utf8).write(to: url)
     let lines = try read(&reader, url)
-    #expect(lines?.lines == ["b"] && lines?.isRescan == false)
+    #expect(lines.lines == ["b"] && lines.outcome == .appended)
 }
 
 /// Lines are whole however they fall across the reader's buffer, also a line longer than it that waits for its newline.
@@ -94,9 +94,9 @@ private func read(_ reader: inout IncrementalJSONLReader, _ url: URL) throws -> 
     try Data((lines.joined(separator: "\n") + "\n" + String(repeating: "z", count: 100_000)).utf8).write(to: url)
     var reader = IncrementalJSONLReader(fileReader: LiveFileReader())
 
-    #expect(try read(&reader, url)?.lines == lines)
+    #expect(try read(&reader, url).lines == lines)
     try append("z\n", to: url)
-    #expect(try read(&reader, url)?.lines == [String(repeating: "z", count: 100_001)])
+    #expect(try read(&reader, url).lines == [String(repeating: "z", count: 100_001)])
 }
 
 /// NFR-2: a read frees its file data on return, even when the caller reads many files in one go without draining an

@@ -3,26 +3,74 @@ import ContribusageTestSupport
 import Foundation
 import Testing
 
+/// A fake tool's folder with one file `a` in it, reached also through the symlink `link`.
+private final class ToolFolder: Sendable {
+    let base = FileManager.default.temporaryDirectory.appending(
+        path: "fake-tool-\(UUID())", directoryHint: .isDirectory)
+    var root: URL { base.appending(path: "real", directoryHint: .isDirectory) }
+    var link: URL { base.appending(path: "link", directoryHint: .isDirectory) }
+
+    init() {
+        try! FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try! Data("a".utf8).write(to: root.appending(path: "a"))
+        try! FileManager.default.createSymbolicLink(at: link, withDestinationURL: root)
+    }
+
+    deinit { try? FileManager.default.removeItem(at: base) }
+}
+
 /// SPEC §16.4, US-11: the deliberately un-Claude-like `FakeProvider` passes the shared suite.
 @Test func fakeProviderPassesTheConformanceSuite() async {
+    let folder = ToolFolder()
     let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
     await ProviderConformance.check(
-        FakeProvider(fileEvents: fileEvents),
+        FakeProvider(fileEvents: fileEvents, fileReader: fileReader, reads: [folder.root.appending(path: "a")]),
         neverFinishing: FakeProvider(fetch: {
             try await Task.sleep(for: .seconds(3600))
             throw SourceError.timedOut
         }),
         failing: FakeProvider(fetch: { throw SourceError.io("disk gone") }),
-        fileEvents: fileEvents, fileReader: FakeFileReader()
+        fileEvents: fileEvents, fileReader: fileReader, readRoots: [folder.root]
     )
 }
 
 /// A provider needs only the wirings for the capabilities it has.
 @Test func activityOnlyProviderPassesTheConformanceSuite() async {
+    let folder = ToolFolder()
     let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
     await ProviderConformance.check(
-        ActivityOnlyProvider(base: FakeProvider(fileEvents: fileEvents)), fileEvents: fileEvents,
-        fileReader: FakeFileReader())
+        ActivityOnlyProvider(
+            base: FakeProvider(
+                fileEvents: fileEvents, fileReader: fileReader, reads: [folder.root.appending(path: "a")])),
+        fileEvents: fileEvents, fileReader: fileReader, readRoots: [folder.root])
+}
+
+/// A read through a symlink into a root is inside it, and a root given with a trailing slash still matches.
+@Test func conformanceSuiteResolvesSymlinks() async {
+    let folder = ToolFolder()
+    let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
+    await ProviderConformance.check(
+        ActivityOnlyProvider(
+            base: FakeProvider(
+                fileEvents: fileEvents, fileReader: fileReader, reads: [folder.link.appending(path: "a")])),
+        fileEvents: fileEvents, fileReader: fileReader, readRoots: [URL(filePath: folder.root.path + "/")])
+}
+
+/// The read check cannot pass by bypassing the seam: an activity source that reads nothing through it fails.
+@Test func conformanceSuiteRejectsAnActivitySourceThatReadsNothing() async {
+    let fileEvents = FakeFileEvents()
+    let fileReader = FakeFileReader()
+    await withKnownIssue {
+        await ProviderConformance.check(
+            ActivityOnlyProvider(base: FakeProvider(fileEvents: fileEvents, fileReader: fileReader)),
+            fileEvents: fileEvents, fileReader: fileReader, readRoots: [URL(filePath: "/tmp/fake-tool")]
+        )
+    } matching: { issue in
+        issue.comments.contains { $0.rawValue.contains("no reads") }
+    }
 }
 
 /// The suite is only worth running if it can fail.

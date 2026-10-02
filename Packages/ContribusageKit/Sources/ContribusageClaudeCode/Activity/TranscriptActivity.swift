@@ -36,20 +36,19 @@ actor TranscriptActivity: ActivitySource {
     }()
     private var streams: [UUID: AsyncStream<ActivityReport>.Continuation] = [:]
 
-    private struct Transcript {
+    struct Transcript {
         /// The first line per key, as the aggregator would count it (FR-24), without the IDs the key holds; a
         /// response repeats its usage on every line, so keeping the repeats would cost memory for nothing (NFR-2).
         var keyed: [String: TranscriptLine] = [:]
         /// Lines without a key each count as a request.
         var unkeyed: [TranscriptLine] = []
         var skipped = 0
-        /// Session IDs and models, so the lines share one copy of each instead of one per line (NFR-2).
+        /// Session IDs and models, so the lines share one copy of each instead of one per line (NFR-2). Real models
+        /// carry a date and pass Swift's 15-byte small-string storage, so they are interned too.
         private var strings: Set<String> = []
 
         mutating func add(_ line: TranscriptLine) {
-            var line = line
-            line.sessionID = line.sessionID.map { strings.insert($0).memberAfterInsert }
-            line.model = strings.insert(line.model).memberAfterInsert
+            var line = intern(line)
             if let key = line.key {
                 guard keyed[key] == nil else { return }
                 // The key holds them.
@@ -61,11 +60,18 @@ actor TranscriptActivity: ActivitySource {
             }
         }
 
-        /// Lines read later: a key already here keeps its first line.
+        /// Lines read later, interned against this file's strings: a key already here keeps its first line.
         mutating func append(_ later: Transcript) {
-            keyed.merge(later.keyed) { first, _ in first }
-            unkeyed += later.unkeyed
+            for (key, line) in later.keyed where keyed[key] == nil { keyed[key] = intern(line) }
+            for line in later.unkeyed { unkeyed.append(intern(line)) }
             skipped += later.skipped
+        }
+
+        private mutating func intern(_ line: TranscriptLine) -> TranscriptLine {
+            var line = line
+            line.sessionID = line.sessionID.map { strings.insert($0).memberAfterInsert }
+            line.model = strings.insert(line.model).memberAfterInsert
+            return line
         }
     }
 
@@ -141,23 +147,24 @@ actor TranscriptActivity: ActivitySource {
     }
 
     /// Brings `files` up to date: new lines appended, rescanned files from scratch, vanished files dropped.
-    // ponytail: opens every transcript on each change; read only the changed ones if T-4.7 measures it too slow.
+    // ponytail: opens every transcript on each change, about 45 ms for 273 files / 520 MB in release on an M3 (ADR-026);
+    // trees with many more small files cost more per pass. Read only the files in the event batch if that bites.
     private func read(_ roots: [URL]) {
         let listed = TranscriptFiles.files(in: roots, excludingProjectOf: probeFolder, fileReader: fileReader)
         for url in Set(listed).union(files.keys) {
             do {
                 var appended = Transcript()
-                let isRescan = try reader.read(url) { line in
+                let outcome = try reader.read(url) { line in
                     do {
                         if let decoded = try TranscriptLine.decode(line) { appended.add(decoded) }
                     } catch {
                         appended.skipped += 1
                     }
                 }
-                switch isRescan {
-                case nil: files[url] = nil
-                case true?: files[url] = appended
-                case false?: files[url, default: Transcript()].append(appended)
+                switch outcome {
+                case .gone: files[url] = nil
+                case .rescanned: files[url] = appended
+                case .appended: files[url, default: Transcript()].append(appended)
                 }
             } catch {
                 // SPEC §13: retried on the next change.

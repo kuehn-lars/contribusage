@@ -4,11 +4,23 @@ import Foundation
 /// Reads line files incrementally (SPEC §8.3.5, FR-26): per file its identity, offset and pending partial line, so each
 /// read hands over only the complete lines appended since the last one. Decoding the lines is the provider's job.
 public struct IncrementalJSONLReader: Sendable {
+    /// What a read found, and so what to do with what the file contributed before.
+    public enum Outcome: Equatable, Sendable {
+        /// The file no longer exists; its state is dropped (frozen history is not the reader's concern).
+        case gone
+        /// Read from 0 because its identity changed or it shrank: drop what it contributed before.
+        case rescanned
+        /// Read on from the last offset: the lines add to what it contributed before.
+        case appended
+    }
+
     private struct State {
         /// Device and inode.
         var identity: (dev_t, ino_t)
         /// Bytes read so far, `pending` included.
         var offset: UInt64 = 0
+        // ponytail: `pending` grows with a single line's length, so one huge line is held whole until its newline;
+        // cap it and skip the line if transcripts ever carry lines that large.
         var pending = Data()
     }
 
@@ -21,16 +33,14 @@ public struct IncrementalJSONLReader: Sendable {
     /// are left out. The file is streamed through a fixed buffer and each line is released after `body` returns, so
     /// memory does not grow with the file (NFR-2).
     ///
-    /// Returns `nil` when the file no longer exists; its state is dropped (frozen history is not the reader's concern).
-    /// Otherwise whether the file was read from 0 because its identity changed or it shrank: then drop what it
-    /// contributed before. When it throws, discard the lines `body` received: the next read hands them over again.
-    public mutating func read(_ url: URL, lines body: (Data) -> Void) throws -> Bool? {
+    /// When it throws, discard the lines `body` received: the next read hands them over again.
+    public mutating func read(_ url: URL, lines body: (Data) -> Void) throws -> Outcome {
         let handle: FileHandle
         do {
             handle = try fileReader.handle(forReadingFrom: url)
         } catch CocoaError.fileNoSuchFile {
             files[url] = nil
-            return nil
+            return .gone
         }
         defer { try? handle.close() }
 
@@ -67,6 +77,6 @@ public struct IncrementalJSONLReader: Sendable {
             }
         }
         files[url] = state
-        return isRescan
+        return isRescan ? .rescanned : .appended
     }
 }
