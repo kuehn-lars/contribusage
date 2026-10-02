@@ -20,7 +20,7 @@ SPEC §8.3.4 described the live index (unique keys and their usage for the trans
 | Keep it in memory, rebuild it on the first `reports()` subscription | No file to keep consistent; the transcripts stay the only truth | Every launch reads all transcripts once |
 
 ## Decision
-The live index lives in memory only (`TranscriptActivity`, [[modules/claude-code]]) and is rebuilt from the transcripts when the first `reports()` stream starts. `live-index.json` is not written.
+The live index lives in memory only (`TranscriptActivity`, [[modules/claude-code]]: the first line per key, SPEC §8.3.4) and is rebuilt from the transcripts when the first `reports()` stream starts. `live-index.json` is not written.
 
 ## Consequences
 - The history store ([[decisions/0005-json-file-persistence]]) is unaffected: frozen days persist as before, so a deleted transcript still keeps its history.

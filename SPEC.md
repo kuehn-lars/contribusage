@@ -946,6 +946,12 @@ public protocol FileEvents: Sendable {
     func changes(in roots: [URL], debounce: Duration) -> AsyncStream<Set<URL>>
 }
 
+public protocol FileReading: Sendable {                   // every file a provider lists or reads (16.4, ADR-025)
+    func enumerator(at folder: URL) -> FileManager.DirectoryEnumerator?
+    func handle(forReadingFrom file: URL) throws -> FileHandle
+    func contents(of file: URL) throws -> Data
+}
+
 public struct AppPaths: Sendable {                        // a struct, not a seam (ADR-015)
     public let root: URL                                   // .live: ~/Library/Application Support/contribusage
     public init(root: URL)                                 // tests pass a temporary folder
@@ -1381,7 +1387,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - `fetch()` honours cancellation within 2 s (fake process runner that never finishes).
 - Failures surface as `SourceError`, never as crashes or untyped errors.
 - Cancelling the consumer of `reports()` releases all file watching (fake `FileEvents` reports zero active streams).
-- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots (fake file system records accesses; the seam and its check come with T-4.7, [ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
+- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots: every listing and read goes through `FileReading`, whose fake passes through to the disk and records each URL; up to the first activity report, every recorded URL must lie inside the roots the test wiring declares (the FR-22 roots plus the provider's own folder). Child processes and writes are not covered ([ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
 
 `FakeProvider` intentionally differs from Claude Code: only one window of kind `weekly`, limits delivered only via `pushedUpdates()`, token categories `input` and `output` only.
 

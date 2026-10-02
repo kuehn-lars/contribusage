@@ -25,3 +25,4 @@ The seam and the check are part of T-4.7. Until then `ProviderConformance` state
 ## Consequences
 - SPEC §16.4 and T-4.7 name the task; the conformance suite's doc comment points to T-4.7.
 - A provider added before T-4.7 is reviewed for its reads by hand.
+- Built in T-4.7: the `FileReading` seam (SPEC §10.6) runs through the three read paths, each taking it as a required parameter, so a new read path cannot skip it; `ProviderConformance.check` takes a recording `FakeFileReader` and the declared `readRoots` and fails on any read outside them, comparing whole path components. `conformanceSuiteRejectsAReadOutsideTheRoots` keeps the check able to fail.

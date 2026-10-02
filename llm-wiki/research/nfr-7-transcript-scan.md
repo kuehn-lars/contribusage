@@ -25,11 +25,11 @@ Before the fix (6eb98f1):
 | Release (3 runs) | 3.1–3.9 s | 63–93 ms | ~95 → 540–640 → ~480 MB |
 | Debug | 5.8–6.1 s | 114–121 ms | ~95 → 590 → 481 MB |
 
-After the fix (d78b912; three identical release runs, the debug run within 10 %):
+After the fix (d78b912, and again after the `FileReading` seam in 19d83e7; release runs agree within 15 %):
 
 | Build | Cold scan | Incremental | Footprint before → after scan → after update, peak |
 |---|---|---|---|
-| Release | 1.48–1.67 s | 41–42 ms | 9 → 36 → 36 MB, peak 36 MB |
+| Release | 1.48–1.67 s | 41–45 ms | 9 → 36 → 36 MB, peak 36 MB |
 | Debug | 1.65 s | 63 ms | 9 → 36 → 36 MB |
 
 - Time: inside NFR-7 with a wide margin, also under the half budget of ADR-026. A `sample` of the release scan put about 60 % of busy time in splitting the read bytes into lines (`Data.split`), 15–20 % in `JSONDecoder`, about 5 % in `read`.
