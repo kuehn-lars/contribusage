@@ -24,5 +24,5 @@ NFR-7 sets the scan budget for an Apple M1, the slowest supported chip ([[decisi
 The opt-in performance test asserts NFR-7's limits. NFR-7 counts as met for an M1 when the release cold scan on the M3 takes at most 15 s, half of the 30 s budget, and the incremental update at most 100 ms.
 
 ## Consequences
-- Results and margins: [[research/nfr-7-transcript-scan]].
+- Results and margins: [[research/nfr-7-transcript-scan]]. The first measurement, 1.5 to 1.7 s and 42 ms, sits far inside the half budget.
 - Revisit when an M1 is at hand or a measurement lands close to the half-budget line.
