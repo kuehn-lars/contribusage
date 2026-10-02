@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-02
+updated: 2026-10-03
 aliases: [ADR-028]
 tags: [settings, scheduling, providers, app]
 tracks: [App/Settings, App/AppState.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
@@ -17,7 +17,7 @@ SPEC §11.6 lists controls that other tasks own: launch at login (T-5.3), copy d
 | Option | For | Against |
 |---|---|---|
 | T-5.2 builds every §11.6 control, inert ones included | One task completes the window | Controls without behaviour ship, and the menu bar mode type is designed before its renderer |
-| T-5.2 builds the controls no other task owns | Every control works when it appears | The window grows with T-5.3, T-5.5, T-5.10 and T-6.2 |
+| T-5.2 builds the controls no other task owns | Every control works when it appears | The window grows with T-5.3 (done: the General tab's launch at login toggle), T-5.5, T-5.10 and T-6.2 |
 
 ## Decision
 T-5.2 builds the controls no other task owns; the menu bar display mode and menu bar provider settings move to T-5.10, next to the label that reads them. Intervals are settings a `Job` reads before every scheduling decision (`interval`, `limitsInterval(ProviderID)` for providers) as the policy's default, which `Schedule` clamps to the policy's bounds; `intervalsChanged()` reschedules at once. `resetCaches()` lives in the coordinator: it forgets every snapshot, keeps the notification keys and runs every source. Detecting availability and locating `claude` while the Providers tab is shown are allowed for a disabled provider: the user asked by opening the tab, and the registry's once-a-minute rule (FR-3) still bounds it.

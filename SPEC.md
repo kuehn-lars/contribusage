@@ -1480,7 +1480,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [x] **T-5.1** `NotificationPlanner` plus delivery with `UNUserNotificationCenter`, planned in the coordinator (ADR-027). *(FR-13 to FR-15, US-3)*
 - [x] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion; the controls of T-5.3, T-5.5, T-5.10 and T-6.2 come with those tasks (ADR-028). *(FR-2, FR-33, US-7, US-12)*
-- [ ] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
+- [x] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
 - [ ] **T-5.4** First run onboarding. *(FR-37)*
 - [ ] **T-5.5** Copy diagnostics. *(FR-36, US-10)*
 - [ ] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
