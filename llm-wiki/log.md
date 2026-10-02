@@ -239,3 +239,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] fix | T-5.3 review fixes
 - Launch at login status re-read on app activation instead of on appear, since approval happens in System Settings.
 - A failed register or unregister shows its error instead of being swallowed; the approval row uses the title + subtitle `LabeledContent`.
+
+## [2026-10-03] decision | No first run onboarding (ADR-029)
+- FR-37 and T-5.4 struck: an onboarding card was built and dropped in review as unintuitive for developers, who configure in Settings.
+- US-6 no longer offers launch at login on first run; the §16.5 fresh user row relies on the popover's not configured states.

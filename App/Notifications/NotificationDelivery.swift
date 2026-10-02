@@ -10,7 +10,7 @@ final class NotificationDelivery: NSObject, UNUserNotificationCenterDelegate, Se
         UNUserNotificationCenter.current().delegate = self
     }
 
-    /// Asks for permission on the first note; FR-37's onboarding (T-5.4) asks earlier.
+    /// Asks for permission on the first note; there is no earlier prompt (ADR-029).
     func deliver(_ notes: [NotificationPlanner.Note]) async {
         let center = UNUserNotificationCenter.current()
         guard (try? await center.requestAuthorization(options: [.alert])) == true else { return }

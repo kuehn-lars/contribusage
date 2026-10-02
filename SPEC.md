@@ -206,7 +206,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 ### US-6 (P2): Start automatically, run natively and stay out of the way
 
 - The app has no Dock icon and no app switcher entry.
-- "Launch at login" is a toggle in Settings (off by default, offered on first run).
+- "Launch at login" is a toggle in Settings (off by default; not offered on first run, ADR-029).
 - The app runs natively on Apple Silicon; its executable contains only an arm64 slice.
 - The app uses no measurable CPU while idle (see [NFR-1](#6-non-functional-requirements)).
 
@@ -313,7 +313,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-34 | P2 | Launch at login via `SMAppService.mainApp`. |
 | FR-35 | P1 | Quit item in the footer (`⌘Q`). |
 | FR-36 | P2 | "Copy diagnostics" (US-10) in the footer's overflow menu. For the resolved `claude` executable, diagnostics state whether it is a Mach-O arm64 binary, a Mach-O x86_64 binary (would need Rosetta) or a script (for example an npm shim). |
-| FR-37 | P2 | First run onboarding in the popover: detects providers, offers GitHub connection, asks notification permission, offers launch at login. Each step skippable. |
+| FR-37 | P2 | ~~First run onboarding in the popover: detects providers, offers GitHub connection, asks notification permission, offers launch at login. Each step skippable.~~ Dropped (ADR-029): the popover's not configured states and Settings cover each step where it is needed. |
 
 ### 5.8 Optional features (P3)
 
@@ -1401,7 +1401,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 | `claude` installed as x86_64 binary on a Mac without Rosetta | Clear Rosetta message; others unaffected |
 | Claude Code provider disabled | Group hidden; no `claude` processes (check Activity Monitor); menu bar falls back |
 | Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider |
-| Fresh macOS user without `~/.claude` | Onboarding explains; no crash |
+| Fresh macOS user without `~/.claude` | Popover sections explain ("Claude Code not found" with "Locate…", "No Claude Code sessions found on this Mac"); no crash |
 | Invalid GitHub token | GitHub section error with "Change token…", which opens Settings |
 | Dark mode, increased contrast, Reduce Motion | Readable, no animations beyond system defaults |
 | VoiceOver through popover | All values announced meaningfully |
@@ -1481,7 +1481,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.1** `NotificationPlanner` plus delivery with `UNUserNotificationCenter`, planned in the coordinator (ADR-027). *(FR-13 to FR-15, US-3)*
 - [x] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion; the controls of T-5.3, T-5.5, T-5.10 and T-6.2 come with those tasks (ADR-028). *(FR-2, FR-33, US-7, US-12)*
 - [x] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
-- [ ] **T-5.4** First run onboarding. *(FR-37)*
+- [ ] ~~**T-5.4** First run onboarding. *(FR-37)*~~ Dropped with FR-37 (ADR-029).
 - [ ] **T-5.5** Copy diagnostics. *(FR-36, US-10)*
 - [ ] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
 - [ ] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)*
