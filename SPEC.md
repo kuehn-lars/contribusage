@@ -946,7 +946,7 @@ public protocol FileEvents: Sendable {
     func changes(in roots: [URL], debounce: Duration) -> AsyncStream<Set<URL>>
 }
 
-public protocol FileReading: Sendable {                   // every file a provider lists or reads (16.4, ADR-025)
+public protocol FileReading: Sendable {                   // what an activity source lists or reads (16.4, ADR-025)
     func enumerator(at folder: URL) -> FileManager.DirectoryEnumerator?
     func handle(forReadingFrom file: URL) throws -> FileHandle
     func contents(of file: URL) throws -> Data
@@ -1387,7 +1387,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - `fetch()` honours cancellation within 2 s (fake process runner that never finishes).
 - Failures surface as `SourceError`, never as crashes or untyped errors.
 - Cancelling the consumer of `reports()` releases all file watching (fake `FileEvents` reports zero active streams).
-- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots: every listing and read goes through `FileReading`, whose fake passes through to the disk and records each URL; up to the first activity report, every recorded URL must lie inside the roots the test wiring declares (the FR-22 roots plus the provider's own folder). Child processes and writes are not covered ([ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
+- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots: every listing and read goes through `FileReading`, whose fake passes through to the disk and records each URL; up to the first activity report, at least one URL must be recorded and every recorded URL, symlinks resolved, must lie inside the roots the test wiring declares (the FR-22 roots plus the provider's own folder). Not covered: child processes, writes, and limits-side reads such as the locator's look at the `claude` executable (FR-36) ([ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
 
 `FakeProvider` intentionally differs from Claude Code: only one window of kind `weekly`, limits delivered only via `pushedUpdates()`, token categories `input` and `output` only.
 
@@ -1473,7 +1473,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [x] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [x] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
-- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024); the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.6, NFR-7, 16.4)*
+- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024), and keep it within NFR-2; the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.4, 8.3.6, NFR-2, NFR-7, 16.4)*
 - [ ] **M3 check:** US-5 acceptance holds.
 
 ### 17.5 Phase 5: v1.0 (M4)
