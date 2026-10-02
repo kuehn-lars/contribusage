@@ -235,3 +235,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] feat | Launch at login (T-5.3)
 - General tab: launch at login toggle through `SMAppService.mainApp`, status read back after each call and on appear, Open System Settings while approval is pending.
 - SPEC T-5.3 ticked; [[modules/app]] updated.
+
+## [2026-10-03] fix | T-5.3 review fixes
+- Launch at login status re-read on app activation instead of on appear, since approval happens in System Settings.
+- A failed register or unregister shows its error instead of being swallowed; the approval row uses the title + subtitle `LabeledContent`.

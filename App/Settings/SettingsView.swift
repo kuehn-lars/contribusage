@@ -26,8 +26,9 @@ enum SettingsTab: String {
 
 /// FR-13, FR-14, FR-34.
 private struct GeneralTab: View {
-    /// Read from `SMAppService`, never stored (SPEC §10.7); re-read on appear, since System Settings can change it.
+    /// Read from `SMAppService`, never stored (SPEC §10.7); re-read on activation, since System Settings can change it.
     @State private var loginStatus = SMAppService.mainApp.status
+    @State private var loginError: String?
     @AppStorage("notifyOnReset") private var notifyOnReset = false
     /// Saved on edits only, so an untouched field keeps the planner's defaults.
     @State private var thresholds = NotificationPlanner.Settings.stored.thresholds.map(String.init)
@@ -38,11 +39,14 @@ private struct GeneralTab: View {
             Section {
                 Toggle("Launch at login", isOn: launchAtLogin)
                 if loginStatus == .requiresApproval {
-                    LabeledContent("Allow contribusage in Login Items.") {
-                        Button("Open System Settings") { SMAppService.openSystemSettingsLoginItems() }
+                    LabeledContent {
+                        Button("Open System Settings", action: SMAppService.openSystemSettingsLoginItems)
+                    } label: {
+                        Text("Waiting for approval")
+                        Text("Allow contribusage in Login Items.")
                     }
-                    .foregroundStyle(.secondary)
                 }
+                if let loginError { Text(loginError).foregroundStyle(.red) }
             }
             Section {
                 TextField("Notify at", text: $thresholds, prompt: Text("80, 95"))
@@ -56,19 +60,26 @@ private struct GeneralTab: View {
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
-        .onAppear { loginStatus = SMAppService.mainApp.status }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            loginStatus = SMAppService.mainApp.status
+        }
         .onChange(of: thresholds) {
             // The planner applies the bounds (FR-13), so the field may hold what it ignores.
             NotificationPlanner.Settings.stored.thresholds = thresholds.split { !$0.isNumber }.compactMap { Int($0) }
         }
     }
 
-    /// On while registered, including while it waits for approval. A failed call leaves the toggle at the real status.
+    /// On while registered, including while it waits for approval. After a failed call it shows the real status.
     private var launchAtLogin: Binding<Bool> {
         Binding {
             loginStatus == .enabled || loginStatus == .requiresApproval
         } set: { on in
-            try? on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
+            do {
+                try on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
+                loginError = nil
+            } catch {
+                loginError = "Couldn't change launch at login: \(error.localizedDescription)"
+            }
             loginStatus = SMAppService.mainApp.status
         }
     }
