@@ -14,9 +14,9 @@ public struct HistoryStore: Sendable {
     }
 
     /// Throws for an unreadable or other-version file and leaves it on disk: history is never discarded.
-    public init(provider: ProviderID, paths: AppPaths) throws {
+    public init(provider: ProviderID, paths: AppPaths, fileReader: any FileReading) throws {
         file = paths.providerFolder(provider).appending(path: "history.json")
-        days = try JSONStore.read(History.self, from: file)?.days ?? []
+        days = try JSONStore.read(History.self, from: file, using: fileReader)?.days ?? []
     }
 
     /// Freezes the live days that are due, drops days beyond 365 and returns what to show, oldest first: frozen days,

@@ -20,8 +20,10 @@ SPEC §8.3.4 described the live index (unique keys and their usage for the trans
 | Keep it in memory, rebuild it on the first `reports()` subscription | No file to keep consistent; the transcripts stay the only truth | Every launch reads all transcripts once |
 
 ## Decision
-The live index lives in memory only (`TranscriptActivity`, [[modules/claude-code]]) and is rebuilt from the transcripts when the first `reports()` stream starts. `live-index.json` is not written.
+The live index lives in memory only (`TranscriptActivity`, [[modules/claude-code]]: the first line per key, SPEC §8.3.4) and is rebuilt from the transcripts when the first `reports()` stream starts. `live-index.json` is not written.
 
 ## Consequences
 - The history store ([[decisions/0005-json-file-persistence]]) is unaffected: frozen days persist as before, so a deleted transcript still keeps its history.
-- T-4.7 decides: if the launch scan of the 500 MB set misses NFR-7, persist the index then.
+- T-4.7 measured the launch scan of a generated 520 MB set at 1.5 to 1.7 s in a release build on an M3 (3.1 to 3.9 s before the memory fix), well inside NFR-7 by the rule of [[decisions/0026-nfr-7-on-an-m3]] ([[research/nfr-7-transcript-scan]]). The index stays in memory, and `live-index.json` is gone from SPEC §10.7.
+- The opt-in performance test guards the verdict: a first scan above ADR-026's limits fails it.
+- Revisit if a measurement on real data, or a much larger transcript tree, gets close to the budget.

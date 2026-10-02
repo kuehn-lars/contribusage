@@ -193,3 +193,18 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `TranscriptActivity`: roots from FR-22 plus the login shell's `CLAUDE_CONFIG_DIR`, a full incremental pass per file event or rescan, de-duplicated across files, merged with the history store; `ClaudeCodeProvider` gains the `activity` capability and passes the conformance suite with it.
 - App: one `reports()` consumer per enabled provider, rescans on popover open and wake, `noLocalData` when no days exist; `ActivitySection` shows today by date, the reported token categories only and a zero-filled 7 day chart with a VoiceOver summary.
 - ADR-024: the live index stays in memory; T-4.7 decides on persisting it. ADR-025: the SPEC §16.4 declared-roots read check and its file system seam move to T-4.7. `TranscriptFiles.roots` now returns missing roots too, so they are watched.
+
+## [2026-10-02] spec | ccusage validation recorded (T-4.7)
+- SPEC §8.3.6 and R-3: daily token totals match `ccusage daily` within 1 %, checked by hand against the built activity source.
+
+## [2026-10-02] fix | Live index within NFR-2, NFR-7 measured (T-4.7)
+- Opt-in performance test over a generated 520 MB tree: cold scan 1.5–1.7 s, incremental 42 ms in release on an M3; NFR-7 judged on the M3 against half its budget (ADR-026). The live index stays in memory (ADR-024), `live-index.json` left SPEC §10.7.
+- Memory went from about 400 MB growth to 27 MB: the JSONL reader streams through a fixed buffer instead of autoreleased whole-file data, and the live index keeps the first line per key (SPEC §8.3.4). Findings: [[research/nfr-7-transcript-scan]].
+
+## [2026-10-02] test | Declared-roots read check (T-4.7)
+- New seam `FileReading` (SPEC §10.6): the transcript listing, the JSONL reader and the history store read through it; `LiveFileReader` in the app.
+- `ProviderConformance` fails a provider that lists or reads outside its declared roots (SPEC §16.4, ADR-025), proven by `conformanceSuiteRejectsAReadOutsideTheRoots` and a mutation run.
+
+## [2026-10-02] fix | T-4.7 review fixes
+- Interning survives incremental appends; the reader returns a named `Outcome`; `JSONStore.read` takes its `FileReading` without a default.
+- The read check fails when nothing went through the seam and resolves symlinks; the perf test asserts ADR-026's half budget and fails if it cannot measure memory. T-4.7 ticked.

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-01
+updated: 2026-10-02
 aliases: [ADR-018]
 tags: [core, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]

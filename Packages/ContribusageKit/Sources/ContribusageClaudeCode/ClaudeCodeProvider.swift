@@ -19,8 +19,8 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     /// `override` reads the `provider.claude-code.pathOverride` setting on every resolution. `calendar` defines the
     /// local day of activity.
     public init(
-        runner: any ProcessRunning, fileEvents: any FileEvents, paths: AppPaths, home: URL, shell: URL,
-        time: any TimeSource, calendar: Calendar = .autoupdatingCurrent,
+        runner: any ProcessRunning, fileEvents: any FileEvents, fileReader: any FileReading, paths: AppPaths,
+        home: URL, shell: URL, time: any TimeSource, calendar: Calendar = .autoupdatingCurrent,
         override: @escaping @Sendable () -> URL? = { nil }
     ) {
         locator = ClaudeLocator(runner: runner, home: home, shell: shell)
@@ -29,8 +29,8 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
         self.time = time
         self.override = override
         activity = TranscriptActivity(
-            fileEvents: fileEvents, runner: runner, home: home, shell: shell, probeFolder: probeFolder, paths: paths,
-            time: time, calendar: calendar)
+            fileEvents: fileEvents, fileReader: fileReader, runner: runner, home: home, shell: shell,
+            probeFolder: probeFolder, paths: paths, time: time, calendar: calendar)
     }
 
     /// FR-3: only the first call runs processes. Never `notSignedIn`: a logged out CLI prints the same as API key

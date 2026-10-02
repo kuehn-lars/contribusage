@@ -7,7 +7,8 @@ enum ProviderRegistration {
     static func all(time: any TimeSource) -> [any UsageProvider] {
         [
             ClaudeCodeProvider(
-                runner: LiveProcessRunner(), fileEvents: FSEventsFileEvents(), paths: .live, home: .homeDirectory,
+                runner: LiveProcessRunner(), fileEvents: FSEventsFileEvents(), fileReader: LiveFileReader(),
+                paths: .live, home: .homeDirectory,
                 shell: URL(filePath: ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"),
                 time: time,
                 override: {

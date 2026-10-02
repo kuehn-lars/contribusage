@@ -336,7 +336,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-4 | Main thread | App code never blocks the main thread longer than 16 ms. Process execution, file IO and parsing run off the main actor. | Thread Performance Checker, code review |
 | NFR-5 | Probe budget | Automatic Claude Code probes at most every 15 min by default, never more often than every 5 min. Manual refresh at most every 30 s. | Unit tests on the scheduler |
 | NFR-6 | GitHub budget | Automatic GitHub fetches at most every 30 min by default, never more often than every 10 min. Rate limit headers respected. | Unit tests |
-| NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures |
+| NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
 | NFR-9 | Appearance | Correct in light and dark mode; respects Reduce Motion and Reduce Transparency; uses system fonts and semantic colors. | Manual checklist |
 | NFR-10 | Localization | All user facing strings in a String Catalog. English first. Dates, numbers and relative times formatted with the user's locale. | Build check, pseudo-localization run |
@@ -573,6 +573,8 @@ The incremental JSONL reader is generic (core); the Claude Code target supplies 
 #### 8.3.6 Validation
 
 `ccusage` (`npx ccusage daily --json`) serves as an external reference implementation. Token totals per day must match within 1 % (R-3, T-4.7).
+
+Checked 2026-10-02 (T-4.7): the app's daily token totals, compared by hand with `ccusage daily` on the same machine and dates, match within 1 %.
 
 ### 8.4 GitHub contributions
 
@@ -944,6 +946,12 @@ public protocol FileEvents: Sendable {
     func changes(in roots: [URL], debounce: Duration) -> AsyncStream<Set<URL>>
 }
 
+public protocol FileReading: Sendable {                   // what an activity source lists or reads (16.4, ADR-025)
+    func enumerator(at folder: URL) -> FileManager.DirectoryEnumerator?
+    func handle(forReadingFrom file: URL) throws -> FileHandle
+    func contents(of file: URL) throws -> Data
+}
+
 public struct AppPaths: Sendable {                        // a struct, not a seam (ADR-015)
     public let root: URL                                   // .live: ~/Library/Application Support/contribusage
     public init(root: URL)                                 // tests pass a temporary folder
@@ -960,7 +968,6 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 | File | Content | Loss tolerable? |
 |---|---|---|
 | `state.json` | `schemaVersion`, last limits snapshot per provider, last GitHub snapshot, notification keys | Yes (cache) |
-| `providers/claude-code/live-index.json` | Reserved for the per file read state and unique usage entries of existing transcripts; not written while the live index stays in memory (ADR-024, T-4.7 decides) | Yes (rebuilt by rescan) |
 | `providers/claude-code/history.json` | Frozen daily aggregates, 365 days | **No**: back up to `history.json.bak` before migrations |
 | `providers/claude-code/statusline-limits.json` | Written by the optional bridge script | Yes |
 | `providers/claude-code/probe/` | Empty working directory for probes | Yes |
@@ -1380,7 +1387,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - `fetch()` honours cancellation within 2 s (fake process runner that never finishes).
 - Failures surface as `SourceError`, never as crashes or untyped errors.
 - Cancelling the consumer of `reports()` releases all file watching (fake `FileEvents` reports zero active streams).
-- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots (fake file system records accesses; the seam and its check come with T-4.7, [ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
+- The provider performs no HTTP (it receives no `HTTPTransport`; holds by construction) and reads no path outside its declared roots: every listing and read goes through `FileReading`, whose fake passes through to the disk and records each URL; up to the first activity report, at least one URL must be recorded and every recorded URL, symlinks resolved, must lie inside the roots the test wiring declares (the FR-22 roots plus the provider's own folder). Not covered: child processes, writes, and limits-side reads such as the locator's look at the `claude` executable (FR-36) ([ADR-025](llm-wiki/decisions/0025-read-roots-check-with-t-4-7.md)).
 
 `FakeProvider` intentionally differs from Claude Code: only one window of kind `weekly`, limits delivered only via `pushedUpdates()`, token categories `input` and `output` only.
 
@@ -1423,7 +1430,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [ ] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry.
 - [x] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13. Answered 2026-09-29: `llm-wiki/research/r-2-usage-output-variants.md`.
-- [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures.
+- [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
 
@@ -1466,7 +1473,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [x] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [x] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
-- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set on an M1; persist the live index only if the launch scan misses NFR-7 (ADR-024); the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.6, NFR-7, 16.4)*
+- [x] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024), and keep it within NFR-2; the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.4, 8.3.6, NFR-2, NFR-7, 16.4)*
 - [ ] **M3 check:** US-5 acceptance holds.
 
 ### 17.5 Phase 5: v1.0 (M4)

@@ -1,3 +1,4 @@
+import ContribusageCore
 import Foundation
 import Testing
 
@@ -36,6 +37,6 @@ private func makeFiles(_ paths: [String], in folder: URL) throws {
             "-Users-octocat-work/s1.jsonl", "-Users-octocat-work/s1/subagents/a.jsonl", "-Users-octocat-work/notes.txt",
         ], in: root)
 
-    let files = TranscriptFiles.files(in: [root], excludingProjectOf: probe)
+    let files = TranscriptFiles.files(in: [root], excludingProjectOf: probe, fileReader: LiveFileReader())
     #expect(files.map(\.lastPathComponent).sorted() == ["a.jsonl", "s1.jsonl"])
 }

@@ -32,5 +32,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - R-4 changes one argument in `AppState.live`, not the coordinator.
 - `GitHubReport.staleAfter` became `GitHubReport.policy.staleAfter`.
 - `ContributionCalendar` keeps GitHub's `weeks` (SPEC §10.5), so the heatmap's columns are `weeks.suffix(26)` with no weekday arithmetic; `days` is derived.
-- Notification keys join `state.json` the same way, as an optional field.
+- Notification keys join `state.json` the same way, as an optional field. The coordinator reads `state.json` through `JSONStore.read(_:using: LiveFileReader())`; the reader is explicit since T-4.7 ([[decisions/0025-read-roots-check-with-t-4-7]]).
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.

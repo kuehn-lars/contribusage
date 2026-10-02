@@ -7,19 +7,27 @@ import os
 /// The shared checks of SPEC §16.4, run from every provider's test target against the provider wired to fakes.
 /// Violations are recorded as test issues at the caller's line.
 ///
-/// Not checked here: "no HTTP" holds by construction (a provider receives no `HTTPTransport`); "no reads outside the
-/// declared roots" needs a file system seam, which comes with T-4.7 (ADR-025).
+/// "No reads outside the declared roots" covers what the activity source opens, lists or reads through `FileReading`
+/// up to its first report: an enumerated folder counts when it is opened, an entry when it is read. An activity source
+/// that records no read at all fails, so bypassing the seam cannot pass. Paths are compared whole component by whole
+/// component after resolving symlinks on both sides. Not covered: child processes (`claude`, the login shell) read
+/// what they like, writes, and the limits side's reads (the locator's executable header read, FR-36). "No HTTP" holds
+/// by construction: a provider receives no `HTTPTransport`.
 public enum ProviderConformance {
     /// - Parameters:
     ///   - provider: wired to fakes that answer normally.
     ///   - neverFinishing: wired so `limits.fetch()` never finishes. Required when the provider has limits.
     ///   - failing: wired so `limits.fetch()` fails. Required when the provider has limits.
     ///   - fileEvents: the fake the activity source watches through. Required when the provider has activity.
+    ///   - fileReader: the fake the activity source reads through. Required when the provider has activity.
+    ///   - readRoots: the folders its spec section lets it read, its own `AppPaths.providerFolder` included.
     public static func check(
         _ provider: any UsageProvider,
         neverFinishing: (any UsageProvider)? = nil,
         failing: (any UsageProvider)? = nil,
         fileEvents: FakeFileEvents? = nil,
+        fileReader: FakeFileReader? = nil,
+        readRoots: [URL] = [],
         sourceLocation: SourceLocation = #_sourceLocation
     ) async {
         checkDescriptor(of: provider, at: sourceLocation)
@@ -30,7 +38,9 @@ public enum ProviderConformance {
             )
         }
         if let activity = provider.activity {
-            await checkActivity(activity, of: provider.descriptor.id, fileEvents: fileEvents, at: sourceLocation)
+            await checkActivity(
+                activity, of: provider.descriptor.id, fileEvents: fileEvents, fileReader: fileReader,
+                readRoots: readRoots, at: sourceLocation)
         }
     }
 
@@ -89,15 +99,23 @@ public enum ProviderConformance {
     }
 
     private static func checkActivity(
-        _ activity: any ActivitySource, of id: ProviderID, fileEvents: FakeFileEvents?, at location: SourceLocation
+        _ activity: any ActivitySource, of id: ProviderID, fileEvents: FakeFileEvents?, fileReader: FakeFileReader?,
+        readRoots: [URL], at location: SourceLocation
     ) async {
-        guard let fileEvents else {
-            Issue.record("activity needs the fileEvents fake", sourceLocation: location)
+        guard let fileEvents, let fileReader else {
+            Issue.record("activity needs the fileEvents and fileReader fakes", sourceLocation: location)
             return
         }
         let stream = activity.reports()
         let report = await withTimeout(.seconds(2)) { await stream.first { _ in true } }
         #expect(report?.provider == id, "no initial activity report of its own", sourceLocation: location)
+
+        let reads = fileReader.reads
+        #expect(!reads.isEmpty, "no reads through FileReading before the first report", sourceLocation: location)
+        func components(_ url: URL) -> [String] { url.standardizedFileURL.resolvingSymlinksInPath().pathComponents }
+        let roots = readRoots.map(components)
+        let outside = reads.filter { read in !roots.contains { components(read).starts(with: $0) } }
+        #expect(outside.isEmpty, "read outside its roots: \(outside.map(\.path))", sourceLocation: location)
 
         let consumer = Task { for await _ in stream {} }
         consumer.cancel()

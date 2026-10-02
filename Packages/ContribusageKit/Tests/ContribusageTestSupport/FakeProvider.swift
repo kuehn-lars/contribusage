@@ -10,11 +10,14 @@ public final class FakeProvider: UsageProvider {
     public let activity: (any ActivitySource)?
     private let state: OSAllocatedUnfairLock<(availability: ProviderAvailability, detections: Int)>
 
-    /// `fetch` defaults to failing: a push-only source has nothing to poll.
+    /// `fetch` defaults to failing: a push-only source has nothing to poll. The activity source reads `reads` through
+    /// `fileReader` before each report.
     public init(
         id: ProviderID = .fake,
         availability: ProviderAvailability = .available(version: "1.0"),
         fileEvents: FakeFileEvents = FakeFileEvents(),
+        fileReader: FakeFileReader = FakeFileReader(),
+        reads: [URL] = [],
         fetch: @escaping @Sendable () async throws -> LimitsReport = {
             throw SourceError.providerSpecific(code: "push-only", message: "limits are only pushed")
         }
@@ -24,7 +27,7 @@ public final class FakeProvider: UsageProvider {
             tokenCategories: [.input, .output], limitsPolicy: nil
         )
         limits = FakeLimitsSource(id: id, fetch: fetch)
-        activity = FakeActivitySource(id: id, fileEvents: fileEvents)
+        activity = FakeActivitySource(id: id, fileEvents: fileEvents, fileReader: fileReader, reads: reads)
         state = .init(initialState: (availability, 0))
     }
 
@@ -64,8 +67,11 @@ private struct FakeLimitsSource: LimitsSource {
 private struct FakeActivitySource: ActivitySource {
     let id: ProviderID
     let fileEvents: FakeFileEvents
+    let fileReader: FakeFileReader
+    let reads: [URL]
 
     func reports() -> AsyncStream<ActivityReport> {
+        for url in reads { _ = try? fileReader.contents(of: url) }
         let day = ActivityDay(
             day: DayKey(rawValue: "2026-09-28"), requests: 3, sessions: 1,
             tokens: TokenCounts(input: 120, output: 80), byModel: [:]
