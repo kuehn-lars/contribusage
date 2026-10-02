@@ -211,3 +211,11 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-02] test | M3 check
 - US-5 holds in the running app, checked by hand; SPEC §17.4's M3 check is ticked. Phase 4 is complete.
+
+## [2026-10-02] feat | Threshold notifications (T-5.1)
+- `NotificationPlanner` in the core; the coordinator plans after each polled fetch and persists the keys in `state.json` ([[decisions/0027-notification-planning-in-the-coordinator]]).
+- App delivery through `UNUserNotificationCenter`; SPEC §9.2 wording and T-5.1 ticked.
+
+## [2026-10-02] refactor | T-5.1 review fixes
+- Planner stores one cycle per window (highest threshold sent) instead of a key per threshold; `state.json` stays readable; FR-15 and [[decisions/0027-notification-planning-in-the-coordinator]] updated.
+- The limits job's `fetch` runs the planner (no state filter); default thresholds in one place; delegate set once; coordinator test uses the shared helpers.

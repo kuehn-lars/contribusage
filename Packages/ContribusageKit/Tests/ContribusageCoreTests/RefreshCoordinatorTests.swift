@@ -29,10 +29,12 @@ private struct PolledProvider: UsageProvider, LimitsSource {
     func pushedUpdates() -> AsyncStream<LimitsReport> { AsyncStream { $0.finish() } }
 }
 
-private func report(_ id: ProviderID, resetsAt: Date? = nil) -> LimitsReport {
+private func report(_ id: ProviderID, percent: Double = 5, resetsAt: Date? = nil) -> LimitsReport {
     LimitsReport(
         provider: id,
-        windows: [UsageWindow(label: "Week", kind: .weekly, usedPercent: 5, isBelowOne: false, resetsAt: resetsAt)],
+        windows: [
+            UsageWindow(label: "Week", kind: .weekly, usedPercent: percent, isBelowOne: false, resetsAt: resetsAt)
+        ],
         billingNote: nil, insights: nil, rawOutput: nil)
 }
 
@@ -65,12 +67,13 @@ private final class Log: Sendable {
 
 private func coordinator(
     _ providers: [any UsageProvider], enabled: Set<ProviderID>? = nil, paths: AppPaths = .temporary(),
-    time: FakeTimeSource = FakeTimeSource(now: start), log: Log, github: RefreshCoordinator<Int>.Job<Int>? = nil
+    time: FakeTimeSource = FakeTimeSource(now: start), log: Log, github: RefreshCoordinator<Int>.Job<Int>? = nil,
+    notifications: RefreshCoordinator<Int>.Notifications? = nil
 ) -> RefreshCoordinator<Int> {
     RefreshCoordinator(
         registry: ProviderRegistry(
             providers: providers, enabledIDs: enabled ?? Set(providers.map(\.descriptor.id)), time: time),
-        paths: paths, time: time, github: github, onUpdate: { log.record($0, $1) })
+        paths: paths, time: time, github: github, notifications: notifications, onUpdate: { log.record($0, $1) })
 }
 
 /// NFR-18, SPEC §12 rule 5: two overlapping passes still run one fetch at a time, in registry order.
@@ -134,6 +137,25 @@ private func coordinator(
     #expect(snapshot.value == report(a))
     #expect(relaunchLog.fetches.isEmpty)
     #expect(next == start + 900)
+}
+
+/// FR-15, US-3: a fetched report is planned and delivered; the sent keys survive a restart, a cached report sends nothing.
+@Test func notificationsAreSentOnceAcrossARestart() async {
+    let paths = AppPaths.temporary()
+    let time = FakeTimeSource(now: start)
+    let sent = OSAllocatedUnfairLock(initialState: [String]())
+    let notifications = RefreshCoordinator<Int>.Notifications(
+        settings: { NotificationPlanner.Settings(thresholds: [50]) },
+        deliver: { notes in sent.withLock { $0 += notes.map(\.title) } })
+    let provider = PolledProvider(id: a) { report($0, percent: 60) }
+    _ = await coordinator([provider], paths: paths, time: time, log: Log(), notifications: notifications).runDue()
+    #expect(sent.withLock { $0 } == ["Polled: Week at 50 %"])
+
+    time.advance(by: .seconds(3600))
+    let relaunched = coordinator([provider], paths: paths, time: time, log: Log(), notifications: notifications)
+    await relaunched.restore()
+    _ = await relaunched.runDue()
+    #expect(sent.withLock { $0 }.count == 1)
 }
 
 /// SPEC §13: a failure keeps the previous snapshot and backs off.

@@ -49,9 +49,19 @@ import Observation
             // ponytail: the Mac's calendar defines GitHub's today until R-4 names the zone GitHub counts in (ADR-021).
             fetch: { try await gitHubAccount.report(now: time.now, calendar: .current) },
             onUpdate: { [weak state] update in await state?.apply(update) })
-        let coordinator = RefreshCoordinator(registry: registry, paths: .live, time: time, github: github) {
-            [weak state] id, update in await state?.apply(update, to: id)
-        }
+        // FR-13, FR-14: the Settings keys of SPEC §10.7, read before every plan.
+        let notifications = RefreshCoordinator<GitHubReport>.Notifications(
+            settings: {
+                let defaults = UserDefaults.standard
+                var settings = NotificationPlanner.Settings(notifyOnReset: defaults.bool(forKey: "notifyOnReset"))
+                if let thresholds = defaults.array(forKey: "notificationThresholds") as? [Int] {
+                    settings.thresholds = thresholds
+                }
+                return settings
+            }, deliver: NotificationDelivery.shared.deliver)
+        let coordinator = RefreshCoordinator(
+            registry: registry, paths: .live, time: time, github: github, notifications: notifications
+        ) { [weak state] id, update in await state?.apply(update, to: id) }
         state.coordinator = coordinator
         // One consumer keeps the changes in order; a task per change would not.
         let (changes, changed) = AsyncStream.makeStream(of: ScheduleConditions.self)
