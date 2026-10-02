@@ -1473,7 +1473,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-4.4** Generic `HistoryStore` in the core: freezing after 48 h, 365 day retention, never discarded, keyed by provider. *(FR-29, 8.3.4)*
 - [x] **T-4.5** Live `FileEvents` with FSEvents (file level events, 5 s latency). *(FR-27)*
 - [x] **T-4.6** Claude Code `ActivitySource` and Activity section UI: today row, 7 day chart, states, hidden token categories. *(US-5, 10.4)* Accept: conformance suite passes with activity.
-- [ ] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024), and keep it within NFR-2; the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.4, 8.3.6, NFR-2, NFR-7, 16.4)*
+- [x] **T-4.7** Validation against `ccusage` and performance test with generated 500 MB fixture set (on an M3 against half the budget, ADR-026); persist the live index only if the launch scan misses NFR-7 (ADR-024), and keep it within NFR-2; the file system seam and the conformance check that a provider reads only its declared roots (16.4, ADR-025). *(8.3.4, 8.3.6, NFR-2, NFR-7, 16.4)*
 - [ ] **M3 check:** US-5 acceptance holds.
 
 ### 17.5 Phase 5: v1.0 (M4)

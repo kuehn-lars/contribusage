@@ -25,4 +25,5 @@ NFR-7 counts as met for an M1 when the first scan in a release build on the M3 t
 
 ## Consequences
 - Results and margins: [[research/nfr-7-transcript-scan]]. The measurements so far, 1.5 to 1.7 s and 41 to 45 ms, sit far inside the half budget.
+- On a machine slower than the M3, the test can fail at the halved limits although NFR-7 holds; judge such a run by hand against the full budget rather than loosening the test.
 - Revisit when an M1 is at hand or a measurement lands close to the half-budget line.
