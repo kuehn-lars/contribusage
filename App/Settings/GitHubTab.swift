@@ -50,9 +50,13 @@ struct GitHubTab: View {
                     if let error { Text(error).foregroundStyle(.red) }
                 }
             }
+            Section {
+                IntervalPicker(
+                    "Refresh every", key: "githubInterval", policy: GitHubReport.policy,
+                    choices: [10, 15, 30, 60, 120, 240, 360])
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
     }
 

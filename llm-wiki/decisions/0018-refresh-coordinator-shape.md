@@ -33,4 +33,5 @@ T-2.6 builds the scheduler of SPEC §12. Four points were open: how the neutral 
 - GitHub joined in T-3.6 with the coordinator generic over its value ([[decisions/0022-github-job-in-the-coordinator]]).
 - The extra triggers of SPEC §12 (popover opened, a window's reset) joined the same passes in T-2.7 as `triggers` dates ([[decisions/0019-extra-refresh-triggers]]).
 - T-5.1 plans notifications after each polled limits fetch in the same passes ([[decisions/0027-notification-planning-in-the-coordinator]]).
+- T-5.2's settings enter the same actor as calls: `intervalsChanged()` reschedules, `resetCaches()` forgets the snapshots and runs a pass ([[decisions/0028-settings-scope-and-wiring]]).
 - Revisit if a provider's fetch is slow enough that queueing behind it matters: then passes per provider, with the process gate as the only global lock.

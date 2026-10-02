@@ -219,3 +219,15 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-02] refactor | T-5.1 review fixes
 - Planner stores one cycle per window (highest threshold sent) instead of a key per threshold; `state.json` stays readable; FR-15 and [[decisions/0027-notification-planning-in-the-coordinator]] updated.
 - The limits job's `fetch` runs the planner (no state filter); default thresholds in one place; delegate set once; coordinator test uses the shared helpers.
+
+## [2026-10-02] feat | Settings window (T-5.2)
+- General, Providers, GitHub and Advanced tabs: enable toggles that start and stop a provider at runtime (FR-2, US-12), Claude Code's located `claude`, override with Test, probe and GitHub intervals, data deletion while off, thresholds, insights toggle, reset caches.
+- Core: `Job.interval`, `limitsInterval`, `intervalsChanged()`, `resetCaches()`; `ClaudeCodeProvider.located()`. [[decisions/0028-settings-scope-and-wiring]]; SPEC FR-2, §10.7, §11.6, T-5.2, T-5.10 updated.
+
+## [2026-10-02] fix | T-5.2 review fixes
+- `restore()` publishes only for sources without a state, so enabling a provider no longer hides a rejected token or a failure (test added).
+- App: a group per registered provider plus `enabledIDs` (no parking or reinsertion), one `IntervalPicker`, `Lookup` for the located `claude`, `NotificationPlanner.Settings.stored`; `ClaudeLocator.Found.kind`, `ClaudeCodeProvider.located()` replaces the private `locate()`.
+
+## [2026-10-02] test | Notifications and Settings checked by hand
+- US-3 notifications (threshold crossing on a fetch, permission prompt, banner) and the T-5.2 Settings window verified in the built `.app` from `/Applications`.
+- How to repeat the check: [[modules/app#Things that bite]].

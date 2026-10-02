@@ -12,24 +12,28 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     public typealias Update = @Sendable (ProviderID, SourceState<LimitsReport>) async -> Void
 
     /// One polled source: a provider's limits, or GitHub as the app supplies it. `triggers` are the extra refresh dates
-    /// a fetched value brings (FR-11: a window's reset).
+    /// a fetched value brings (FR-11: a window's reset). `interval` is the interval setting, read before every
+    /// scheduling decision; `nil` keeps the policy's default.
     public struct Job<Value: Sendable & Codable>: Sendable {
         let policy: SchedulePolicy
         let origin: Origin
         let fetch: @Sendable () async throws -> Value
         let onUpdate: @Sendable (SourceState<Value>) async -> Void
         let triggers: @Sendable (Value) -> [Date]
+        let interval: @Sendable () -> Duration?
 
         public init(
             policy: SchedulePolicy, origin: Origin, fetch: @escaping @Sendable () async throws -> Value,
             onUpdate: @escaping @Sendable (SourceState<Value>) async -> Void,
-            triggers: @escaping @Sendable (Value) -> [Date] = { _ in [] }
+            triggers: @escaping @Sendable (Value) -> [Date] = { _ in [] },
+            interval: @escaping @Sendable () -> Duration? = { nil }
         ) {
             self.policy = policy
             self.origin = origin
             self.fetch = fetch
             self.onUpdate = onUpdate
             self.triggers = triggers
+            self.interval = interval
         }
     }
 
@@ -79,6 +83,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private let onUpdate: Update
     private let gitHubJob: Job<GitHubValue>?
     private let notifications: Notifications?
+    private let limitsInterval: @Sendable (ProviderID) -> Duration?
     private var notificationKeys: NotificationPlanner.Sent = [:]
     private var conditions = ScheduleConditions()
     private var records: [ProviderID: Record<LimitsReport>] = [:]
@@ -86,15 +91,19 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private var pass: Task<Date?, Never>?
     private var loop: Task<Void, Never>?
 
+    /// `limitsInterval` is a provider's interval setting (for Claude Code: `provider.claude-code.probeInterval`).
     public init(
         registry: ProviderRegistry, paths: AppPaths, time: any TimeSource, github: Job<GitHubValue>?,
-        notifications: Notifications? = nil, onUpdate: @escaping Update
+        notifications: Notifications? = nil,
+        limitsInterval: @escaping @Sendable (ProviderID) -> Duration? = { _ in nil },
+        onUpdate: @escaping Update
     ) {
         self.registry = registry
         stateFile = paths.root.appending(path: "state.json")
         self.time = time
         gitHubJob = github
         self.notifications = notifications
+        self.limitsInterval = limitsInterval
         self.onUpdate = onUpdate
     }
 
@@ -111,7 +120,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     }
 
     /// FR-10: every enabled provider's and GitHub's last success shows at once, as `cache`; a snapshot already in
-    /// memory stays. An unreadable file is a lost cache.
+    /// memory stays, and a source that already shows a state keeps it. An unreadable file is a lost cache.
     public func restore() async {
         guard
             let persisted = (try? JSONStore.read(PersistedState.self, from: stateFile, using: LiveFileReader())) ?? nil
@@ -122,13 +131,15 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         if github.snapshot == nil { github.snapshot = persisted.github?.cached }
         if notificationKeys.isEmpty { notificationKeys = persisted.notificationKeys ?? [:] }
         for provider in await registry.enabledProviders() {
-            if let job = job(for: provider), let record = records[provider.descriptor.id],
+            if let job = job(for: provider), let record = records[provider.descriptor.id], record.state == nil,
                 let snapshot = record.snapshot
             {
                 await publish(job, record, .loaded(snapshot))
             }
         }
-        if let gitHubJob, let snapshot = github.snapshot { await publish(gitHubJob, github, .loaded(snapshot)) }
+        if let gitHubJob, github.state == nil, let snapshot = github.snapshot {
+            await publish(gitHubJob, github, .loaded(snapshot))
+        }
     }
 
     /// Wake, sleep, network and Low Power Mode changes (SPEC §12 rules 1 to 3).
@@ -143,6 +154,21 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             record(provider.descriptor.id).manual = true
         }
         github.manual = true
+        await runDue()
+        if loop != nil { reschedule() }
+    }
+
+    /// An interval setting changed: the next run moves at once instead of after the old interval.
+    public func intervalsChanged() {
+        if loop != nil { reschedule() }
+    }
+
+    /// SPEC §11.6 "reset caches": every snapshot is forgotten and every source runs again. The notification keys stay,
+    /// or the refetch would repeat notifications (FR-15); history is the providers' and never touched.
+    public func resetCaches() async {
+        records = [:]
+        github = Record()
+        persist()
         await runDue()
         if loop != nil { reschedule() }
     }
@@ -209,7 +235,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     }
 
     private func nextRun<Value>(_ job: Job<Value>, _ record: Record<Value>, openedAt: Date?) -> Date? {
-        var policy = job.policy
+        var policy = job.policy.withDefault(job.interval())
         switch record.state {
         case .notConfigured(.unsupportedPlan)?:
             policy = policy.fixed(unsupportedPlanRecheck, manualFloor: policy.manualFloor)
@@ -279,7 +305,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
                 await self.notify(report, name)
                 return report
             },
-            onUpdate: { [onUpdate] in await onUpdate(id, $0) }, triggers: { $0.windows.compactMap(\.resetsAt) })
+            onUpdate: { [onUpdate] in await onUpdate(id, $0) }, triggers: { $0.windows.compactMap(\.resetsAt) },
+            interval: { [limitsInterval] in limitsInterval(id) })
     }
 
     /// FR-15: the keys are persisted before delivery, so a restart cannot repeat a notification. Runs only on a fetch,
@@ -316,6 +343,14 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
 }
 
 extension SchedulePolicy {
+    /// This policy with `interval` as its default; `Schedule` clamps it to the bounds.
+    fileprivate func withDefault(_ interval: Duration?) -> SchedulePolicy {
+        guard let interval else { return self }
+        return SchedulePolicy(
+            defaultInterval: interval, minimumInterval: minimumInterval, maximumInterval: maximumInterval,
+            staleAfter: staleAfter, manualFloor: manualFloor, needsNetwork: needsNetwork)
+    }
+
     /// This policy with every interval `interval`, so backoff and triggers cannot move a run.
     fileprivate func fixed(_ interval: Duration, manualFloor: Duration) -> SchedulePolicy {
         SchedulePolicy(

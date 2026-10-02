@@ -28,4 +28,5 @@ SPEC §12 lists two extra triggers for polled limits: "popover opened and data o
 - The app only reports the popover opening; it holds no timers of its own.
 - After a failed attempt past a reset, the source returns to its backoff schedule.
 - The same `resetsAt` changing between fetches is what re-arms notification thresholds ([[decisions/0027-notification-planning-in-the-coordinator]]).
+- An interval setting replaces only the policy's default interval; a trigger still waits for the minimum interval ([[decisions/0028-settings-scope-and-wiring]]).
 - A window whose reported reset never moves forward (the tool keeps printing a past time) triggers nothing after the first attempt, since the trigger must lie after the last run.

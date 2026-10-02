@@ -5,7 +5,8 @@ import Observation
 
 /// The view model (SPEC §9.2): one `SourceState` per provider capability and one for GitHub.
 @Observable final class AppState {
-    /// One popover group (FR-4). Only enabled providers get one, in registry order.
+    /// One popover group (FR-4), in registry order. Disabled groups keep their last states, so turning a provider on
+    /// again shows them at once.
     struct ProviderGroupState: Identifiable {
         let descriptor: ProviderDescriptor
         /// `nil` when the provider lacks the capability.
@@ -15,23 +16,48 @@ import Observation
     }
 
     var providers: [ProviderGroupState]
+    /// FR-2: only these groups show in the popover.
+    private(set) var enabledIDs: Set<ProviderID>
     var github: SourceState<GitHubReport>
+    /// `nil` in previews, which never open Settings.
+    @ObservationIgnored private(set) var registry: ProviderRegistry?
     /// `nil` in previews.
     @ObservationIgnored private var coordinator: RefreshCoordinator<GitHubReport>?
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private var gitHubAccount: GitHubAccount?
     @ObservationIgnored private var conditions: SystemConditions?
-    /// The enabled providers' activity sources, rescanned on popover open and wake (SPEC §12).
-    @ObservationIgnored private var activities: [any ActivitySource] = []
+    /// The enabled providers' activity sources and the tasks that consume their reports, rescanned on popover open
+    /// and wake (SPEC §12); cancelling a task stops the watching (ADR-016).
+    @ObservationIgnored private var activities: [ProviderID: (source: any ActivitySource, watch: Task<Void, Never>)] =
+        [:]
+    @ObservationIgnored private let time: any TimeSource
 
-    init(providers: [ProviderGroupState], github: SourceState<GitHubReport>) {
+    /// `enabledIDs` defaults to every group in `providers`.
+    init(
+        providers: [ProviderGroupState], enabledIDs: Set<ProviderID>? = nil, github: SourceState<GitHubReport>,
+        time: any TimeSource = SystemTimeSource()
+    ) {
         self.providers = providers
+        self.enabledIDs = enabledIDs ?? Set(providers.map(\.id))
         self.github = github
+        self.time = time
     }
+
+    /// The popover's groups.
+    var enabledProviders: [ProviderGroupState] { providers.filter { enabledIDs.contains($0.id) } }
 
     /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
     static func live() -> AppState {
-        let state = AppState(providers: [], github: .loading(previous: nil))
+        let time = SystemTimeSource()
+        let defaults = UserDefaults.standard
+        let enabledIDs = defaults.stringArray(forKey: "enabledProviders").map { Set($0.map(ProviderID.init)) }
+        let registry = ProviderRegistry(
+            providers: ProviderRegistration.all(time: time), enabledIDs: enabledIDs, time: time)
+        // None shows until the registry has settled the FR-2 first-run default.
+        let state = AppState(
+            providers: registry.providers.map(ProviderGroupState.init), enabledIDs: [], github: .loading(previous: nil),
+            time: time)
+        state.registry = registry
         // FR-16: Keychain service `<bundle id>.github`. Both Info.plist keys come from the build settings.
         let gitHubAccount = GitHubAccount(
             secrets: KeychainSecretStore(service: Bundle.main.bundleIdentifier! + ".github"),
@@ -39,29 +65,19 @@ import Observation
                 transport: URLSessionTransport(),
                 version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String))
         state.gitHubAccount = gitHubAccount
-        let time = SystemTimeSource()
-        let defaults = UserDefaults.standard
-        let enabledIDs = defaults.stringArray(forKey: "enabledProviders").map { Set($0.map(ProviderID.init)) }
-        let registry = ProviderRegistry(
-            providers: ProviderRegistration.all(time: time), enabledIDs: enabledIDs, time: time)
         let github = RefreshCoordinator<GitHubReport>.Job(
             policy: GitHubReport.policy, origin: .github,
             // ponytail: the Mac's calendar defines GitHub's today until R-4 names the zone GitHub counts in (ADR-021).
             fetch: { try await gitHubAccount.report(now: time.now, calendar: .current) },
-            onUpdate: { [weak state] update in await state?.apply(update) })
-        // FR-13, FR-14: the Settings keys of SPEC §10.7, read before every plan.
+            onUpdate: { [weak state] update in await state?.apply(update) },
+            interval: { minutes(UserDefaults.standard.object(forKey: "githubInterval")) })
+        // Read before every plan.
         let notifications = RefreshCoordinator<GitHubReport>.Notifications(
-            settings: {
-                let defaults = UserDefaults.standard
-                var settings = NotificationPlanner.Settings(notifyOnReset: defaults.bool(forKey: "notifyOnReset"))
-                if let thresholds = defaults.array(forKey: "notificationThresholds") as? [Int] {
-                    settings.thresholds = thresholds
-                }
-                return settings
-            }, deliver: NotificationDelivery.shared.deliver)
+            settings: { .stored }, deliver: NotificationDelivery.shared.deliver)
         let coordinator = RefreshCoordinator(
-            registry: registry, paths: .live, time: time, github: github, notifications: notifications
-        ) { [weak state] id, update in await state?.apply(update, to: id) }
+            registry: registry, paths: .live, time: time, github: github, notifications: notifications,
+            limitsInterval: { minutes(UserDefaults.standard.object(forKey: "provider.\($0.rawValue).probeInterval")) },
+            onUpdate: { [weak state] id, update in await state?.apply(update, to: id) })
         state.coordinator = coordinator
         // One consumer keeps the changes in order; a task per change would not.
         let (changes, changed) = AsyncStream.makeStream(of: ScheduleConditions.self)
@@ -77,18 +93,7 @@ import Observation
             }
         }
         Task {
-            let enabled = await registry.enabledProviders()
-            defaults.set(enabled.map(\.descriptor.id.rawValue), forKey: "enabledProviders")  // FR-2 first-run default
-            state.providers = enabled.map {
-                ProviderGroupState(
-                    descriptor: $0.descriptor, limits: $0.limits.map { _ in .loading(previous: nil) },
-                    activity: $0.activity.map { _ in .loading(previous: nil) })
-            }
-            state.activities = enabled.compactMap(\.activity)
-            for activity in state.activities {
-                // Watching lasts as long as this loop consumes the stream (ADR-016).
-                Task { for await report in activity.reports() { state.apply(report, at: time.now) } }
-            }
+            state.apply(enabled: await registry.enabledProviders())
             await coordinator.start()
         }
         return state
@@ -106,7 +111,48 @@ import Observation
     }
 
     private func rescanActivity() {
-        for activity in activities { Task { await activity.rescan() } }
+        for activity in activities.values { Task { await activity.source.rescan() } }
+    }
+
+    /// FR-2, US-12: a disabled provider watches nothing and the coordinator skips it; its group leaves the popover.
+    /// Enabling it shows its cached snapshot and runs what is due.
+    // ponytail: a probe already running when the provider is disabled still finishes (at most 30 s, FR-7).
+    func setEnabled(_ id: ProviderID, _ enabled: Bool) async {
+        guard let registry, let coordinator else { return }
+        await registry.setEnabled(id, enabled)
+        apply(enabled: await registry.enabledProviders())
+        if enabled { await coordinator.start() }
+    }
+
+    /// The one place the registry's enabled set takes effect: the setting, the popover and the watching, which lasts
+    /// as long as a task consumes the stream (ADR-016). Applying the same set twice changes nothing.
+    private func apply(enabled: [any UsageProvider]) {
+        UserDefaults.standard.set(enabled.map(\.descriptor.id.rawValue), forKey: "enabledProviders")
+        enabledIDs = Set(enabled.map(\.descriptor.id))
+        for (id, activity) in activities where !enabledIDs.contains(id) {
+            activity.watch.cancel()
+            activities[id] = nil
+        }
+        for provider in enabled where activities[provider.descriptor.id] == nil {
+            guard let source = provider.activity else { continue }
+            let watch = Task { [time] in for await report in source.reports() { self.apply(report, at: time.now) } }
+            activities[provider.descriptor.id] = (source, watch)
+        }
+    }
+
+    /// US-12 "Delete data for this provider": its folder under the data folder, history included.
+    func deleteData(of id: ProviderID) async throws {
+        try await Task.detached { try JSONStore.deleteProviderData(id, in: .live) }.value
+    }
+
+    /// An interval setting changed (SPEC §11.6).
+    func intervalsChanged() {
+        Task { await coordinator?.intervalsChanged() }
+    }
+
+    /// SPEC §11.6 Advanced "reset caches": `state.json`'s snapshots, never history.
+    func resetCaches() {
+        Task { await coordinator?.resetCaches() }
     }
 
     /// FR-17: saves a token GitHub accepts and returns its login; GitHub then starts over with it (SPEC §12).
@@ -137,5 +183,37 @@ import Observation
         providers[index].activity =
             report.days.isEmpty
             ? .notConfigured(.noLocalData) : .loaded(Snapshot(value: report, fetchedAt: now, origin: .activity))
+    }
+}
+
+extension AppState.ProviderGroupState {
+    /// Before the first update every section the provider has is loading.
+    init(_ provider: any UsageProvider) {
+        self.init(
+            descriptor: provider.descriptor, limits: provider.limits.map { _ in .loading(previous: nil) },
+            activity: provider.activity.map { _ in .loading(previous: nil) })
+    }
+}
+
+/// An interval setting in minutes (SPEC §10.7); `nil` keeps the policy's default.
+nonisolated private func minutes(_ setting: Any?) -> Duration? {
+    (setting as? Int).map { .seconds($0 * 60) }
+}
+
+extension NotificationPlanner.Settings {
+    /// FR-13, FR-14: the Settings keys of SPEC §10.7; unset keeps the planner's defaults.
+    nonisolated static var stored: Self {
+        get {
+            let defaults = UserDefaults.standard
+            var settings = Self(notifyOnReset: defaults.bool(forKey: "notifyOnReset"))
+            if let thresholds = defaults.array(forKey: "notificationThresholds") as? [Int] {
+                settings.thresholds = thresholds
+            }
+            return settings
+        }
+        set {
+            UserDefaults.standard.set(newValue.thresholds, forKey: "notificationThresholds")
+            UserDefaults.standard.set(newValue.notifyOnReset, forKey: "notifyOnReset")
+        }
     }
 }

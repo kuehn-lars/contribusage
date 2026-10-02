@@ -28,7 +28,7 @@ struct PopoverView: View {
 
     private var groups: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(appState.providers) { group in
+            ForEach(appState.enabledProviders) { group in
                 ProviderGroup(group: group).padding(12)
                 Divider()
             }
@@ -43,6 +43,8 @@ private struct Footer: View {
         HStack {
             Button("Refresh", systemImage: "arrow.clockwise") { appState.refresh() }  // FR-32
                 .keyboardShortcut("r")
+            Spacer()
+            SettingsButton(title: "Settings", systemImage: "gearshape", tab: .general).keyboardShortcut(",")
             Spacer()
             Button("Quit", systemImage: "power") { NSApplication.shared.terminate(nil) }
                 .keyboardShortcut("q")

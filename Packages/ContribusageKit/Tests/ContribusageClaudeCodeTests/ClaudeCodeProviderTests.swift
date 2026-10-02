@@ -176,6 +176,15 @@ func mapsProbeResult(_ result: ProcessResult, to error: SourceError) async {
     #expect(fake.requests.filter { $0.arguments == ["--version"] }.count == 2)
 }
 
+/// SPEC §11.6 Providers tab: the located `claude` with its executable type; the fake path is no file, hence `unknown`.
+@Test func reportsTheLocatedClaude() async {
+    let located = await provider(runner()).located()
+    #expect(located?.executable.path == claude)
+    #expect(located?.version == "2.1.284")
+    #expect(located?.kind == .unknown)
+    #expect(await provider(FakeProcessRunner { _ in throw CocoaError(.fileNoSuchFile) }).located() == nil)
+}
+
 /// Detection stays cheap and cannot know the plan; the probe reports it (ADR-017).
 @Test func reportsAnUnsupportedPlanFromTheProbe() async throws {
     let apiKey = runner { _ in ProcessResult(exitCode: 0, stdout: "Total cost:            $0.0000\n", stderr: "") }
