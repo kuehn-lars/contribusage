@@ -243,3 +243,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] decision | No first run onboarding (ADR-029)
 - FR-37 and T-5.4 struck: an onboarding card was built and dropped in review as unintuitive for developers, who configure in Settings.
 - US-6 no longer offers launch at login on first run; the §16.5 fresh user row relies on the popover's not configured states.
+
+## [2026-10-03] feat | Copy diagnostics and copy statistics (T-5.5)
+- Settings' Advanced tab copies diagnostics: app, macOS, chip, per source state, skipped lines, Claude Code's located `claude` and last probe, GitHub's state; never a token.
+- The popover footer's Copy button copies what the popover shows, insights of every period included (new FR-42); its lines share the views' helpers.
+- `UsageProvider.diagnostics()` with an empty default carries provider lines ([[decisions/0030-provider-diagnostics-hook]]); SPEC §10.2, §11.2, §13 and FR-36 updated.

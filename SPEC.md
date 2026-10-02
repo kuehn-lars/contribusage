@@ -312,7 +312,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-33 | P2 | Settings window (SwiftUI `Settings` scene) covering US-7 and US-12. |
 | FR-34 | P2 | Launch at login via `SMAppService.mainApp`. |
 | FR-35 | P1 | Quit item in the footer (`⌘Q`). |
-| FR-36 | P2 | "Copy diagnostics" (US-10) in the footer's overflow menu. For the resolved `claude` executable, diagnostics state whether it is a Mach-O arm64 binary, a Mach-O x86_64 binary (would need Rosetta) or a script (for example an npm shim). |
+| FR-36 | P2 | "Copy diagnostics" (US-10) in Settings' Advanced tab (ADR-030). For the resolved `claude` executable, diagnostics state whether it is a Mach-O arm64 binary, a Mach-O x86_64 binary (would need Rosetta) or a script (for example an npm shim). |
 | FR-37 | P2 | ~~First run onboarding in the popover: detects providers, offers GitHub connection, asks notification permission, offers launch at login. Each step skippable.~~ Dropped (ADR-029): the popover's not configured states and Settings cover each step where it is needed. |
 
 ### 5.8 Optional features (P3)
@@ -323,6 +323,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-39 | P3 | Claude Code status line bridge support: watch the bridge file, merge its windows with probe data (US-9, [8.2](#82-claude-code-status-line-bridge-optional)). Guided installer that backs up `~/.claude/settings.json`, never overwrites an existing `statusLine` without showing a diff and getting consent, and can uninstall cleanly. |
 | FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
+| FR-42 | P2 | "Copy" button in the popover footer (copy statistics): copies what the popover shows as plain text, in its order (per enabled provider its limits, activity and, while shown, insights with every period, then GitHub; a section without values its error message), without diagnostics (ADR-030). |
 
 ---
 
@@ -804,6 +805,8 @@ public protocol UsageProvider: Sendable {
     func detectAvailability() async -> ProviderAvailability
     var limits: (any LimitsSource)? { get }
     var activity: (any ActivitySource)? { get }
+    func diagnostics() async -> [String]       // provider specific lines for FR-36; may detect, never fetches;
+                                               // no secret; default [] (ADR-030)
 }
 
 public protocol LimitsSource: Sendable {
@@ -1006,7 +1009,7 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 │ ░▒▓█░▒▒▓░░▒█▓▒░ … (26 weeks × 7 days)       │
 │ Today 5 · Streak 12 days · Year 1,234      │
 ├────────────────────────────────────────────┤
-│ ⟳ Refresh        ⚙︎ Settings    ⋯    ⏻ Quit │
+│ ⟳ Refresh     ⚙︎ Settings    ⧉ Copy   ⏻ Quit │
 └────────────────────────────────────────────┘
 ```
 
@@ -1097,14 +1100,14 @@ Global rules:
 | Not logged in | Non-zero exit and the output says "login", "log in" or "logged in" (other non-zero exits: `processFailed` with the last 500 characters of stderr). R-2: Claude Code 2.1.284 prints no login text; logged out looks like API key billing and lands in the next row | `failed(.notLoggedIn)` | "Claude Code isn't logged in. Run `claude` in Terminal and log in." | Normal schedule |
 | API key billing, no subscription | P-10; `fetch()` throws `SourceError.unsupportedPlan` | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
 | Probe timeout | 30 s elapsed | `failed(.timedOut)` | "Claude Code didn't answer in time." | Backoff |
-| Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output and diagnostics |
+| Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output; diagnostics in Settings (FR-36) |
 | `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
 | Offline | `NWPathMonitor` | `failed(.offline)` with previous | "Offline" badge | Auto on reconnect |
 | GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + "Change token…" button (opens Settings) | Stop until token changes |
 | GitHub rate limited | Failed response with `x-ratelimit-remaining: 0` (8.4.3) | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
 | Transcript root missing | Directory absent | `notConfigured(.noLocalData)` | See 11.3 | Watch parent directory for creation |
 | Malformed transcript lines | Decode failure | Loaded, `skippedLines > 0` | Only in diagnostics | none |
-| Provider throws unexpectedly | Any error not mapped | `failed(.providerSpecific)` for that provider only | "Something went wrong with <provider>." + "Copy diagnostics" | Backoff; other providers unaffected |
+| Provider throws unexpectedly | Any error not mapped | `failed(.providerSpecific)` for that provider only | "Something went wrong with <provider>." (diagnostics in Settings, FR-36) | Backoff; other providers unaffected |
 | Disk write failure | Throwing write | Keep in memory | Only in diagnostics (log error) | Retry on next change |
 
 ---
@@ -1482,7 +1485,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.2** Complete Settings window including Providers tab, enable toggles and data deletion; the controls of T-5.3, T-5.5, T-5.10 and T-6.2 come with those tasks (ADR-028). *(FR-2, FR-33, US-7, US-12)*
 - [x] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
 - [ ] ~~**T-5.4** First run onboarding. *(FR-37)*~~ Dropped with FR-37 (ADR-029).
-- [ ] **T-5.5** Copy diagnostics. *(FR-36, US-10)*
+- [x] **T-5.5** Copy diagnostics in Settings, with provider lines through `UsageProvider.diagnostics()`, and copy statistics in the popover footer (ADR-030). *(FR-36, FR-42, US-10)*
 - [ ] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
 - [ ] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)*
 - [ ] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)*

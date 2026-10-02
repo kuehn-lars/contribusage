@@ -13,6 +13,10 @@ import Observation
         var limits: SourceState<LimitsReport>?
         var activity: SourceState<ActivityReport>?
         var id: ProviderID { descriptor.id }
+        /// FR-38: the insights the group can show; the `showInsights` setting decides whether it does.
+        var insights: Insights? {
+            descriptor.capabilities.contains(.insights) ? limits?.snapshot?.value.insights : nil
+        }
     }
 
     var providers: [ProviderGroupState]

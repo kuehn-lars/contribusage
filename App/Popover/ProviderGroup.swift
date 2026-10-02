@@ -26,9 +26,7 @@ struct ProviderGroup: View {
                     state: activity, displayName: descriptor.displayName, placeholder: .placeholder(descriptor.id),
                     content: { ActivitySection(report: $0, categories: descriptor.tokenCategories) })
             }
-            if showInsights, descriptor.capabilities.contains(.insights),
-                let insights = group.limits?.snapshot?.value.insights
-            {
+            if showInsights, let insights = group.insights {
                 InsightsSection(insights: insights)
             }
         }
@@ -102,7 +100,7 @@ struct InsightsSection: View {
                     ForEach(period.shares, id: \.label, content: row)
                     ForEach(period.rankings, id: \.title) { ranking in
                         Text(ranking.title).font(.caption).foregroundStyle(.secondary).padding(.top, 5)
-                        ForEach(ranking.items.prefix(3), id: \.label, content: row)
+                        ForEach(ranking.shown, id: \.label, content: row)
                     }
                 }
                 .font(.callout)
@@ -122,6 +120,11 @@ struct InsightsSection: View {
     }
 }
 
+extension Insights.Ranking {
+    /// The top three items, as the popover and Copy show them (FR-38, FR-42).
+    var shown: ArraySlice<Insights.Share> { items.prefix(3) }
+}
+
 /// US-5: today's numbers, then total tokens of the last 7 days; categories the provider does not report are hidden
 /// (SPEC §10.4).
 struct ActivitySection: View {
@@ -130,31 +133,14 @@ struct ActivitySection: View {
     @Environment(\.now) private var now
 
     var body: some View {
-        let calendar = Calendar.current
-        let byDay = Dictionary(report.days.map { ($0.day, $0) }, uniquingKeysWith: { $1 })
-        // Oldest first, today last; days without activity count as 0.
-        let week = (0..<7).reversed().map { calendar.date(byAdding: .day, value: -$0, to: now)! }
-        let tokens = week.map { byDay[DayKey($0, calendar: calendar)]?.tokens.total ?? 0 }
-        let todayKey = DayKey(now, calendar: calendar)
-        let today =
-            byDay[todayKey] ?? ActivityDay(day: todayKey, requests: 0, sessions: 0, tokens: TokenCounts(), byModel: [:])
+        let figures = Figures(report: report, now: now)
         VStack(alignment: .leading, spacing: 4) {
             Text("On this Mac").font(.subheadline).foregroundStyle(.secondary)
-            Text(
-                "Today: \(today.requests) requests · \(today.sessions) sessions · \(compact(today.tokens.total))"
-            )
-            let shown: [(category: TokenCategory, label: String, count: KeyPath<TokenCounts, Int>)] = [
-                (.input, "Input", \.input), (.output, "Output", \.output), (.cacheRead, "Cache read", \.cacheRead),
-                (.cacheWrite, "Cache write", \.cacheWrite),
-            ]
-            Text(
-                shown.filter { categories.contains($0.category) }
-                    .map { "\($0.label) \(compact(today.tokens[keyPath: $0.count]))" }.joined(separator: " · ")
-            )
-            .font(.caption).foregroundStyle(.secondary)
+            Text(figures.todayText)
+            Text(figures.categoriesText(categories)).font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .bottom) {
-                Chart(Array(zip(week, tokens)), id: \.0) { day, total in
-                    BarMark(x: .value("Day", day, unit: .day), y: .value("Tokens", total))
+                Chart(figures.week, id: \.day) {
+                    BarMark(x: .value("Day", $0.day, unit: .day), y: .value("Tokens", $0.tokens))
                 }
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
@@ -162,15 +148,47 @@ struct ActivitySection: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Tokens, last 7 days")
                 .accessibilityValue(
-                    zip(week, tokens).map { "\($0.formatted(.dateTime.weekday(.wide))): \(compact($1))" }
+                    figures.week.map { "\($0.day.formatted(.dateTime.weekday(.wide))): \(Figures.compact($0.tokens))" }
                         .joined(separator: ", "))
                 Text("last 7 days").font(.caption).foregroundStyle(.secondary)
             }
         }
     }
 
-    /// SPEC §11.5: "4.2M", "812K".
-    private func compact(_ tokens: Int) -> String { tokens.formatted(.number.notation(.compactName)) }
+    /// What the section shows, shared with Copy Statistics (FR-42).
+    struct Figures {
+        let today: ActivityDay
+        /// Oldest first, today last; days without activity count as 0.
+        let week: [(day: Date, tokens: Int)]
+
+        init(report: ActivityReport, now: Date, calendar: Calendar = .current) {
+            let byDay = Dictionary(report.days.map { ($0.day, $0) }, uniquingKeysWith: { $1 })
+            week = (0..<7).reversed().map {
+                let day = calendar.date(byAdding: .day, value: -$0, to: now)!
+                return (day, byDay[DayKey(day, calendar: calendar)]?.tokens.total ?? 0)
+            }
+            let todayKey = DayKey(now, calendar: calendar)
+            today =
+                byDay[todayKey]
+                ?? ActivityDay(day: todayKey, requests: 0, sessions: 0, tokens: TokenCounts(), byModel: [:])
+        }
+
+        var todayText: String {
+            "Today: \(today.requests) requests · \(today.sessions) sessions · \(Self.compact(today.tokens.total))"
+        }
+
+        func categoriesText(_ categories: Set<TokenCategory>) -> String {
+            let shown: [(category: TokenCategory, label: String, count: KeyPath<TokenCounts, Int>)] = [
+                (.input, "Input", \.input), (.output, "Output", \.output), (.cacheRead, "Cache read", \.cacheRead),
+                (.cacheWrite, "Cache write", \.cacheWrite),
+            ]
+            return shown.filter { categories.contains($0.category) }
+                .map { "\($0.label) \(Self.compact(today.tokens[keyPath: $0.count]))" }.joined(separator: " · ")
+        }
+
+        /// SPEC §11.5: "4.2M", "812K".
+        static func compact(_ tokens: Int) -> String { tokens.formatted(.number.notation(.compactName)) }
+    }
 }
 
 extension LimitsReport {

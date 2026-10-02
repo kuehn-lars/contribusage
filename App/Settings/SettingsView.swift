@@ -3,8 +3,7 @@ import ContribusageGitHub
 import ServiceManagement
 import SwiftUI
 
-/// SPEC §11.6. The menu bar settings (T-5.10), diagnostics (T-5.5) and the status line bridge
-/// (T-6.2) join their tabs with their tasks.
+/// SPEC §11.6. The menu bar settings (T-5.10) and the status line bridge (T-6.2) join their tabs with their tasks.
 struct SettingsView: View {
     /// Shared with `SettingsButton`, which opens a given tab.
     @AppStorage("settingsTab") private var tab = SettingsTab.general
@@ -100,6 +99,12 @@ private struct AdvancedTab: View {
             } label: {
                 Text("Caches")
                 Text("Fetches every value again; history stays.")
+            }
+            LabeledContent {
+                Button("Copy Diagnostics", action: appState.copyDiagnostics)
+            } label: {
+                Text("Diagnostics")
+                Text("App, Mac and provider status for a bug report; never a token.")
             }
         }
         .formStyle(.grouped)

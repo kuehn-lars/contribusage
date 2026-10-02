@@ -74,6 +74,12 @@ public protocol UsageProvider: Sendable {
     func detectAvailability() async -> ProviderAvailability
     var limits: (any LimitsSource)? { get }
     var activity: (any ActivitySource)? { get }
+    /// Provider specific lines for "Copy diagnostics" (FR-36). May run detection, never a fetch; never holds a secret.
+    func diagnostics() async -> [String]
+}
+
+extension UsageProvider {
+    public func diagnostics() async -> [String] { [] }
 }
 
 /// Failures are thrown as `SourceError`; cancellation as `CancellationError`.

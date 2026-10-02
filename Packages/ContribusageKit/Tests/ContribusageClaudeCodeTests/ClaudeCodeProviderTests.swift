@@ -194,3 +194,23 @@ func mapsProbeResult(_ result: ProcessResult, to error: SourceError) async {
     }
     #expect(await provider.detectAvailability() == .available(version: "2.1.284"))
 }
+
+/// FR-36: the located `claude`, located if no probe ran yet (as the Providers tab does), and the last probe.
+@Test func reportsDiagnostics() async {
+    let fake = runner { _ in ProcessResult(exitCode: 2, stdout: "partial\n", stderr: "boom\n") }
+    let subject = provider(fake)
+    let before = await subject.diagnostics()
+    #expect(
+        before == ["claude: \(claude)", "Version: 2.1.284", "Type: unknown", "Last probe: none since launch"])
+    #expect(fake.requests.allSatisfy { $0.arguments.first != "-p" })
+    let missing = await provider(FakeProcessRunner { _ in throw CocoaError(.fileNoSuchFile) })
+        .diagnostics()
+    #expect(missing == ["claude: not found", "Last probe: none since launch"])
+    _ = try? await subject.fetch()
+    let after = await subject.diagnostics()
+    #expect(
+        after == [
+            "claude: \(claude)", "Version: 2.1.284", "Type: unknown", "Last probe exit code: 2",
+            "Last /usage output:\npartial\n",
+        ])
+}

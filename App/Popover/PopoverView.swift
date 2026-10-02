@@ -46,6 +46,9 @@ private struct Footer: View {
             Spacer()
             SettingsButton(title: "Settings", systemImage: "gearshape", tab: .general).keyboardShortcut(",")
             Spacer()
+            Button("Copy", systemImage: "doc.on.doc", action: appState.copyStatistics)  // FR-42
+                .help("Copy statistics")
+            Spacer()
             Button("Quit", systemImage: "power") { NSApplication.shared.terminate(nil) }
                 .keyboardShortcut("q")
         }
