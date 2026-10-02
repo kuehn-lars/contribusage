@@ -29,8 +29,10 @@ public struct TranscriptAggregator: Sendable {
     /// `calendar` defines the local day (the Mac's current zone in the app).
     public init(calendar: Calendar = .current) { self.calendar = calendar }
 
-    public mutating func add(_ line: TranscriptLine) {
-        let key = line.messageID.map { message in line.requestID.map { "\(message):\($0)" } ?? message }
+    public mutating func add(_ line: TranscriptLine) { add(line, key: line.key) }
+
+    /// `key` in place of `line.key`, for a caller that keeps the key apart from the line.
+    public mutating func add(_ line: TranscriptLine, key: String?) {
         if let key {
             guard seen.insert(key).inserted else { return }
         } else {

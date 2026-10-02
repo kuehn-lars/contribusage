@@ -41,6 +41,8 @@ enum TranscriptTree {
         var summary = Summary()
         /// Message content is cut from this; plain words, so it needs no JSON escaping.
         private let filler: [UInt8]
+        /// Written out every 64 KB, so generating leaves no large freed blocks behind to blur the footprint baseline.
+        private var out: [UInt8] = []
         private static let stamp = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 
         init(rng: SplitMix64, end: Date) {
@@ -61,7 +63,14 @@ enum TranscriptTree {
 
         /// Writes alternating user and assistant turns until the file holds `budget` bytes, at least one response.
         mutating func file(_ url: URL, _ session: String, _ start: Date, _ budget: Int, sidechain: Bool) throws {
-            var out: [UInt8] = []
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            let handle = try FileHandle(forWritingTo: url)
+            defer { try? handle.close() }
+            var written = 0
             var time = start
             let header =
                 #""isSidechain":\#(sidechain),"userType":"external","cwd":"/Users/octocat/code/project","#
@@ -70,7 +79,7 @@ enum TranscriptTree {
                 time += .random(in: 1...30, using: &rng)
                 let result = Bool.random(using: &rng) ? Int.random(in: 4_000...30_000, using: &rng) : 0
                 line(
-                    &out, time,
+                    time,
                     #"{"parentUuid":"\#(uuid())",\#(header),"type":"user","message":{"role":"user","content":"#
                         + #"[{"tool_use_id":"toolu_\#(hex())","type":"tool_result","content":""#,
                     text: Int.random(in: 200...4_000, using: &rng)
@@ -91,7 +100,7 @@ enum TranscriptTree {
                     let kind =
                         block == blocks - 1 ? "text" : ["thinking", "text", "tool_use"].randomElement(using: &rng)!
                     line(
-                        &out, time,
+                        time,
                         #"{"parentUuid":"\#(uuid())",\#(header),"message":{"id":"\#(message)","type":"message","#
                             + #""role":"assistant","model":"\#(model)","content":[{"type":"\#(kind)","text":""#,
                         text: .random(in: 50...3_000, using: &rng),
@@ -104,17 +113,18 @@ enum TranscriptTree {
                 summary.usageLines += blocks
                 summary.requests += 1
                 summary.tokens += usage
-            } while out.count < budget
-
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try Data(out).write(to: url)
+                if out.count >= 1 << 16 || written + out.count >= budget {
+                    try handle.write(contentsOf: out)
+                    written += out.count
+                    out.removeAll(keepingCapacity: true)
+                }
+            } while written < budget
             summary.files += 1
-            summary.bytes += out.count
+            summary.bytes += written
         }
 
         /// `prefix`, `text` bytes of filler, `suffix`, the timestamp, the line end.
-        private mutating func line(_ out: inout [UInt8], _ time: Date, _ prefix: String, text: Int, _ suffix: String) {
+        private mutating func line(_ time: Date, _ prefix: String, text: Int, _ suffix: String) {
             let from = Int.random(in: 0..<(filler.count - text), using: &rng)
             out += prefix.utf8
             out += filler[from..<(from + text)]

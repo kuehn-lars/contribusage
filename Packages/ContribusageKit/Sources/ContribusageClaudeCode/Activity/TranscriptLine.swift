@@ -13,6 +13,9 @@ public struct TranscriptLine: Equatable, Sendable {
     public var cacheWrite: Int
     public var cacheRead: Int
 
+    /// The de-duplication key (FR-24): `message.id:requestId`, `message.id` alone, or `nil` for a line without either.
+    public var key: String? { messageID.map { message in requestID.map { "\(message):\($0)" } ?? message } }
+
     /// `nil`: a line that carries no usage (not `assistant`, no `message.usage`, placeholder model).
     /// Throws: not JSON, or no usable `timestamp`; the caller counts it as malformed (FR-23).
     public static func decode(_ line: Data) throws -> TranscriptLine? {

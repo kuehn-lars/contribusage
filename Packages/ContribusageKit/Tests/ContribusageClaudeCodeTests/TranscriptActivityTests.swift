@@ -110,6 +110,26 @@ func next(_ reports: AsyncStream<ActivityReport>, within timeout: Duration = .se
     #expect(report.skippedLines == 0)
 }
 
+/// FR-24: when duplicates disagree, the first line in path order counts, also after an append to that file; lines
+/// without a key count each.
+@Test func firstDuplicateInPathOrderCounts() async throws {
+    let machine = Machine()
+    try machine.write(".claude/projects/-work/b.jsonl", entry("m1", input: 2) + entry("m1", input: 3))
+    try machine.write(".claude/projects/-work/a.jsonl", entry("m1", input: 1))
+    let unkeyed =
+        #"{"type":"assistant","timestamp":"2026-09-28T10:00:00.000Z","#
+        + #""message":{"model":"claude-opus-5-5","usage":{"input_tokens":100}}}"# + "\n"
+    try machine.write(".claude/projects/-work/c.jsonl", unkeyed + unkeyed)
+    let reports = machine.activity().reports()
+    let first = try #require(await next(reports)?.days.last)
+    #expect(first.requests == 3 && first.tokens.input == 201)
+
+    try machine.write(".claude/projects/-work/a.jsonl", entry("m1", input: 4), append: true)
+    machine.fileEvents.send([])
+    let appended = try #require(await next(reports)?.days.last)
+    #expect(appended.requests == 3 && appended.tokens.input == 201)
+}
+
 /// SPEC §12: a rescan (popover opened, wake) reports on the open streams without a file event.
 @Test func rescanReportsOnOpenStreams() async throws {
     let machine = Machine()

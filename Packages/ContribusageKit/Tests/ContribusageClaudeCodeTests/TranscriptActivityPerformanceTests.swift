@@ -28,6 +28,8 @@ import Testing
 
 /// NFR-7 on 500 MB of transcripts: only with `CONTRIBUSAGE_PERF_TESTS=1`, ideally with `-c release`. The cold scan is
 /// the time to the first report, the incremental update the time from a file event to the report with one more line.
+/// NFR-2: the activity source adds at most 40 MB to the footprint, so the app (baseline under 25 MB, M1 check) stays
+/// under 80 MB with one provider.
 @Test(.enabled(if: ProcessInfo.processInfo.environment["CONTRIBUSAGE_PERF_TESTS"] == "1"))
 func scansFiveHundredMegabytesWithinNFR7() async throws {
     let machine = Machine()
@@ -57,11 +59,14 @@ func scansFiveHundredMegabytesWithinNFR7() async throws {
         "NFR-7: \(tree.bytes / 1_000_000) MB, \(tree.files) files, \(tree.lines) lines (\(tree.usageLines) usage,",
         "\(tree.requests) requests); cold scan \(scan), incremental \(incremental);",
         "footprint before \(before.now) MB, after scan \(afterScan.now) MB,",
-        "after update \(afterUpdate.now) MB, peak \(afterUpdate.peak) MB")
+        "after update \(afterUpdate.now) MB, peak \(afterUpdate.peak) MB",
+        "(peak growth at most \(afterUpdate.peak - before.now) MB)")
     #expect(cold.days.reduce(0) { $0 + $1.requests } == tree.requests)
     #expect(updated.days.reduce(0) { $0 + $1.requests } == tree.requests + 1)
     #expect(scan < .seconds(30))
     #expect(incremental < .milliseconds(200))
+    #expect(afterScan.now - before.now <= 40)
+    #expect(afterUpdate.now - before.now <= 40)
 }
 
 /// The process's physical footprint and its peak so far, in MB.

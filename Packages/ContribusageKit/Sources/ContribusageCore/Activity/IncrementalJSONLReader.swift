@@ -2,15 +2,8 @@ import Darwin
 import Foundation
 
 /// Reads line files incrementally (SPEC §8.3.5, FR-26): per file its identity, offset and pending partial line, so each
-/// read returns only the complete lines appended since the last one. Decoding the lines is the provider's job.
+/// read hands over only the complete lines appended since the last one. Decoding the lines is the provider's job.
 public struct IncrementalJSONLReader: Sendable {
-    public struct Lines: Sendable {
-        /// The file was read from 0 because its identity changed or it shrank: drop what it contributed before.
-        public let isRescan: Bool
-        /// Complete lines without their newline; empty lines are left out.
-        public let lines: [Data]
-    }
-
     private struct State {
         /// Device and inode.
         var identity: (dev_t, ino_t)
@@ -23,8 +16,14 @@ public struct IncrementalJSONLReader: Sendable {
 
     public init() {}
 
-    /// `nil` when the file no longer exists; its state is dropped (frozen history is not the reader's concern).
-    public mutating func read(_ url: URL) throws -> Lines? {
+    /// Calls `body` with each complete line appended since the last read, in order, without its newline; empty lines
+    /// are left out. The file is streamed through a fixed buffer and each line is released after `body` returns, so
+    /// memory does not grow with the file (NFR-2).
+    ///
+    /// Returns `nil` when the file no longer exists; its state is dropped (frozen history is not the reader's concern).
+    /// Otherwise whether the file was read from 0 because its identity changed or it shrank: then drop what it
+    /// contributed before. When it throws, discard the lines `body` received: the next read hands them over again.
+    public mutating func read(_ url: URL, lines body: (Data) -> Void) throws -> Bool? {
         let handle: FileHandle
         do {
             handle = try FileHandle(forReadingFrom: url)
@@ -44,14 +43,29 @@ public struct IncrementalJSONLReader: Sendable {
         let isRescan = previous.map { $0.identity != identity || UInt64(info.st_size) < $0.offset } ?? false
         var state = (isRescan ? nil : previous) ?? State(identity: identity)
 
-        // ponytail: reads the whole appended range at once; stream in chunks if single files reach hundreds of MB.
         try handle.seek(toOffset: state.offset)
-        let chunk = try handle.readToEnd() ?? Data()
-        state.offset += UInt64(chunk.count)
-        // The last piece is the incomplete line, empty when the data ends with a newline.
-        var pieces = (state.pending + chunk).split(separator: UInt8(ascii: "\n"), omittingEmptySubsequences: false)
-        state.pending = Data(pieces.removeLast())
+        try withUnsafeTemporaryAllocation(byteCount: 1 << 16, alignment: 1) { buffer in
+            while true {
+                let count = Darwin.read(handle.fileDescriptor, buffer.baseAddress, buffer.count)
+                guard count >= 0 else {
+                    if errno == EINTR { continue }
+                    throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                }
+                if count == 0 { break }
+                state.offset += UInt64(count)
+                let bytes = UnsafeRawBufferPointer(rebasing: buffer[..<count])
+                var start = 0
+                while let newline = memchr(buffer.baseAddress! + start, 0x0A, count - start) {
+                    let end = buffer.baseAddress!.distance(to: newline)
+                    state.pending.append(contentsOf: bytes[start..<end])
+                    if !state.pending.isEmpty { body(state.pending) }
+                    state.pending = Data()
+                    start = end + 1
+                }
+                state.pending.append(contentsOf: bytes[start...])
+            }
+        }
         files[url] = state
-        return Lines(isRescan: isRescan, lines: pieces.filter { !$0.isEmpty }.map { Data($0) })
+        return isRescan
     }
 }

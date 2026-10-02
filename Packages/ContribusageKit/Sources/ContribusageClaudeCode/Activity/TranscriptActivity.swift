@@ -19,9 +19,9 @@ actor TranscriptActivity: ActivitySource {
     /// Resolved on the first subscription; the login shell's `CLAUDE_CONFIG_DIR` does not change while the app runs.
     private var roots: [URL]?
     private var reader = IncrementalJSONLReader()
-    /// Per transcript its decoded lines and how many it could not decode. The aggregate is rebuilt from all of them,
-    /// because a key repeats across files (resumed sessions) and a file can shrink or vanish.
-    // ponytail: every usage line stays in memory; drop lines older than the live window if NFR-2 is at risk (T-4.7).
+    /// The live index (SPEC §8.3.4): per transcript its usage lines, one per key, and how many it could not decode. The
+    /// aggregate is rebuilt from all of them, because a key repeats across files (resumed sessions) and a file can
+    /// shrink or vanish.
     private var files: [URL: Transcript] = [:]
     /// `nil` when `history.json` is unreadable: it stays on disk untouched and the report shows live days only.
     private lazy var history: HistoryStore? = {
@@ -35,8 +35,36 @@ actor TranscriptActivity: ActivitySource {
     private var streams: [UUID: AsyncStream<ActivityReport>.Continuation] = [:]
 
     private struct Transcript {
-        var lines: [TranscriptLine] = []
+        /// The first line per key, as the aggregator would count it (FR-24), without the IDs the key holds; a
+        /// response repeats its usage on every line, so keeping the repeats would cost memory for nothing (NFR-2).
+        var keyed: [String: TranscriptLine] = [:]
+        /// Lines without a key each count as a request.
+        var unkeyed: [TranscriptLine] = []
         var skipped = 0
+        /// Session IDs and models, so the lines share one copy of each instead of one per line (NFR-2).
+        private var strings: Set<String> = []
+
+        mutating func add(_ line: TranscriptLine) {
+            var line = line
+            line.sessionID = line.sessionID.map { strings.insert($0).memberAfterInsert }
+            line.model = strings.insert(line.model).memberAfterInsert
+            if let key = line.key {
+                guard keyed[key] == nil else { return }
+                // The key holds them.
+                line.messageID = nil
+                line.requestID = nil
+                keyed[key] = line
+            } else {
+                unkeyed.append(line)
+            }
+        }
+
+        /// Lines read later: a key already here keeps its first line.
+        mutating func append(_ later: Transcript) {
+            keyed.merge(later.keyed) { first, _ in first }
+            unkeyed += later.unkeyed
+            skipped += later.skipped
+        }
     }
 
     init(
@@ -114,19 +142,19 @@ actor TranscriptActivity: ActivitySource {
         let listed = TranscriptFiles.files(in: roots, excludingProjectOf: probeFolder)
         for url in Set(listed).union(files.keys) {
             do {
-                guard let appended = try reader.read(url) else {
-                    files[url] = nil
-                    continue
-                }
-                var file = appended.isRescan ? Transcript() : files[url, default: Transcript()]
-                for line in appended.lines {
+                var appended = Transcript()
+                let isRescan = try reader.read(url) { line in
                     do {
-                        if let decoded = try TranscriptLine.decode(line) { file.lines.append(decoded) }
+                        if let decoded = try TranscriptLine.decode(line) { appended.add(decoded) }
                     } catch {
-                        file.skipped += 1
+                        appended.skipped += 1
                     }
                 }
-                files[url] = file
+                switch isRescan {
+                case nil: files[url] = nil
+                case true?: files[url] = appended
+                case false?: files[url, default: Transcript()].append(appended)
+                }
             } catch {
                 // SPEC §13: retried on the next change.
                 log.error("transcript unreadable: \(error.localizedDescription, privacy: .public)")
@@ -139,7 +167,8 @@ actor TranscriptActivity: ActivitySource {
         var aggregator = TranscriptAggregator(calendar: calendar)
         // Path order, so the same files always give the same counts when duplicates disagree.
         for (_, file) in files.sorted(by: { $0.key.path < $1.key.path }) {
-            for line in file.lines { aggregator.add(line) }
+            for (key, line) in file.keyed { aggregator.add(line, key: key) }
+            for line in file.unkeyed { aggregator.add(line) }
         }
         let live = aggregator.days()
         var days = live
