@@ -11,7 +11,7 @@ private var utc: Calendar {
 }
 
 /// One usage line in the shape of SPEC Appendix E.
-private func entry(
+func entry(
     _ message: String, request: String = "r", session: String = "s1", at stamp: String = "2026-09-28T10:00:00.000Z",
     input: Int = 10
 ) -> String {
@@ -21,7 +21,7 @@ private func entry(
 }
 
 /// A temporary home with transcripts, an app root and a login shell that exports `configDir`; no `claude` installed.
-private final class Machine: Sendable {
+final class Machine: Sendable {
     let home = FileManager.default.temporaryDirectory.appending(path: "home-\(UUID())", directoryHint: .isDirectory)
     let paths = AppPaths.temporary()
     let fileEvents = FakeFileEvents()
@@ -54,12 +54,12 @@ private final class Machine: Sendable {
     }
 }
 
-/// The next report, or `nil` after 2 s.
-private func next(_ reports: AsyncStream<ActivityReport>) async -> ActivityReport? {
+/// The next report, or `nil` after `timeout`.
+func next(_ reports: AsyncStream<ActivityReport>, within timeout: Duration = .seconds(2)) async -> ActivityReport? {
     await withTaskGroup(of: ActivityReport?.self) { group in
         group.addTask { await reports.first { _ in true } }
         group.addTask {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: timeout)
             return nil
         }
         defer { group.cancelAll() }
