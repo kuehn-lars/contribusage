@@ -188,3 +188,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-02] feat | Live file events with FSEvents (T-4.5)
 - Core `FSEventsFileEvents`: one FSEvents stream per consumer, file level events, the debounce as latency, utility queue (FR-27).
 - Batches report files only, by real path; a root created later is picked up; dropped events are left to the activity source's rescan.; a stream that cannot start finishes.
+
+## [2026-10-02] feat | Claude Code activity source and Activity section (T-4.6)
+- `TranscriptActivity`: roots from FR-22 plus the login shell's `CLAUDE_CONFIG_DIR`, a full incremental pass per file event or rescan, de-duplicated across files, merged with the history store; `ClaudeCodeProvider` gains the `activity` capability and passes the conformance suite with it.
+- App: one `reports()` consumer per enabled provider, rescans on popover open and wake, `noLocalData` when no days exist; `ActivitySection` shows today by date, the reported token categories only and a zero-filled 7 day chart with a VoiceOver summary.
+- ADR-024: the live index stays in memory; T-4.7 decides on persisting it. ADR-025: the SPEC §16.4 declared-roots read check and its file system seam move to T-4.7. `TranscriptFiles.roots` now returns missing roots too, so they are watched.

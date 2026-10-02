@@ -8,7 +8,7 @@ import os
 /// Violations are recorded as test issues at the caller's line.
 ///
 /// Not checked here: "no HTTP" holds by construction (a provider receives no `HTTPTransport`); "no reads outside the
-/// declared roots" needs a file system seam, which comes with the first provider task that reads files.
+/// declared roots" needs a file system seam, which comes with T-4.7 (ADR-025).
 public enum ProviderConformance {
     /// - Parameters:
     ///   - provider: wired to fakes that answer normally.

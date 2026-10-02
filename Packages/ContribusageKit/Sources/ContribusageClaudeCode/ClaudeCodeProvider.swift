@@ -2,11 +2,11 @@ import ContribusageCore
 import Foundation
 
 /// The Claude Code provider (SPEC §7.5, §8.1) and its limits source, the `/usage` probe: FR-6 locate cache, FR-7 single
-/// flight, P-10 and SPEC §13 error mapping. Activity arrives with phase 4.
+/// flight, P-10 and SPEC §13 error mapping. Activity comes from the transcripts (SPEC §8.3).
 public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     public nonisolated var descriptor: ProviderDescriptor { .claudeCode }
     public nonisolated var limits: (any LimitsSource)? { self }
-    public nonisolated var activity: (any ActivitySource)? { nil }
+    public nonisolated let activity: (any ActivitySource)?
 
     private let locator: ClaudeLocator
     private let runner: any ProcessRunning
@@ -16,9 +16,11 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
     private var located: (claude: ClaudeLocator.Found, override: URL?)?
     private var running: Task<LimitsReport, any Error>?
 
-    /// `override` reads the `provider.claude-code.pathOverride` setting on every resolution.
+    /// `override` reads the `provider.claude-code.pathOverride` setting on every resolution. `calendar` defines the
+    /// local day of activity.
     public init(
-        runner: any ProcessRunning, paths: AppPaths, home: URL, shell: URL, time: any TimeSource,
+        runner: any ProcessRunning, fileEvents: any FileEvents, paths: AppPaths, home: URL, shell: URL,
+        time: any TimeSource, calendar: Calendar = .autoupdatingCurrent,
         override: @escaping @Sendable () -> URL? = { nil }
     ) {
         locator = ClaudeLocator(runner: runner, home: home, shell: shell)
@@ -26,6 +28,9 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
         probeFolder = paths.providerFolder(.claudeCode).appending(path: "probe", directoryHint: .isDirectory)
         self.time = time
         self.override = override
+        activity = TranscriptActivity(
+            fileEvents: fileEvents, runner: runner, home: home, shell: shell, probeFolder: probeFolder, paths: paths,
+            time: time, calendar: calendar)
     }
 
     /// FR-3: only the first call runs processes. Never `notSignedIn`: a logged out CLI prints the same as API key
@@ -107,7 +112,8 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
 extension ProviderDescriptor {
     /// SPEC §7.5, §8.1.4.
     fileprivate static let claudeCode = ProviderDescriptor(
-        id: .claudeCode, displayName: "Claude Code", symbolName: "terminal", capabilities: [.limits, .insights],
+        id: .claudeCode, displayName: "Claude Code", symbolName: "terminal",
+        capabilities: [.limits, .activity, .insights],
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
             defaultInterval: .seconds(15 * 60), minimumInterval: .seconds(5 * 60), maximumInterval: .seconds(60 * 60),

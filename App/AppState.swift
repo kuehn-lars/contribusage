@@ -21,6 +21,8 @@ import Observation
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private var gitHubAccount: GitHubAccount?
     @ObservationIgnored private var conditions: SystemConditions?
+    /// The enabled providers' activity sources, rescanned on popover open and wake (SPEC §12).
+    @ObservationIgnored private var activities: [any ActivitySource] = []
 
     init(providers: [ProviderGroupState], github: SourceState<GitHubReport>) {
         self.providers = providers
@@ -54,12 +56,28 @@ import Observation
         // One consumer keeps the changes in order; a task per change would not.
         let (changes, changed) = AsyncStream.makeStream(of: ScheduleConditions.self)
         state.conditions = SystemConditions { changed.yield($0) }
-        Task { for await conditions in changes { await coordinator.update(conditions) } }
+        Task {
+            var lastWake: Date?
+            for await conditions in changes {
+                await coordinator.update(conditions)
+                if conditions.lastWake != lastWake {
+                    lastWake = conditions.lastWake
+                    state.rescanActivity()
+                }
+            }
+        }
         Task {
             let enabled = await registry.enabledProviders()
             defaults.set(enabled.map(\.descriptor.id.rawValue), forKey: "enabledProviders")  // FR-2 first-run default
             state.providers = enabled.map {
-                ProviderGroupState(descriptor: $0.descriptor, limits: $0.limits.map { _ in .loading(previous: nil) })
+                ProviderGroupState(
+                    descriptor: $0.descriptor, limits: $0.limits.map { _ in .loading(previous: nil) },
+                    activity: $0.activity.map { _ in .loading(previous: nil) })
+            }
+            state.activities = enabled.compactMap(\.activity)
+            for activity in state.activities {
+                // Watching lasts as long as this loop consumes the stream (ADR-016).
+                Task { for await report in activity.reports() { state.apply(report, at: time.now) } }
             }
             await coordinator.start()
         }
@@ -74,6 +92,11 @@ import Observation
     /// SPEC §12 "popover opened".
     func popoverOpened() {
         Task { await coordinator?.popoverOpened() }
+        rescanActivity()
+    }
+
+    private func rescanActivity() {
+        for activity in activities { Task { await activity.rescan() } }
     }
 
     /// FR-17: saves a token GitHub accepts and returns its login; GitHub then starts over with it (SPEC §12).
@@ -96,5 +119,13 @@ import Observation
     private func apply(_ update: SourceState<LimitsReport>, to id: ProviderID) {
         guard let index = providers.firstIndex(where: { $0.id == id }) else { return }
         providers[index].limits = update
+    }
+
+    /// No days at all, not even frozen ones: nothing on this Mac to show (SPEC §11.3, §13).
+    private func apply(_ report: ActivityReport, at now: Date) {
+        guard let index = providers.firstIndex(where: { $0.id == report.provider }) else { return }
+        providers[index].activity =
+            report.days.isEmpty
+            ? .notConfigured(.noLocalData) : .loaded(Snapshot(value: report, fetchedAt: now, origin: .activity))
     }
 }

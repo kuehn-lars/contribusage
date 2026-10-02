@@ -31,8 +31,10 @@ private func runner(
 private let paths = AppPaths(root: FileManager.default.temporaryDirectory.appending(path: "contribusage-tests"))
 private let time = FakeTimeSource(now: Date(timeIntervalSince1970: 1_790_000_000))
 
-private func provider(_ runner: FakeProcessRunner) -> ClaudeCodeProvider {
-    ClaudeCodeProvider(runner: runner, paths: paths, home: home, shell: URL(filePath: "/bin/zsh"), time: time)
+private func provider(_ runner: FakeProcessRunner, fileEvents: FakeFileEvents = FakeFileEvents()) -> ClaudeCodeProvider
+{
+    ClaudeCodeProvider(
+        runner: runner, fileEvents: fileEvents, paths: paths, home: home, shell: URL(filePath: "/bin/zsh"), time: time)
 }
 
 private func fetch(_ runner: FakeProcessRunner) async throws -> LimitsReport {
@@ -40,14 +42,16 @@ private func fetch(_ runner: FakeProcessRunner) async throws -> LimitsReport {
 }
 
 @Test func passesConformance() async {
+    let fileEvents = FakeFileEvents()
     await ProviderConformance.check(
-        provider(runner()),
+        provider(runner(), fileEvents: fileEvents),
         neverFinishing: provider(
             runner { _ in
                 try await Task.sleep(for: .seconds(3600))
                 throw SourceError.timedOut
             }),
-        failing: provider(runner { _ in throw SourceError.timedOut })
+        failing: provider(runner { _ in throw SourceError.timedOut }),
+        fileEvents: fileEvents
     )
 }
 
@@ -69,7 +73,8 @@ private func fetch(_ runner: FakeProcessRunner) async throws -> LimitsReport {
     let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }
     _ = try await ClaudeCodeProvider(
-        runner: runner(), paths: AppPaths(root: root), home: home, shell: URL(filePath: "/bin/zsh"), time: time
+        runner: runner(), fileEvents: FakeFileEvents(), paths: AppPaths(root: root), home: home,
+        shell: URL(filePath: "/bin/zsh"), time: time
     ).fetch()
     let attributes = try FileManager.default.attributesOfItem(atPath: root.path(percentEncoded: false))
     #expect(attributes[.posixPermissions] as? Int == 0o700)
@@ -150,7 +155,8 @@ func mapsProbeResult(_ result: ProcessResult, to error: SourceError) async {
         return ProcessResult(exitCode: 0, stdout: output, stderr: "")
     }
     let provider = ClaudeCodeProvider(
-        runner: fake, paths: paths, home: home, shell: URL(filePath: "/bin/zsh"), time: time,
+        runner: fake, fileEvents: FakeFileEvents(), paths: paths, home: home, shell: URL(filePath: "/bin/zsh"),
+        time: time,
         override: { override.withLock { $0 } })
     _ = try await provider.fetch()
     override.withLock { $0 = URL(filePath: custom) }

@@ -1,7 +1,7 @@
 ---
 type: architecture
 status: active
-updated: 2026-10-01
+updated: 2026-10-02
 tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift]
 tags: [structure]
 ---

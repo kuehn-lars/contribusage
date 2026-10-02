@@ -44,6 +44,8 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0021-stats-calendar-parameter]]: ADR-021, contribution statistics take the `Calendar` that defines today; R-4 picks its zone
 - [[decisions/0022-github-job-in-the-coordinator]]: ADR-022, GitHub as a typed job in the coordinator; token, 401 and rate-limit rules
 - [[decisions/0023-structured-insights]]: ADR-023, insights parsed into periods, shares and rankings instead of verbatim text
+- [[decisions/0024-live-index-in-memory]]: ADR-024, the live index is rebuilt at launch, not persisted, until T-4.7 measures
+- [[decisions/0025-read-roots-check-with-t-4-7]]: ADR-025, the file system seam and the declared-roots read check come with T-4.7
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

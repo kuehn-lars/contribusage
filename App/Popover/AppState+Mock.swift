@@ -96,10 +96,14 @@ extension Insights {
 extension ActivityReport {
     static let mockActivity = ActivityReport(
         provider: .claudeCode,
+        // The last 7 days up to today, so the section finds today.
         days: [1.1, 3.4, 2.0, 5.1, 4.4, 0.8, 4.2].enumerated().map { index, millions in
             ActivityDay(
-                day: DayKey(rawValue: "2026-09-\(22 + index)"), requests: 668, sessions: 8,
-                tokens: TokenCounts(output: Int(millions * 1_000_000)), byModel: [:])
+                day: DayKey(.now.addingTimeInterval(Double(index - 6) * 86400), calendar: .current), requests: 668,
+                sessions: 8,
+                tokens: TokenCounts(
+                    input: 12_000, output: 812_000, cacheWrite: 300_000, cacheRead: Int(millions * 1_000_000)),
+                byModel: [:])
         },
         skippedLines: 0)
 }

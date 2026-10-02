@@ -11,18 +11,16 @@ private func makeFiles(_ paths: [String], in folder: URL) throws {
     }
 }
 
-/// FR-22: config dir first, then the two defaults; missing folders and duplicates are left out.
-@Test func rootsInOrderExistingOnly() throws {
-    let home = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
-    defer { try? FileManager.default.removeItem(at: home) }
-    try makeFiles([".claude/projects/x.jsonl", "custom/projects/x.jsonl"], in: home)
-    let custom = home.appending(path: "custom")
-    let claude = home.appending(path: ".claude")
-    let projects = { (base: URL) in base.appending(path: "projects", directoryHint: .isDirectory).standardizedFileURL }
+/// FR-22: config dir first, then the two defaults, existing or not; duplicates are left out.
+@Test func rootsInOrder() {
+    let home = URL(filePath: "/Users/octocat/", directoryHint: .isDirectory)
+    let projects = { (base: String) in URL(filePath: "/Users/octocat/\(base)/projects/", directoryHint: .isDirectory) }
+    let defaults = [projects(".claude"), projects(".config/claude")]
 
-    #expect(TranscriptFiles.roots(home: home, configDir: custom) == [projects(custom), projects(claude)])
-    #expect(TranscriptFiles.roots(home: home, configDir: claude) == [projects(claude)])
-    #expect(TranscriptFiles.roots(home: home, configDir: nil) == [projects(claude)])
+    #expect(
+        TranscriptFiles.roots(home: home, configDir: home.appending(path: "custom")) == [projects("custom")] + defaults)
+    #expect(TranscriptFiles.roots(home: home, configDir: home.appending(path: ".claude")) == defaults)
+    #expect(TranscriptFiles.roots(home: home, configDir: nil) == defaults)
 }
 
 /// FR-22, FR-28: `**/*.jsonl`, nested folders included, the probe folder's project directory excluded.
