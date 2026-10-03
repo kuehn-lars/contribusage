@@ -30,6 +30,6 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - A source marked offline runs on reconnect within its floor (T-5.6), so a long interval setting does not keep it "Offline".
 - Status and error texts the tabs build as `String` go through `String(localized:)`; paths and versions stay as found ([[decisions/0031-string-catalogs]]).
 - A probe running when its provider is turned off still finishes (at most 30 s); its result lands in a group that is no longer shown.
-- T-5.13 makes `AppState.layout` settable for the Popover tab (T-5.15): its `didSet` saves the `popoverLayout` default and applies the demand of FR-46.
+- T-5.13 makes `AppState.layout` settable for the Popover tab (T-5.15): its `didSet` saves the `popoverLayout` default and applies the demand of FR-46. T-5.15 binds the Popover tab to it and drops Advanced's `showInsights` toggle: the Popover tab's per-provider Insights toggle (`hiddenSections`) does the same job, and two switches for one section let one read "on" while the other hid it.
 - T-5.14 adds the GitHub tab's switch, bound to `AppState.gitHubEnabled` (`githubEnabled` default); its `didSet` saves and applies the demand like `layout`.
 - ADR-033 adds `toolText` to Claude Code's descriptor; its settings (path override, probe interval, config folder) are unchanged.

@@ -13,7 +13,7 @@ import Observation
         var limits: SourceState<LimitsReport>?
         var activity: SourceState<ActivityReport>?
         var id: ProviderID { descriptor.id }
-        /// FR-38: the insights the group can show; the `showInsights` setting decides whether it does.
+        /// FR-38: the insights the group can show; the Popover tab decides whether it does (FR-44).
         var insights: Insights? {
             descriptor.capabilities.contains(.insights) ? limits?.snapshot?.value.insights : nil
         }
@@ -64,8 +64,15 @@ import Observation
         self.time = time
     }
 
-    /// The popover's groups.
-    var enabledProviders: [ProviderGroupState] { providers.filter { enabledIDs.contains($0.id) } }
+    /// The popover's blocks in order (FR-44, FR-47); Copy follows them (FR-42).
+    // ponytail: the heatmap block is left out until T-5.16 draws it; its grid still sits in GitHub's block.
+    var blocks: [BlockID] { layout.blocks(registered: providers.map(\.id), on: on).filter { $0 != .heatmap } }
+
+    /// A registered provider's group; `providers` holds every registered one, so a block or layout ID always has one.
+    func group(_ id: ProviderID) -> ProviderGroupState { providers.first { $0.id == id }! }
+
+    /// FR-47: whether a block's source is on.
+    func isOn(_ block: BlockID) -> Bool { layout.isOn(block, on: on) }
 
     /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
     static func live() -> AppState {

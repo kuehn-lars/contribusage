@@ -287,3 +287,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] feat | Claude Code tool texts in German (ADR-033)
 - `ProviderDescriptor.toolText` translates window labels, insights periods, counts and note at display time; the printed text stays the key ([[decisions/0033-provider-tool-texts]]).
+
+## [2026-10-03] feat | Popover tab and blocks in order (T-5.15)
+- The popover and Copy statistics follow `PopoverLayout`: block order, hidden blocks and sections, "Nothing to show"; Settings gets the Popover tab ([[modules/app]]).
+- Advanced's `showInsights` toggle dropped: the Popover tab's Insights toggle replaces it (SPEC §10.7, §11.6, [[decisions/0028-settings-scope-and-wiring]]).

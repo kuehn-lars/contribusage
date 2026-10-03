@@ -6,9 +6,23 @@ import Foundation
 extension AppState {
     /// FR-42: what the popover shows, in its order, as plain text. Insights give every period, not only the one picked.
     func statistics(at now: Date) -> String {
-        var sections: [[String]] = enabledProviders.map { group in
-            let name = group.descriptor.displayName
-            var lines = [header(name, group.limits?.snapshot?.fetchedAt)]
+        let login = github.snapshot.map { " @\($0.value.calendar.login)" } ?? ""
+        return blocks.compactMap { block in
+            switch block {
+            case .provider(let id): statistics(of: group(id), at: now)
+            case .heatmap: nil  // unreachable until T-5.16 draws the heatmap
+            case .github:
+                [header("GitHub" + login, github.snapshot?.fetchedAt)] + values(github, "GitHub") { [$0.statsText] }
+            }
+        }
+        .map { $0.joined(separator: "\n") }.joined(separator: "\n\n")
+    }
+
+    /// A provider group's lines: its header, then the sections the Popover tab shows.
+    private func statistics(of group: ProviderGroupState, at now: Date) -> [String] {
+        let name = group.descriptor.displayName
+        var lines = [header(name, group.limits?.snapshot?.fetchedAt)]
+        if layout[shows: .limits, of: group.id] {
             lines += values(group.limits, name) { report in
                 report.windows.map { window in
                     [
@@ -18,6 +32,8 @@ extension AppState {
                     .compactMap(\.self).joined(separator: " · ")
                 }
             }
+        }
+        if layout[shows: .activity, of: group.id] {
             lines += values(group.activity, name) { report in
                 let figures = ActivitySection.Figures(report: report, now: now)
                 let week = figures.week.map {
@@ -28,15 +44,11 @@ extension AppState {
                     String(localized: "Last 7 days: \(week.joined(separator: " · "))"),
                 ]
             }
-            if UserDefaults.standard.object(forKey: "showInsights") as? Bool ?? true, let insights = group.insights {
-                lines += insightsLines(insights, group.descriptor.toolText)
-            }
-            return lines
         }
-        let login = github.snapshot.map { " @\($0.value.calendar.login)" } ?? ""
-        sections.append(
-            [header("GitHub" + login, github.snapshot?.fetchedAt)] + values(github, "GitHub") { [$0.statsText] })
-        return sections.map { $0.joined(separator: "\n") }.joined(separator: "\n\n")
+        if layout[shows: .insights, of: group.id], let insights = group.insights {
+            lines += insightsLines(insights, group.descriptor.toolText)
+        }
+        return lines
     }
 
     /// FR-42: copies `statistics(at:)` to the clipboard.

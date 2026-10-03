@@ -75,3 +75,37 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     #expect(layout.demand(on: [.github], menuBar: [.github]).github)
     #expect(!layout.demand(on: [], menuBar: [.github]).github)
 }
+
+/// FR-44, FR-45: the Popover tab lists every known block, hidden or off ones too; reordering them keeps the saved keys
+/// of providers that are not registered.
+@Test func reorderingKeepsUnknownKeys() {
+    let unknown = ProviderID(rawValue: "gone")
+    var layout = PopoverLayout()
+    layout.order = [.provider(unknown), .github]
+    layout.hiddenBlocks = [.provider(a)]
+    #expect(layout.arranged(registered: [a]) == [.github, .provider(a), .heatmap])
+    layout.arrange([.heatmap, .provider(a), .github])
+    #expect(layout.order == [.heatmap, .provider(a), .github, .provider(unknown)])
+    #expect(layout.blocks(registered: [a], on: [.provider(a), .github]) == [.heatmap, .github])
+}
+
+/// FR-47: a block is on while its source is; the heatmap while one of its layers is.
+@Test func aBlockIsOnWithItsSource() {
+    var layout = PopoverLayout()
+    layout.outOfHeatmap = [.github]
+    #expect(layout.isOn(.github, on: [.github]))
+    #expect(!layout.isOn(.heatmap, on: [.github]))
+    #expect(layout.isOn(.heatmap, on: [.github, .provider(a)]))
+    #expect(!layout.isOn(.provider(a), on: [.github]))
+}
+
+/// FR-44: a section shows until hidden; showing every section again leaves no empty entry behind.
+@Test func sectionsShowUntilHidden() {
+    var layout = PopoverLayout()
+    #expect(layout[shows: .insights, of: a])
+    layout[shows: .insights, of: a] = false
+    #expect(!layout[shows: .insights, of: a] && layout[shows: .limits, of: a] && layout[shows: .insights, of: b])
+    layout[shows: .insights, of: a] = true
+    #expect(layout == PopoverLayout())
+    #expect(SectionKind.allCases.map(\.capability) == [.limits, .activity, .insights])
+}

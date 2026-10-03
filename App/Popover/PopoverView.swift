@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// SPEC §11.2: provider groups, GitHub, footer (FR-31).
+/// SPEC §11.2: the blocks in the configured order, then the footer (FR-31, FR-44).
 struct PopoverView: View {
     @Environment(AppState.self) private var appState
     @State private var groupsHeight: CGFloat = 0
@@ -9,11 +9,11 @@ struct PopoverView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
             VStack(alignment: .leading, spacing: 0) {
-                // Many providers scroll; GitHub and the footer stay put. The scroll view exists only while the groups
-                // overflow, since VoiceOver on macOS stops at a scroll area until the user interacts with it; it takes
-                // the cap as its height because the menu bar window gives it none.
-                // ponytail: fixed allowance for GitHub and footer; measure them if it ever clips. Crossing the cap
-                // rebuilds the groups and resets their view state (Insights collapses); keep one identity if it bites.
+                // Many providers scroll; the footer stays put. The scroll view exists only while the blocks overflow,
+                // since VoiceOver on macOS stops at a scroll area until the user interacts with it; it takes the cap as
+                // its height because the menu bar window gives it none.
+                // ponytail: fixed allowance for the footer; measure it if it ever clips. Crossing the cap rebuilds the
+                // blocks and resets their view state (Insights collapses); keep one identity if it bites.
                 let maxHeight = (NSScreen.main?.visibleFrame.height ?? 800) - 250
                 let measuredGroups = groups.onGeometryChange(for: CGFloat.self, of: \.size.height) {
                     groupsHeight = $0
@@ -23,8 +23,10 @@ struct PopoverView: View {
                 } else {
                     measuredGroups
                 }
-                if appState.gitHubEnabled { GitHubSection(state: appState.github).padding(12) }
-                Divider()
+                if appState.blocks.isEmpty {
+                    NothingToShow().padding(12)
+                    Divider()
+                }
                 Footer().padding(8)
             }
             .environment(\.now, context.date)
@@ -36,11 +38,26 @@ struct PopoverView: View {
 
     private var groups: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(appState.enabledProviders) { group in
-                ProviderGroup(group: group).padding(12)
+            ForEach(appState.blocks, id: \.self) { block in
+                switch block {
+                case .provider(let id): ProviderGroup(group: appState.group(id)).padding(12)
+                case .heatmap: EmptyView()  // unreachable until T-5.16 draws the heatmap
+                case .github: GitHubSection(state: appState.github).padding(12)
+                }
                 Divider()
             }
         }
+    }
+}
+
+/// FR-47, US-13: no visible block has a source that is on.
+private struct NothingToShow: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Nothing to show").foregroundStyle(.secondary)
+            SettingsButton(title: "Open Settings…", tab: .popover)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
