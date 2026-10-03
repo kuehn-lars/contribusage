@@ -3,7 +3,7 @@ import ContribusageGitHub
 import ServiceManagement
 import SwiftUI
 
-/// SPEC §11.6. The menu bar settings (T-5.10) and the status line bridge (T-6.2) join their tabs with their tasks.
+/// SPEC §11.6. The status line bridge (T-6.2) joins its tab with its task.
 struct SettingsView: View {
     /// Shared with `SettingsButton`, which opens a given tab.
     @AppStorage("settingsTab") private var tab = SettingsTab.general
@@ -24,8 +24,9 @@ enum SettingsTab: String {
     case general, popover, providers, github, advanced
 }
 
-/// FR-13, FR-14, FR-34.
+/// FR-12, FR-13, FR-14, FR-34.
 private struct GeneralTab: View {
+    @Environment(AppState.self) private var appState
     /// Read from `SMAppService`, never stored (SPEC §10.7); re-read on activation, since System Settings can change it.
     @State private var loginStatus = SMAppService.mainApp.status
     @State private var loginError: String?
@@ -36,6 +37,23 @@ private struct GeneralTab: View {
 
     var body: some View {
         Form {
+            Section("Menu bar") {
+                Picker("Show", selection: menuBarMode) {
+                    ForEach(appState.menuBarModes, id: \.self) { Text($0.title).tag($0) }
+                }
+                if appState.providers.count > 1 {
+                    Picker("Provider", selection: menuBarProvider) {
+                        ForEach(appState.menuBarProviders) { Text($0.descriptor.displayName).tag(Optional($0.id)) }
+                    }
+                }
+                MenuBarStylePicker()
+                Picker("Color", selection: Bindable(appState).menuBarTint) {
+                    ForEach(MenuBarTint.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                if appState.menuBarTint == .custom {
+                    ColorPicker("Custom color", selection: menuBarColor, supportsOpacity: false)
+                }
+            }
             Section {
                 Toggle("Launch at login", isOn: launchAtLogin)
                 if loginStatus == .requiresApproval {
@@ -69,6 +87,33 @@ private struct GeneralTab: View {
         }
     }
 
+    /// A saved mode that is not offered shows as the one the label falls back to (FR-12).
+    private var menuBarMode: Binding<MenuBarMode> {
+        Binding {
+            appState.resolvedMenuBarMode
+        } set: {
+            appState.menuBarMode = $0
+        }
+    }
+
+    /// FR-51: kept as `RRGGBB`.
+    private var menuBarColor: Binding<Color> {
+        Binding {
+            Color(nsColor: NSColor(hex: appState.menuBarColor) ?? .controlAccentColor)
+        } set: {
+            appState.menuBarColor = NSColor($0).hex
+        }
+    }
+
+    /// Shows the provider the label uses (FR-12).
+    private var menuBarProvider: Binding<ProviderID?> {
+        Binding {
+            appState.shownMenuBarProvider
+        } set: {
+            appState.menuBarProvider = $0
+        }
+    }
+
     /// On while registered, including while it waits for approval. After a failed call it shows the real status.
     private var launchAtLogin: Binding<Bool> {
         Binding {
@@ -81,6 +126,79 @@ private struct GeneralTab: View {
                 loginError = String(localized: "Couldn't change launch at login: \(error.localizedDescription)")
             }
             loginStatus = SMAppService.mainApp.status
+        }
+    }
+}
+
+extension MenuBarMode {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .primary: "Current session"
+        case .weekly: "Weekly limit"
+        case .highest: "Highest limit"
+        case .githubToday: "GitHub contributions today"
+        case .primaryAndGitHub: "Current session and GitHub"
+        case .iconOnly: "Icon only"
+        }
+    }
+}
+
+/// FR-51: each style as a tile that shows the label as it would draw now, in the chosen color.
+private struct MenuBarStylePicker: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Style")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 10) {
+                ForEach(MenuBarStyle.allCases, id: \.self) { style in
+                    let selected = appState.menuBarStyle == style
+                    Button {
+                        appState.menuBarStyle = style
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(nsImage: appState.menuBarImage(at: .now, style: style))
+                                .frame(maxWidth: .infinity, minHeight: 30)
+                                .background(.quaternary.opacity(0.6), in: .rect(cornerRadius: 7))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 7)
+                                        .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2)
+                                }
+                            Text(style.title).font(.caption).foregroundStyle(selected ? .primary : .secondary)
+                        }
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(style.title)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+    }
+}
+
+extension MenuBarStyle {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .prompt: "Prompt"
+        case .rings: "Rings"
+        case .ring: "Ring"
+        case .line: "Line"
+        case .heatmap: "Heatmap"
+        case .sharedHeatmap: "Shared heatmap"
+        case .text: "Text"
+        }
+    }
+}
+
+extension MenuBarTint {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .provider: "Provider color"
+        case .usage: "By usage"
+        case .accent: "Accent color"
+        case .monochrome: "Monochrome"
+        case .custom: "Custom"
         }
     }
 }

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-022]
 tags: [core, github, scheduling]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, App/AppState.swift]
@@ -30,6 +30,7 @@ tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoo
 The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the default [[decisions/0021-stats-calendar-parameter]] named; R-4 no longer blocks T-3.6.
 
 ## Consequences
+- A GitHub menu bar mode (T-5.10) keeps GitHub wanted through `Demand.github` (FR-46), whatever the popover shows.
 - R-4 changes one argument in `AppState.live`, not the coordinator.
 - `GitHubReport.staleAfter` became `GitHubReport.policy.staleAfter`.
 - `ContributionCalendar` keeps GitHub's `weeks` (SPEC §10.5), so the heatmap's columns are `weeks.suffix(26)` with no weekday arithmetic; `days` is derived.
@@ -40,3 +41,4 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - T-5.14 (FR-43): the GitHub switch removes GitHub from the sources that are on, so `Demand.github` turns false and the job is skipped; the token stays in the Keychain.
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.
 - GitHub's heatmap layer reads the job's last snapshot, stale or failed ones dimmed (T-5.16, SPEC §11.4).
+- T-5.19: the menu bar's demand set (`AppState.menuBarSources`) also names the activity the heatmap styles draw (`menuBarHeatmapSources(_:style:)`) ([[decisions/0035-drawn-menu-bar-label]]); GitHub's part of it is unchanged.

@@ -116,14 +116,14 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
         arranged(registered: sources).filter { $0 != .heatmap && on.contains($0) && !outOfHeatmap.contains($0) }
     }
 
-    /// What must run (FR-46): a provider's activity while its section or its layer shows, GitHub while its block or
-    /// layer shows or the menu bar uses it. Limits need no demand: they run while their provider is on, because
-    /// notifications use them.
+    /// What must run (FR-46): a provider's activity while its section or its layer shows or the menu bar draws it
+    /// (FR-51), GitHub while its block or layer shows or the menu bar uses it. Limits need no demand: they run while
+    /// their provider is on, because notifications use them.
     public func demand(on: Set<BlockID>, menuBar: Set<BlockID>) -> Demand {
         let providers = on.compactMap { if case .provider(let id) = $0 { id } else { nil } }
         let activity = providers.filter {
             !hiddenBlocks.contains(.provider($0)) && self[shows: .activity, of: $0]
-                || inShownHeatmap(.provider($0))
+                || inShownHeatmap(.provider($0)) || menuBar.contains(.provider($0))
         }
         let github =
             on.contains(.github)

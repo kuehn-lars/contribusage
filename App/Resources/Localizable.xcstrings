@@ -116,6 +116,16 @@
     "@%@" : {
       "shouldTranslate" : false
     },
+    "Accent color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzentfarbe"
+          }
+        }
+      }
+    },
     "Account" : {
       "localizations" : {
         "de" : {
@@ -196,6 +206,16 @@
         }
       }
     },
+    "By usage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Auslastung"
+          }
+        }
+      }
+    },
     "Cache read" : {
       "localizations" : {
         "de" : {
@@ -272,6 +292,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entfernen"
+          }
+        }
+      }
+    },
+    "Color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Farbe"
           }
         }
       }
@@ -382,6 +412,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Token auf GitHub erstellen …"
+          }
+        }
+      }
+    },
+    "Current session" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuelle Sitzung"
+          }
+        }
+      }
+    },
+    "Current session and GitHub" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuelle Sitzung und GitHub"
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene"
+          }
+        }
+      }
+    },
+    "Custom color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Farbe"
           }
         }
       }
@@ -529,6 +599,16 @@
     "GitHub" : {
       "shouldTranslate" : false
     },
+    "GitHub contributions today" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub-Beiträge heute"
+          }
+        }
+      }
+    },
     "Heatmap" : {
       "localizations" : {
         "de" : {
@@ -559,12 +639,32 @@
         }
       }
     },
+    "Highest limit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchstes Limit"
+          }
+        }
+      }
+    },
     "History and caches" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verlauf und Caches"
+          }
+        }
+      }
+    },
+    "Icon only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Symbol"
           }
         }
       }
@@ -649,12 +749,42 @@
         }
       }
     },
+    "Line" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linie"
+          }
+        }
+      }
+    },
     "Locate…" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suchen …"
+          }
+        }
+      }
+    },
+    "Menu bar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menüleiste"
+          }
+        }
+      }
+    },
+    "Monochrome" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monochrom"
           }
         }
       }
@@ -899,6 +1029,36 @@
         }
       }
     },
+    "Prompt" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prompt"
+          }
+        }
+      }
+    },
+    "Provider" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieter"
+          }
+        }
+      }
+    },
+    "Provider color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieterfarbe"
+          }
+        }
+      }
+    },
     "Providers" : {
       "localizations" : {
         "de" : {
@@ -979,6 +1139,26 @@
         }
       }
     },
+    "Ring" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring"
+          }
+        }
+      }
+    },
+    "Rings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ringe"
+          }
+        }
+      }
+    },
     "Script" : {
       "localizations" : {
         "de" : {
@@ -1005,6 +1185,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Shared heatmap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemeinsame Heatmap"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzeigen"
           }
         }
       }
@@ -1059,6 +1259,16 @@
         }
       }
     },
+    "Style" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil"
+          }
+        }
+      }
+    },
     "Test" : {
       "localizations" : {
         "de" : {
@@ -1075,6 +1285,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wird getestet …"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
           }
         }
       }
@@ -1309,6 +1529,16 @@
         }
       }
     },
+    "Weekly limit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wöchentliches Limit"
+          }
+        }
+      }
+    },
     "While off, GitHub gets no requests; the token stays saved." : {
       "localizations" : {
         "de" : {
@@ -1330,9 +1560,6 @@
       }
     },
     "claude" : {
-      "shouldTranslate" : false
-    },
-    "contribusage" : {
       "shouldTranslate" : false
     },
     "github_pat_…" : {

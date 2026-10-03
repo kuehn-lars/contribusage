@@ -125,33 +125,34 @@ extension AppState {
     /// days are "no data".
     func heatmap(at now: Date) -> (days: [DayKey], layers: [ShownLayer]) {
         let days = HeatmapLayer.days(through: now, calendar: .current)
-        let layers = heatmapSources.compactMap { source -> ShownLayer? in
-            switch source {
-            case .github:
-                let shown = Set(days)
-                let contributions =
-                    github.snapshot?.value.calendar.weeks.joined().filter { shown.contains($0.date) } ?? []
-                let layer = HeatmapLayer(
-                    id: .github, name: "GitHub",
-                    values: Dictionary(uniqueKeysWithValues: contributions.map { ($0.date, $0.count) }),
-                    levels: Dictionary(uniqueKeysWithValues: contributions.map { ($0.date, $0.level.rawValue) }))
-                let stale = github.snapshot?.isStale(at: now, after: GitHubReport.policy.staleAfter) ?? false
-                return ShownLayer(layer: layer, color: .green, dimmed: stale || github.isFailed)
-            case .provider(let id):
-                let group = group(id)
-                let reported = group.activity?.snapshot?.value.days ?? []  // oldest first
-                let tokens = Dictionary(reported.map { ($0.day, $0.tokens.total) }, uniquingKeysWith: +)
-                let shown = reported.first.map { first in days.filter { $0 >= first.day } } ?? []
-                let layer = HeatmapLayer.quartiled(
-                    source, name: group.descriptor.displayName,
-                    values: Dictionary(uniqueKeysWithValues: shown.map { ($0, tokens[$0, default: 0]) }))
-                return ShownLayer(
-                    layer: layer, color: group.descriptor.heatmapHue.color, dimmed: group.activity?.isFailed ?? false)
-            case .heatmap:
-                return nil
-            }
+        return (days, heatmapSources.compactMap { layer($0, days: days, at: now) })
+    }
+
+    /// A source's layer over `days`; `nil` for the heatmap block itself.
+    func layer(_ source: BlockID, days: [DayKey], at now: Date) -> ShownLayer? {
+        switch source {
+        case .github:
+            let shown = Set(days)
+            let contributions = github.snapshot?.value.calendar.weeks.joined().filter { shown.contains($0.date) } ?? []
+            let layer = HeatmapLayer(
+                id: .github, name: "GitHub",
+                values: Dictionary(uniqueKeysWithValues: contributions.map { ($0.date, $0.count) }),
+                levels: Dictionary(uniqueKeysWithValues: contributions.map { ($0.date, $0.level.rawValue) }))
+            let stale = github.snapshot?.isStale(at: now, after: GitHubReport.policy.staleAfter) ?? false
+            return ShownLayer(layer: layer, color: .green, dimmed: stale || github.isFailed)
+        case .provider(let id):
+            let group = group(id)
+            let reported = group.activity?.snapshot?.value.days ?? []  // oldest first
+            let tokens = Dictionary(reported.map { ($0.day, $0.tokens.total) }, uniquingKeysWith: +)
+            let shown = reported.first.map { first in days.filter { $0 >= first.day } } ?? []
+            let layer = HeatmapLayer.quartiled(
+                source, name: group.descriptor.displayName,
+                values: Dictionary(uniqueKeysWithValues: shown.map { ($0, tokens[$0, default: 0]) }))
+            return ShownLayer(
+                layer: layer, color: group.descriptor.heatmapHue.color, dimmed: group.activity?.isFailed ?? false)
+        case .heatmap:
+            return nil
         }
-        return (days, layers)
     }
 }
 

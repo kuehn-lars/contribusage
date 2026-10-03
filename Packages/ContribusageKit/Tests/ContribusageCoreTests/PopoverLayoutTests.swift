@@ -48,7 +48,7 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     #expect(layout.blocks(registered: [a], on: [.provider(a), .github]) == [.provider(a), .heatmap, .github])
 }
 
-/// FR-46: activity runs only for a visible section or a shown layer.
+/// FR-46: activity runs only for a visible section, a shown layer or the menu bar's heatmap.
 @Test func workFollowsUse() {
     var layout = PopoverLayout()
     layout.hiddenSections[a] = [.activity, .limits]
@@ -63,6 +63,9 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     #expect(layout.demand(on: [.provider(a)], menuBar: []).activity.isEmpty)
     layout.hiddenBlocks = [.heatmap, .provider(b)]
     #expect(layout.demand(on: [.provider(b)], menuBar: []).activity.isEmpty)
+    // The menu bar's heatmap style draws the provider's activity (FR-51), never while the provider is off.
+    #expect(layout.demand(on: [.provider(b)], menuBar: [.provider(b)]).activity == [b])
+    #expect(layout.demand(on: [], menuBar: [.provider(b)]).activity.isEmpty)
 }
 
 /// FR-46: a hidden GitHub block still fetches while its layer shows or the menu bar uses it, never while off.

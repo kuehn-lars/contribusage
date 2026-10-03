@@ -10,8 +10,10 @@ struct ContribusageApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("contribusage", systemImage: "gauge.with.dots.needle.33percent") {
+        MenuBarExtra {
             PopoverView().environment(appState)
+        } label: {
+            MenuBarItem().environment(appState)
         }
         .menuBarExtraStyle(.window)
         Settings { SettingsView().environment(appState) }

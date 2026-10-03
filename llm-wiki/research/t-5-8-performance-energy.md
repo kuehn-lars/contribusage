@@ -1,7 +1,7 @@
 ---
 type: research
 status: answered
-updated: 2026-10-03
+updated: 2026-10-04
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/Schedule.swift, App/AppState.swift, App/Popover/PopoverView.swift]
 tags: [research, performance, energy]
 ---
@@ -27,7 +27,7 @@ Does the Release build meet NFR-1 to NFR-4 and NFR-14 with one provider and real
 | Footprint | 43 → 47 MB | below 80 MB |
 | Idle wakeups, energy impact (1 min) | 3, 0.1 | — |
 
-- While idle, CPU rises in steps of 0.01 to 0.07 s once a minute: the popover's `TimelineView(.periodic(by: 60))` ticks with the popover closed. NFR-1 allows one timer per minute.
+- While idle, CPU rises in steps of 0.01 to 0.07 s once a minute: the popover's `TimelineView(.periodic(by: 60))` ticks with the popover closed. NFR-1 allows one timer per minute. The menu bar label (T-5.10) adds a second once-a-minute wake (a task, since a `TimelineView` loops in a `MenuBarExtra` label); not re-measured.
 - Each burst of transcript writes costs the activity source about 0.1 to 0.4 s of CPU, because an incremental pass opens every transcript ([[research/nfr-7-transcript-scan]]). That is work caused by a running Claude Code session, not idle cost. If it becomes a problem, the fix is to read only the files named in the file events.
 - NFR-14: `RefreshCoordinator` has one sleep loop with 10 % tolerance; the shortest automatic interval is 5 min (Claude Code limits), then 10 min (GitHub); `Schedule.nextRun` returns `nil` while the Mac sleeps and doubles intervals in Low Power Mode (`ScheduleTests`).
 - Measured before T-5.15 put GitHub into the ordered blocks; the popover still renders from memory, so the numbers hold.
@@ -40,3 +40,4 @@ Does the Release build meet NFR-1 to NFR-4 and NFR-14 with one provider and real
 - Measured before T-5.13: since then an activity source nobody uses (section hidden, layer out of the heatmap) is not watched, and GitHub skips passes while nothing uses it or it is switched off (T-5.14), so the idle figures are an upper bound.
 
 Measured before the shared heatmap block (T-5.16), which draws up to 182 cells per grid; re-measure if the popover feels slower.
+- T-5.19 draws the menu bar label as an image, redrawn once a minute and on data changes; a Debug run sampled with `ps` over 20 s stayed at about 0 % CPU and 88 MB. The menu bar's demand is computed when a setting changes, never per redraw.

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-028]
 tags: [settings, scheduling, providers, app]
 tracks: [App/Settings, App/AppState.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
@@ -17,7 +17,7 @@ SPEC §11.6 lists controls that other tasks own: launch at login (T-5.3), copy d
 | Option | For | Against |
 |---|---|---|
 | T-5.2 builds every §11.6 control, inert ones included | One task completes the window | Controls without behaviour ship, and the menu bar mode type is designed before its renderer |
-| T-5.2 builds the controls no other task owns | Every control works when it appears | The window grows with T-5.3 (done: the General tab's launch at login toggle), T-5.5 (done: the Advanced tab's copy diagnostics), T-5.10 and T-6.2 |
+| T-5.2 builds the controls no other task owns | Every control works when it appears | The window grows with T-5.3 (done: the General tab's launch at login toggle), T-5.5 (done: the Advanced tab's copy diagnostics), T-5.10 (done: the General tab's Menu bar section) and T-6.2 |
 
 ## Decision
 T-5.2 builds the controls no other task owns; the menu bar display mode and menu bar provider settings move to T-5.10, next to the label that reads them. Intervals are settings a `Job` reads before every scheduling decision (`interval`, `limitsInterval(ProviderID)` for providers) as the policy's default, which `Schedule` clamps to the policy's bounds; `intervalsChanged()` reschedules at once. `resetCaches()` lives in the coordinator: it forgets every snapshot, keeps the notification keys and runs every source. Detecting availability and locating `claude` while the Providers tab is shown are allowed for a disabled provider: the user asked by opening the tab, and the registry's once-a-minute rule (FR-3) still bounds it.
@@ -34,3 +34,4 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - T-5.14 adds the GitHub tab's switch, bound to `AppState.gitHubEnabled` (`githubEnabled` default); its `didSet` saves and applies the demand like `layout`.
 - ADR-033 adds `toolText` to Claude Code's descriptor; its settings (path override, probe interval, config folder) are unchanged.
 - The Popover tab's style picker shows a legend preview of the heatmap's layers (T-5.16); a provider declares its layer's hue in its descriptor.
+- T-5.19 adds the menu bar style tiles and the color choice to the General tab, saved as `menuBarStyle`, `menuBarTint` and `menuBarColor`; the tiles and the label draw through the same `AppState.menuBarImage(at:style:)` ([[decisions/0035-drawn-menu-bar-label]]).

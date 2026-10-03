@@ -310,3 +310,28 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] fix | Heatmap test no longer reads a catalog plural
 - CI's SwiftPM leaves the core's String Catalog uncompiled, so "1 contribution" read "1 contributions"; the assertion is dropped, the catalog step covers the key.
+
+## [2026-10-03] feat | Menu bar label and its settings (T-5.10)
+- Core `MenuBarMode` and `MenuBarLabel`: modes, fallbacks, stale `~`, gauge variants, stable width ([[modules/core]]).
+- App `MenuBarItem`, `AppState.menuBarLabel(at:)`, Settings' Menu bar section; a GitHub mode puts GitHub in the demand ([[modules/app]]).
+- SPEC: US-1 stale wording, FR-12 not-offered mode, §11.1 GitHub mode text.
+
+## [2026-10-03] refactor | Menu bar label review
+- `MenuBarMode.usesProviders`/`usesGitHub` replace the mode lists in `offered` and the app's demand; one `limits(_:)` path for every limits mode, no recursive init.
+- The menu bar provider fallback lives once, in `AppState.shownMenuBarProvider` ([[modules/app]], [[modules/core]]).
+
+## [2026-10-03] fix | Menu bar label no longer loops on launch
+- A `TimelineView` in the `MenuBarExtra` label made SwiftUI re-request label updates endlessly: 100 % CPU, memory growing without bound, no menu bar item. A `.task` loop now ticks a `@State` date each minute ([[modules/app]]).
+
+## [2026-10-04] feat | Menu bar styles and colors (T-5.19)
+- The label is one drawn, colored image: the `prompt` mark, rings, ring, line, heatmap and text; provider, usage, accent, monochrome or custom color (FR-51, [[decisions/0035-drawn-menu-bar-label]]).
+- `MenuBarLabel` carries meter, companion window, stale flag, title and source instead of a gauge symbol; `iconOnly` keeps the meter.
+- Settings shows each style as a live preview tile; the heatmap style watches the provider's activity (FR-46).
+
+## [2026-10-04] feat | Shared heatmap in the menu bar
+- New `sharedHeatmap` style: the shared heatmap's layers (for example Claude Code and GitHub) over the last three weeks, a stripe per active layer as in FR-49 Combined (FR-51, [[decisions/0035-drawn-menu-bar-label]]).
+- The heatmap styles keep their hues from 90 %; the value text turns red instead, since red beside GitHub's green fails ADR-032's rule.
+
+## [2026-10-04] refactor | Menu bar label review
+- One rule for the layers a heatmap style draws, `menuBarHeatmapSources(_:style:)`, read by the image and the demand ([[decisions/0035-drawn-menu-bar-label]]).
+- `MenuBarArt`: one value-based meter color, straight bars instead of path trimming, layers captured by the glyph; every style renders byte-identical in light and dark.
