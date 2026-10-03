@@ -307,3 +307,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] refactor | One switch builds each heatmap layer
 - `HeatmapLayer` carries its `name`; `AppState.heatmap(at:)` returns `ShownLayer`s with hue and dimming, so the per-layer `name`, `color` and `isDimmed` lookups are gone.
+
+## [2026-10-03] fix | Heatmap test no longer reads a catalog plural
+- CI's SwiftPM leaves the core's String Catalog uncompiled, so "1 contribution" read "1 contributions"; the assertion is dropped, the catalog step covers the key.

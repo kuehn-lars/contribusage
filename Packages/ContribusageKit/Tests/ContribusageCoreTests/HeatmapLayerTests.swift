@@ -61,7 +61,6 @@ private func day(_ n: Int) -> DayKey { DayKey(rawValue: "2026-09-\(10 + n)") }
     #expect(
         HeatmapLayer.line(day(0), layers: [tokens, github], locale: enUS)
             == "2026-09-10 · Claude Code: 1.2M tokens · GitHub: 5 contributions")
-    #expect(github.text(1, locale: enUS) == "1 contribution")
     #expect(
         HeatmapLayer.line(day(1), layers: [tokens, github], locale: enUS)
             == "2026-09-11 · Claude Code: no data · GitHub: no data")
