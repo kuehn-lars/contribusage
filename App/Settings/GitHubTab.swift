@@ -15,7 +15,7 @@ struct GitHubTab: View {
         Form {
             Section("Account") {
                 if login.isEmpty {
-                    LabeledContent("Status", value: "Not connected")
+                    LabeledContent("Status") { Text("Not connected") }
                 } else {
                     LabeledContent {
                         Button("Disconnect", role: .destructive, action: remove)
@@ -91,7 +91,7 @@ struct GitHubTab: View {
                 login = ""
                 error = nil
             } catch {
-                self.error = "Couldn't remove the token: \(error.localizedDescription)"
+                self.error = String(localized: "Couldn't remove the token: \(error.localizedDescription)")
             }
         }
     }

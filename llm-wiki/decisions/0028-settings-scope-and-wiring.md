@@ -28,4 +28,5 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - "Delete data for this provider" is offered only while the provider is off, so no running activity source writes `history.json` back during or after the deletion.
 - Enabling a provider calls `start()` again; `restore()` therefore publishes only for sources that show no state yet, or a rejected GitHub token would turn back into its snapshot and poll once more.
 - A source marked offline runs on reconnect within its floor (T-5.6), so a long interval setting does not keep it "Offline".
+- Status and error texts the tabs build as `String` go through `String(localized:)`; paths and versions stay as found ([[decisions/0031-string-catalogs]]).
 - A probe running when its provider is turned off still finishes (at most 30 s); its result lands in a group that is no longer shown.

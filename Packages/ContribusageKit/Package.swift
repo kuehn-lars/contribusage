@@ -3,6 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "ContribusageKit",
+    // English first; user facing strings live in String Catalogs (NFR-10).
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "ContribusageCore", targets: ["ContribusageCore"]),
@@ -11,7 +13,8 @@ let package = Package(
     ],
     targets: [
         // Provider neutral core. Must never depend on a provider or on GitHub (NFR-17).
-        .target(name: "ContribusageCore"),
+        // Resources declared explicitly: older SwiftPM (Xcode 26) leaves an undeclared String Catalog unhandled.
+        .target(name: "ContribusageCore", resources: [.process("Resources")]),
 
         // Providers. Each depends only on the core.
         .target(name: "ContribusageClaudeCode", dependencies: ["ContribusageCore"]),

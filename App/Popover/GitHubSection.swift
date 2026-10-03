@@ -31,11 +31,15 @@ private struct GitHubContent: View {
 extension GitHubReport {
     /// Shared with Copy Statistics (FR-42).
     var statsText: String {
-        "Today \(stats.today) · Streak \(stats.currentStreak) days · Year \(calendar.totalContributions.formatted())"
+        String(
+            localized:
+                "Today \(stats.today) · Streak \(stats.currentStreak) days · Year \(calendar.totalContributions.formatted())"
+        )
     }
 }
 
-// ponytail: plain grid of weeks; T-5.11 owns the palette, keyboard and VoiceOver.
+// ponytail: plain grid of weeks; T-5.11 owns keyboard and VoiceOver.
+/// SPEC §11.4: system green in four steps from 40 % to full, over the window's glass; level 0 is the neutral fill.
 private struct Heatmap: View {
     let weeks: ArraySlice<[ContributionDay]>
 
@@ -46,7 +50,7 @@ private struct Heatmap: View {
                     .fill(
                         day.level == .none
                             ? AnyShapeStyle(.quaternary)
-                            : AnyShapeStyle(.green.opacity(0.25 * Double(day.level.rawValue)))
+                            : AnyShapeStyle(.green.opacity(0.2 + 0.2 * Double(day.level.rawValue)))
                     )
                     .help("\(day.date.rawValue): \(day.count) contributions")
             }
@@ -58,7 +62,7 @@ private struct Heatmap: View {
 /// in GitHub's weeks after the first. The height follows from the width and never from the proposal: the menu bar window
 /// proposes too little height, and `aspectRatio` cells shrank to dots.
 private struct WeekColumns: Layout {
-    private let gap: CGFloat = 2
+    private let gap: CGFloat = 3
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard !subviews.isEmpty else { return .zero }

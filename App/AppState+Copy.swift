@@ -22,7 +22,7 @@ extension AppState {
                 }
                 return [
                     figures.todayText, figures.categoriesText(group.descriptor.tokenCategories),
-                    "Last 7 days: " + week.joined(separator: " · "),
+                    String(localized: "Last 7 days: \(week.joined(separator: " · "))"),
                 ]
             }
             if UserDefaults.standard.object(forKey: "showInsights") as? Bool ?? true, let insights = group.insights {
@@ -52,6 +52,7 @@ extension AppState {
     }
 
     /// The app, the Mac, every registered provider and GitHub. Never a token: the GitHub token never reaches `AppState`.
+    /// English in every language, since it goes into bug reports (ADR-031).
     func diagnostics() async -> String {
         let info = Bundle.main.infoDictionary ?? [:]
         var lines = [
@@ -86,7 +87,8 @@ extension AppState {
 
 /// The section's title and, when it has values, when they were fetched.
 private func header(_ title: String, _ fetchedAt: Date?) -> String {
-    fetchedAt.map { "\(title) · updated \($0.formatted(date: .abbreviated, time: .shortened))" } ?? title
+    fetchedAt.map { String(localized: "\(title) · updated \($0.formatted(date: .abbreviated, time: .shortened))") }
+        ?? title
 }
 
 /// The shown values (current or previous), else a failure's §13 message; a source that is loading or not configured
@@ -100,9 +102,9 @@ private func values<Value>(_ state: SourceState<Value>?, _ name: String, _ lines
 /// `InsightsSection`'s content per period: summary, shares, then the top three of each ranking.
 private func insightsLines(_ insights: Insights) -> [String] {
     func line(_ share: Insights.Share, indent: String) -> String {
-        indent + share.label + (share.percent.map { " \($0)%" } ?? "")
+        indent + share.label + (share.percent.map { " " + $0.formatted(.percent) } ?? "")
     }
-    var lines = ["Insights" + (insights.note.map { " (\($0))" } ?? "")]
+    var lines = [String(localized: "Insights") + (insights.note.map { " (\($0))" } ?? "")]
     for period in insights.periods {
         lines.append("\(period.label): \(period.summary)")
         lines += period.shares.map { line($0, indent: "  ") }

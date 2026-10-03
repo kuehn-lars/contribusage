@@ -126,7 +126,7 @@ struct SectionHeader: View {
 
     var body: some View {
         HStack {
-            Label(title, systemImage: symbolName).font(.headline)
+            Label(title, systemImage: symbolName).font(.headline).accessibilityAddTraits(.isHeader)
             if let subtitle { Text(subtitle).foregroundStyle(.secondary) }
             Spacer()
             if let fetchedAt { AgeText(fetchedAt: fetchedAt).font(.caption).foregroundStyle(.secondary) }
@@ -155,19 +155,21 @@ extension SourceError {
     /// SPEC §13, shared by the popover's error lines and Settings.
     func message(displayName: String) -> String {
         switch self {
-        case .toolNotFound: "\(displayName) wasn't found"
-        case .notLoggedIn: "\(displayName) isn't logged in"
+        case .toolNotFound: String(localized: "\(displayName) wasn't found")
+        case .notLoggedIn: String(localized: "\(displayName) isn't logged in")
         case .unsupportedPlan(let note): note
-        case .timedOut: "\(displayName) didn't answer in time"
-        case .processFailed(let exitCode, _): "Exited with code \(exitCode)"
-        case .unparseable: "Couldn't read the usage output"
-        case .offline: "Offline"
-        case .tokenMissing: "No \(displayName) token saved"
-        case .unauthorized: "\(displayName) token is invalid or expired"
-        case .rateLimited(let until): "Rate limited until \(until.formatted(date: .omitted, time: .shortened))"
-        case .http(let status): "Server error \(status)"
+        case .timedOut: String(localized: "\(displayName) didn't answer in time")
+        case .processFailed(let exitCode, _): String(localized: "Exited with code \(exitCode)")
+        case .unparseable: String(localized: "Couldn't read the usage output")
+        case .offline: String(localized: "Offline")
+        case .tokenMissing: String(localized: "No \(displayName) token saved")
+        case .unauthorized: String(localized: "\(displayName) token is invalid or expired")
+        case .rateLimited(let until):
+            String(localized: "Rate limited until \(until.formatted(date: .omitted, time: .shortened))")
+        case .http(let status): String(localized: "Server error \(status)")
+        // Technical detail, kept as the source reported it (ADR-031).
         case .decoding(let message), .io(let message): message
-        case .providerSpecific: "Something went wrong with \(displayName)"
+        case .providerSpecific: String(localized: "Something went wrong with \(displayName)")
         }
     }
 }

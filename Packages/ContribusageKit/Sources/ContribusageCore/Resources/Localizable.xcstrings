@@ -1,0 +1,68 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@: %@ at %lld %%" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ bei %3$lld %%"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ at %3$lld %%"
+          }
+        }
+      }
+    },
+    "%@: %@ has reset" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ wurde zurückgesetzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ has reset"
+          }
+        }
+      }
+    },
+    "reset, refreshing…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zurückgesetzt, wird aktualisiert …"
+          }
+        }
+      }
+    },
+    "resets %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset %@"
+          }
+        }
+      }
+    },
+    "resets in %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset in %@"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -34,6 +34,24 @@ jobs:
           app=.build/xcode/Build/Products/Release/contribusage.app
           test "$(lipo -archs "$app/Contents/MacOS/contribusage")" = arm64
           test "$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Contents/Info.plist")" = 14.0
+      # Every string the build extracted is in its catalog, no catalog key is stale, and every key meant for
+      # translation has its German one. To fix the first two, run the same sync on the catalog itself after a build.
+      # The copy keeps the catalog's name: it is the table name sync matches.
+      - name: String Catalogs match the code (NFR-10)
+        run: |
+          built=.build/xcode/Build/Intermediates.noindex/
+          check() { # catalog, build folder, target
+            cp "$1" "$RUNNER_TEMP/"
+            xcrun xcstringstool sync "$RUNNER_TEMP/$(basename "$1")" \
+              --stringsdata $(find "$built$2" -path "*/$3*" -name '*.stringsdata')
+            diff -u "$1" "$RUNNER_TEMP/$(basename "$1")"
+            untranslated=$(jq -r '.strings | to_entries[] | select(.value.shouldTranslate != false
+              and .value.localizations.de.stringUnit.state != "translated") | .key' "$1")
+            test -z "$untranslated" || { echo "No German translation in $1:"; echo "$untranslated"; exit 1; }
+          }
+          check App/Resources/Localizable.xcstrings Contribusage.build/Release Contribusage
+          check Packages/ContribusageKit/Sources/ContribusageCore/Resources/Localizable.xcstrings \
+            ContribusageKit.build/Release ContribusageCore
 
   wiki:
     name: Wiki lint

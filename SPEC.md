@@ -340,7 +340,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
 | NFR-9 | Appearance | Correct in light and dark mode; respects Reduce Motion and Reduce Transparency; uses system fonts and semantic colors. | Manual checklist |
-| NFR-10 | Localization | All user facing strings in a String Catalog. English first. Dates, numbers and relative times formatted with the user's locale. | Build check, pseudo-localization run |
+| NFR-10 | Localization | All user facing strings in a String Catalog. English first; German ships as well, because an app without the user's language formats dates and units in English (ADR-031). Dates, numbers and relative times formatted with the user's locale. | Build check (CI: catalogs match the extracted strings and carry German, ADR-031), pseudo-localization run |
 | NFR-11 | Code quality | Swift 6 language mode, strict concurrency, zero compiler warnings. | CI build |
 | NFR-12 | Resilience | Survives: `claude` missing or broken, logged out, offline, sleep and wake, time zone change, clock change, malformed or huge files, deleted transcript folders, a provider throwing on every call. | Test matrix in [16.5](#165-manual-test-matrix) |
 | NFR-13 | Privacy | The app itself connects only to `api.github.com`. Logs never contain tokens. | Little Snitch or `nettop`, log review |
@@ -1009,7 +1009,7 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 │ ░▒▓█░▒▒▓░░▒█▓▒░ … (26 weeks × 7 days)       │
 │ Today 5 · Streak 12 days · Year 1,234      │
 ├────────────────────────────────────────────┤
-│ ⟳ Refresh     ⚙︎ Settings    ⧉ Copy   ⏻ Quit │
+│ ⟳             ⚙︎             ⧉             ⏻ │
 └────────────────────────────────────────────┘
 ```
 
@@ -1018,6 +1018,8 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 - Hovering a heatmap cell shows "2026-09-27: 5 contributions". Hovering a reset text shows the absolute local date and time. Both are tooltips that appear after 0.2 s.
 - The 7 day chart uses Swift Charts, total tokens per day, with an accessibility summary.
 - If the popover content exceeds the screen height (many providers), the provider groups scroll; the footer stays pinned.
+- The footer's buttons show only their icons, with the titles as tooltips and VoiceOver labels: the titles do not fit 360 pt in every language (German).
+- The popover paints no background of its own: the menu bar window's Liquid Glass follows System Settings → Appearance (clear or tinted glass) and Reduce Transparency, and the content uses semantic, vibrant styles on top of it.
 
 ### 11.3 Section states
 
@@ -1033,7 +1035,7 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 | Unsupported plan | "Plan limits need a Claude subscription login in Claude Code" | unaffected | unaffected |
 | Unparseable | Previous values dimmed + "Couldn't read /usage output" + "Show raw output" | n/a | n/a |
 
-The texts in this table are Claude Code specific; each provider supplies its own strings for "not configured" and "unsupported plan" through its String Catalog entries (keys prefixed `provider.<id>.`).
+The texts in this table show Claude Code as the example; the app words each state once with the provider's display name, so providers supply no strings, and the unsupported plan text is the tool's own note (ADR-017, ADR-031).
 
 ### 11.4 Colors and thresholds
 
@@ -1168,7 +1170,8 @@ contribusage/
 │       │   │   ├── Scheduling/       (Schedule, RefreshCoordinator)
 │       │   │   ├── Notifications/NotificationPlanner.swift
 │       │   │   ├── Persistence/
-│       │   │   └── Support/          (protocols + Live/ implementations)
+│       │   │   ├── Support/          (protocols + Live/ implementations)
+│       │   │   └── Resources/Localizable.xcstrings  (the core's texts: reset text, notification titles; ADR-031)
 │       │   ├── ContribusageClaudeCode/
 │       │   │   ├── ClaudeCodeProvider.swift   (descriptor, detection and the probe as its LimitsSource: locate cache, error mapping)
 │       │   │   ├── Limits/           (ClaudeLocator, UsageParser with window classification, StatusLineBridgeReader)
@@ -1487,11 +1490,11 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] ~~**T-5.4** First run onboarding. *(FR-37)*~~ Dropped with FR-37 (ADR-029).
 - [x] **T-5.5** Copy diagnostics in Settings, with provider lines through `UsageProvider.diagnostics()`, and copy statistics in the popover footer (ADR-030). *(FR-36, FR-42, US-10)*
 - [x] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
-- [ ] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)*
+- [x] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)* String Catalogs in the app and the core, English and German, with a CI sync check (ADR-031); provider groups scroll only when they overflow, so VoiceOver reaches them directly; the popover keeps the system's Liquid Glass, the heatmap uses system green in four steps (11.4), the footer shows icons with tooltips; heatmap keyboard and VoiceOver stay with T-5.11; VoiceOver, keyboard and appearance are checked with the 16.5 matrix.
 - [ ] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)*
 - [ ] **T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. *(US-11)*
 - [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
-- [ ] **T-5.11** Heatmap palette (11.4, light and dark), keyboard navigation and VoiceOver. Moved from Phase 3 (split from T-3.5). *(FR-20, NFR-8)*
+- [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, NFR-8)*
 - [ ] **M4 check:** manual matrix 16.5 passes.
 
 ### 17.6 Phase 6: Optional and release (M5)
@@ -1740,7 +1743,7 @@ window classification table (label → session / weekly / other).
 default / minimum / maximum interval, stale after, manual floor, extra triggers.
 
 #### 8.x.5 Error mapping
-Tool specific conditions → SourceError, user facing strings (String Catalog keys `provider.<id>.…`).
+Tool specific conditions → SourceError; the app words each case (ADR-031), and a provider that needs its own wording adds a String Catalog to its target.
 
 #### 8.x.6 Limitations and update procedure
 What is not covered, how to capture new fixtures when the tool updates.
