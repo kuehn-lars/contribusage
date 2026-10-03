@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-02
+updated: 2026-10-03
 aliases: [ADR-018]
 tags: [core, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]
@@ -34,4 +34,5 @@ T-2.6 builds the scheduler of SPEC §12. Four points were open: how the neutral 
 - The extra triggers of SPEC §12 (popover opened, a window's reset) joined the same passes in T-2.7 as `triggers` dates ([[decisions/0019-extra-refresh-triggers]]).
 - T-5.1 plans notifications after each polled limits fetch in the same passes ([[decisions/0027-notification-planning-in-the-coordinator]]).
 - T-5.2's settings enter the same actor as calls: `intervalsChanged()` reschedules, `resetCaches()` forgets the snapshots and runs a pass ([[decisions/0028-settings-scope-and-wiring]]).
+- T-5.6: the wake is a trigger like the others, and `nextRun` treats a source shown offline as a manual refresh, so it runs on reconnect within its floor instead of showing "Offline" until its next interval.
 - Revisit if a provider's fetch is slow enough that queueing behind it matters: then passes per provider, with the process gate as the only global lock.

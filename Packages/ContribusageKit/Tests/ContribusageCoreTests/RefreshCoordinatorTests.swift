@@ -242,22 +242,29 @@ func anIntervalSettingReplacesTheDefault(setting: Duration, expected: TimeInterv
     #expect(next == start + 6 * 3600)
 }
 
-/// SPEC §12 rule 2: offline marks a network source without running it; reconnecting runs it.
+/// SPEC §12 rule 2, §13 "auto on reconnect": offline marks a network source without running it; reconnecting runs it
+/// at once, not at its next interval.
 @Test func offlineMarksTheSourceAndReconnectingRunsIt() async {
+    let time = FakeTimeSource(now: start)
     let log = Log()
-    let coordinator = coordinator([PolledProvider(id: a) { try await log.fetch($0) }], log: log)
+    let coordinator = coordinator([PolledProvider(id: a) { try await log.fetch($0) }], time: time, log: log)
+    _ = await coordinator.runDue()
 
+    time.advance(by: .seconds(60))
     await coordinator.update(ScheduleConditions(isOnline: false))
     #expect(await coordinator.runDue() == nil)
-    guard case (a, .failed(.offline, nil))? = log.updates.last else {
+    guard case (a, .failed(.offline, _?))? = log.updates.last else {
         Issue.record("not offline: \(log.updates)")
         return
     }
-    #expect(log.fetches.isEmpty)
-
-    await coordinator.update(ScheduleConditions())
-    _ = await coordinator.runDue()
     #expect(log.fetches == [a])
+    await coordinator.update(ScheduleConditions())
+    #expect(await coordinator.runDue() == start + 60 + 900)
+    #expect(log.fetches == [a, a])
+    guard case (a, .loaded)? = log.updates.last else {
+        Issue.record("still offline: \(log.updates)")
+        return
+    }
 }
 
 /// SPEC §12 rule 4.
@@ -479,6 +486,26 @@ func aMissingOrRejectedTokenWaitsForTheUser(answer: Result<Int, SourceError>) as
     time.advance(by: .seconds(60))
     #expect(await coordinator.runDue() == start + 120 + 1800)
     #expect(github.fetches == 2)
+}
+
+/// Being offline does not replace a rate limit: reconnecting before the reset still waits for it.
+@Test func aRateLimitOutlastsBeingOffline() async {
+    let time = FakeTimeSource(now: start)
+    let github = GitHubLog()
+    github.answer(.failure(.rateLimited(until: start + 3600)))
+    let coordinator = coordinator([], time: time, log: Log(), github: github.job)
+    _ = await coordinator.runDue()
+
+    await coordinator.update(ScheduleConditions(isOnline: false))
+    _ = await coordinator.runDue()
+    time.advance(by: .seconds(60))
+    await coordinator.update(ScheduleConditions())
+    #expect(await coordinator.runDue() == start + 3600)
+    #expect(github.fetches == 1)
+    guard case .failed(.rateLimited, _)? = github.last else {
+        Issue.record("rate limit replaced: \(String(describing: github.last))")
+        return
+    }
 }
 
 private func isWaiting(_ state: SourceState<Int>?) -> Bool {

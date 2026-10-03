@@ -22,24 +22,25 @@ public enum Schedule {
 
     /// When a polled source runs next, possibly in the past (it is due); `nil` while asleep or while offline for a source
     /// that needs the network. `manual` replaces interval and backoff by the policy's `manualFloor`. `triggers` are extra
-    /// triggers' dates (popover opened, a window's reset): the first one after the last run runs the source, but not
-    /// within the minimum interval.
+    /// triggers' dates (popover opened, a window's reset), joined by the wake plus `wakeDelay`: the first one after the
+    /// last run runs the source, but not within the minimum interval.
     public static func nextRun(
         policy: SchedulePolicy, lastSuccess: Date?, lastAttempt: Date?, failures: Int, now: Date,
         conditions: ScheduleConditions, manual: Bool = false, triggers: [Date] = []
     ) -> Date? {
         if conditions.isAsleep || (policy.needsNetwork && !conditions.isOnline) { return nil }
+        let wake = conditions.lastWake.map { $0 + wakeDelay.timeInterval }
         var next = now
         if let last = [lastSuccess, lastAttempt].compactMap(\.self).max() {
             next =
                 last
                 + (manual ? policy.manualFloor : interval(policy, failures, lowPower: conditions.isLowPowerMode))
                 .timeInterval
-            if let trigger = triggers.filter({ $0 > last }).min() {
+            if let trigger = (triggers + [wake].compactMap(\.self)).filter({ $0 > last }).min() {
                 next = min(next, max(trigger, last + policy.minimumInterval.timeInterval))
             }
         }
-        if let wake = conditions.lastWake { next = max(next, wake + wakeDelay.timeInterval) }
+        if let wake { next = max(next, wake) }
         return next
     }
 

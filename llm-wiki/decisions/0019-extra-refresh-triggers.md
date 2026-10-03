@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-02
+updated: 2026-10-03
 aliases: [ADR-019]
 tags: [core, scheduling, app]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]
@@ -29,4 +29,5 @@ SPEC §12 lists two extra triggers for polled limits: "popover opened and data o
 - After a failed attempt past a reset, the source returns to its backoff schedule.
 - The same `resetsAt` changing between fetches is what re-arms notification thresholds ([[decisions/0027-notification-planning-in-the-coordinator]]).
 - An interval setting replaces only the policy's default interval; a trigger still waits for the minimum interval ([[decisions/0028-settings-scope-and-wiring]]).
+- The last wake plus 10 s is a trigger too (T-5.6, SPEC §12's table); `Schedule` takes it from `conditions.lastWake`, so the coordinator passes nothing extra.
 - A window whose reported reset never moves forward (the tool keeps printing a past time) triggers nothing after the first attempt, since the trigger must lie after the last run.

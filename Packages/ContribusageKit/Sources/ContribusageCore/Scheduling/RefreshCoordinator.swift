@@ -59,12 +59,20 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         var manual = false
         var state: SourceState<Value>?
 
-        /// No token, or the service refused it: only a token change or a manual refresh runs the source again, and
-        /// being offline does not replace the state (SPEC §12, §8.4.3).
+        /// No token, or the service refused it: only a token change or a manual refresh runs the source again (SPEC §12,
+        /// §8.4.3).
         var waitsForUser: Bool {
             switch state {
             case .notConfigured(.githubTokenMissing)?, .failed(.unauthorized, _)?: true
             default: false
+            }
+        }
+
+        /// Being offline does not replace a state that waits for the user or for a rate limit's reset.
+        var outlastsOffline: Bool {
+            switch state {
+            case .failed(.rateLimited, _)?: true
+            default: waitsForUser
             }
         }
     }
@@ -208,6 +216,10 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         loop?.cancel()
         loop = Task {
             while !Task.isCancelled, let next = await runDue() {
+                // SPEC §16.5 "Low Power Mode: intervals doubled (check log)".
+                log.info(
+                    "next pass \(next.description, privacy: .public), Low Power Mode \(self.conditions.isLowPowerMode, privacy: .public)"
+                )
                 let wait = max(next.timeIntervalSince(time.now), 0)
                 try? await Task.sleep(for: .seconds(wait), tolerance: .seconds(wait / 10))  // NFR-14
             }
@@ -227,7 +239,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     /// Marks a job offline or runs it when due; returns when it is due next.
     private func run<Value>(_ job: Job<Value>, _ record: Record<Value>, openedAt: Date?) async -> Date? {
         if job.policy.needsNetwork && !conditions.isOnline {
-            if !record.waitsForUser { await publish(job, record, .failed(.offline, previous: record.snapshot)) }
+            if !record.outlastsOffline { await publish(job, record, .failed(.offline, previous: record.snapshot)) }
             return nil
         }
         if let due = nextRun(job, record, openedAt: openedAt), due <= time.now { await refresh(job, record) }
@@ -236,6 +248,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
 
     private func nextRun<Value>(_ job: Job<Value>, _ record: Record<Value>, openedAt: Date?) -> Date? {
         var policy = job.policy.withDefault(job.interval())
+        var manual = record.manual
         switch record.state {
         case .notConfigured(.unsupportedPlan)?:
             policy = policy.fixed(unsupportedPlanRecheck, manualFloor: policy.manualFloor)
@@ -244,6 +257,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             // `until`; a manual refresh or the popover cannot bring it forward.
             let wait = Duration.seconds(max(until.timeIntervalSince(record.lastAttempt ?? time.now), 0))
             policy = policy.fixed(wait, manualFloor: wait)
+        case .failed(.offline, _)?:
+            manual = true  // SPEC §12 rule 2: it runs on reconnect, within its floor.
         default:
             if record.waitsForUser && !record.manual { return nil }
         }
@@ -251,7 +266,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         let triggers = (record.snapshot.map { job.triggers($0.value) } ?? []) + [openedAt].compactMap(\.self)
         return Schedule.nextRun(
             policy: policy, lastSuccess: record.snapshot?.fetchedAt, lastAttempt: record.lastAttempt,
-            failures: record.failures, now: time.now, conditions: conditions, manual: record.manual,
+            failures: record.failures, now: time.now, conditions: conditions, manual: manual,
             triggers: triggers)
     }
 
