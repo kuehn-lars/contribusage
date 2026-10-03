@@ -47,7 +47,25 @@ import Observation
     }
     /// FR-12: saved under `menuBarProvider`; `shownMenuBarProvider` is the one in use.
     var menuBarProvider = UserDefaults.standard.string(forKey: "menuBarProvider").map(ProviderID.init) {
-        didSet { UserDefaults.standard.set(menuBarProvider?.rawValue, forKey: "menuBarProvider") }
+        didSet {
+            UserDefaults.standard.set(menuBarProvider?.rawValue, forKey: "menuBarProvider")
+            applyDemand()
+        }
+    }
+    /// FR-51: saved under `menuBarStyle`; the heatmap style makes the label's source fetch its activity (FR-46).
+    var menuBarStyle = UserDefaults.standard.string(forKey: "menuBarStyle").flatMap(MenuBarStyle.init) ?? .prompt {
+        didSet {
+            UserDefaults.standard.set(menuBarStyle.rawValue, forKey: "menuBarStyle")
+            applyDemand()
+        }
+    }
+    /// FR-51: saved under `menuBarTint`.
+    var menuBarTint = UserDefaults.standard.string(forKey: "menuBarTint").flatMap(MenuBarTint.init) ?? .provider {
+        didSet { UserDefaults.standard.set(menuBarTint.rawValue, forKey: "menuBarTint") }
+    }
+    /// FR-51: the custom tint as `RRGGBB`, saved under `menuBarColor`; a warm clay until the user picks one.
+    var menuBarColor = UserDefaults.standard.string(forKey: "menuBarColor") ?? "D97757" {
+        didSet { UserDefaults.standard.set(menuBarColor, forKey: "menuBarColor") }
     }
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private(set) var registry: ProviderRegistry?
@@ -118,6 +136,20 @@ import Observation
         return MenuBarLabel(
             mode: resolvedMenuBarMode, provider: shownMenuBarProvider,
             providers: menuBarProviders.map { ($0.descriptor, $0.limits?.snapshot) }, github: github, at: now)
+    }
+
+    /// FR-46: what the menu bar label uses; its heatmap style draws the source's activity (FR-51).
+    // ponytail: `highest` can show another provider than the menu bar provider, whose activity then is not watched;
+    // follow the label's `source` once a second provider exists (T-5.17).
+    private var menuBarSources: Set<BlockID> {
+        var sources: Set<BlockID> = resolvedMenuBarMode.usesGitHub ? [.github] : []
+        if menuBarStyle == .heatmap, resolvedMenuBarMode.usesProviders || resolvedMenuBarMode == .iconOnly,
+            let id = shownMenuBarProvider
+        {
+            sources.insert(.provider(id))
+        }
+        if menuBarStyle == .sharedHeatmap { sources.formUnion(menuBarHeatmapSources(menuBarLabel(at: .now))) }
+        return sources
     }
 
     /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
@@ -216,7 +248,7 @@ import Observation
     /// FR-46: activity is watched as long as a task consumes its stream (ADR-016); applying the same demand twice
     /// changes nothing.
     private func applyDemand() {
-        let demand = layout.demand(on: on, menuBar: resolvedMenuBarMode.usesGitHub ? [.github] : [])
+        let demand = layout.demand(on: on, menuBar: menuBarSources)
         for (id, activity) in activities where !demand.activity.contains(id) {
             activity.watch.cancel()
             activities[id] = nil

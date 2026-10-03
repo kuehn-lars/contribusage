@@ -20,19 +20,59 @@ public enum MenuBarMode: String, Sendable, CaseIterable {
     }
 }
 
-/// What the menu bar item shows (SPEC §11.1): a template SF Symbol and a text, empty for `iconOnly`.
+/// FR-51: how the label draws its value; saved under `menuBarStyle`.
+public enum MenuBarStyle: String, Sendable, CaseIterable {
+    /// The app's mark: a prompt whose code lines fill as the window is used.
+    case prompt
+    /// The shown window outside, the provider's other window inside.
+    case rings
+    /// One ring with the number inside, no text.
+    case ring
+    /// A prompt and a cursor line that fills.
+    case line
+    /// The source's last three weeks of activity.
+    case heatmap
+    /// The shared heatmap's layers over the last three weeks, a stripe per active layer in each day (FR-49).
+    case sharedHeatmap
+    /// The source's name and the value.
+    case text
+}
+
+/// FR-51: the label's color; saved under `menuBarTint`, a custom color as hex under `menuBarColor`.
+public enum MenuBarTint: String, Sendable, CaseIterable {
+    case provider, usage, accent, monochrome, custom
+}
+
+/// What the menu bar item shows (SPEC §11.1); the app draws it in the chosen style and tint (FR-51).
 public struct MenuBarLabel: Equatable, Sendable {
     /// An enabled provider and its last limits, if any.
     public typealias Provider = (descriptor: ProviderDescriptor, limits: Snapshot<LimitsReport>?)
 
-    private static let icon = "gauge.with.dots.needle.33percent"
+    /// `23%` with figure spaces up to three digits, `?`, today's contributions, or empty for `iconOnly`.
+    public var text: String
+    /// The source's name, for the text style and VoiceOver; the app's name with every source off.
+    public var title: String
+    /// The shown window's used fraction, 0 to 1; `nil` without a window or while it is reset (FR-11).
+    public var meter: Double?
+    /// The same provider's other window (weekly beside session, session beside weekly), for the rings style.
+    public var companion: Double?
+    public var isStale = false
+    /// The provider's symbol when `highest` chose among more than one provider (SPEC §7.7).
+    public var badge: String?
+    /// Whose activity the heatmap style draws.
+    public var source: BlockID?
 
-    public let symbol: String
-    public let text: String
-
-    public init(symbol: String, text: String) {
-        self.symbol = symbol
+    public init(
+        text: String, title: String, meter: Double? = nil, companion: Double? = nil, isStale: Bool = false,
+        badge: String? = nil, source: BlockID? = nil
+    ) {
         self.text = text
+        self.title = title
+        self.meter = meter
+        self.companion = companion
+        self.isStale = isStale
+        self.badge = badge
+        self.source = source
     }
 
     /// `mode` is resolved (`MenuBarMode.resolved`); `providers` are the enabled ones in registry order; `provider` is
@@ -49,11 +89,15 @@ public struct MenuBarLabel: Equatable, Sendable {
         case .primary: self = limits(.session)
         case .weekly: self = limits(.weekly)
         case .highest: self = limits(nil)
-        case .githubToday: self.init(symbol: "square.grid.3x3.fill", text: gitHubText)
+        case .githubToday:
+            self.init(text: gitHubText, title: "GitHub", isStale: github?.isStale ?? false, source: .github)
         case .primaryAndGitHub:
-            let primary = limits(.session)
-            self.init(symbol: primary.symbol, text: primary.text + " · " + gitHubText)
-        case .iconOnly: self.init(symbol: Self.icon, text: "")
+            self = limits(.session)
+            text += " · " + gitHubText
+        case .iconOnly:
+            self = providers.isEmpty ? Self(text: "", title: "contribusage") : limits(.session)
+            text = ""
+            companion = nil
         }
     }
 
@@ -62,34 +106,38 @@ public struct MenuBarLabel: Equatable, Sendable {
         _ kind: WindowKind?, of provider: Provider?, among providers: [Provider], at now: Date, _ locale: Locale
     ) -> Self {
         if let kind, let provider, let window = provider.limits?.value.windows.first(where: { $0.kind == kind }) {
-            return Self(window, of: provider, symbol: nil, at: now, locale: locale)
+            return Self(window, of: provider, badge: nil, at: now, locale: locale)
         }
         // A reset window's value is unknown (FR-11), so it never counts.
         let highest = providers.flatMap { provider in
             (provider.limits?.value.windows ?? []).map { (window: $0, provider: provider) }
         }
         .filter { !$0.window.isReset(at: now) }.max { $0.window.usedPercent < $1.window.usedPercent }
-        guard let highest else { return Self(symbol: icon, text: padded("?")) }
-        // SPEC §11.1: with more than one provider the provider's symbol tells whose window it is.
-        let symbol = providers.count > 1 ? highest.provider.descriptor.symbolName : nil
-        return Self(highest.window, of: highest.provider, symbol: symbol, at: now, locale: locale)
+        guard let highest else {
+            let shown = provider ?? providers.first
+            return Self(
+                text: padded("?"), title: shown?.descriptor.displayName ?? "contribusage",
+                source: shown.map { .provider($0.descriptor.id) })
+        }
+        // SPEC §7.7: with more than one provider the provider's symbol tells whose window it is.
+        let badge = providers.count > 1 ? highest.provider.descriptor.symbolName : nil
+        return Self(highest.window, of: highest.provider, badge: badge, at: now, locale: locale)
     }
 
-    /// A window as `~23%`; the gauge follows its percentage unless `symbol` replaces it.
-    private init(_ window: UsageWindow, of provider: Provider, symbol: String?, at now: Date, locale: Locale) {
+    /// A window as `~23%`, with its provider's other window as the companion.
+    private init(_ window: UsageWindow, of provider: Provider, badge: String?, at now: Date, locale: Locale) {
         let stale = provider.descriptor.limitsPolicy.flatMap { provider.limits?.isStale(at: now, after: $0.staleAfter) }
-        let text = (stale == true ? "~" : "") + window.percentText(at: now, locale: locale)
-        self.init(symbol: symbol ?? Self.gauge(window, at: now), text: Self.padded(text))
+        let windows = provider.limits?.value.windows ?? []
+        let other = windows.first { $0.kind == (window.kind == .weekly ? .session : .weekly) && $0 != window }
+        self.init(
+            text: Self.padded((stale == true ? "~" : "") + window.percentText(at: now, locale: locale)),
+            title: provider.descriptor.displayName, meter: Self.fraction(window, at: now),
+            companion: other.flatMap { Self.fraction($0, at: now) }, isStale: stale == true, badge: badge,
+            source: .provider(provider.descriptor.id))
     }
 
-    /// The nearest of the 0/33/50/67/100 % variants; a warning gauge from 90 % (SPEC §11.1).
-    private static func gauge(_ window: UsageWindow, at now: Date) -> String {
-        if window.isReset(at: now) { return icon }
-        if window.usedPercent >= 90 { return "gauge.open.with.lines.needle.84percent.exclamation" }
-        let step = [0, 33, 50, 67, 100].min {
-            abs(Double($0) - window.usedPercent) < abs(Double($1) - window.usedPercent)
-        }!
-        return "gauge.with.dots.needle.\(step)percent"
+    private static func fraction(_ window: UsageWindow, at now: Date) -> Double? {
+        window.isReset(at: now) ? nil : min(max(window.usedPercent / 100, 0), 1)
     }
 
     /// SPEC §11.1 stable width: figure spaces (as wide as a digit) up to three digits.

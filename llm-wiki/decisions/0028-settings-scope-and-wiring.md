@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-028]
 tags: [settings, scheduling, providers, app]
 tracks: [App/Settings, App/AppState.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
@@ -34,3 +34,4 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - T-5.14 adds the GitHub tab's switch, bound to `AppState.gitHubEnabled` (`githubEnabled` default); its `didSet` saves and applies the demand like `layout`.
 - ADR-033 adds `toolText` to Claude Code's descriptor; its settings (path override, probe interval, config folder) are unchanged.
 - The Popover tab's style picker shows a legend preview of the heatmap's layers (T-5.16); a provider declares its layer's hue in its descriptor.
+- T-5.19 adds the menu bar style tiles and the color choice to the General tab, saved as `menuBarStyle`, `menuBarTint` and `menuBarColor` ([[decisions/0035-drawn-menu-bar-label]]).

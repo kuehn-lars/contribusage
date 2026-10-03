@@ -46,6 +46,13 @@ private struct GeneralTab: View {
                         ForEach(appState.menuBarProviders) { Text($0.descriptor.displayName).tag(Optional($0.id)) }
                     }
                 }
+                MenuBarStylePicker()
+                Picker("Color", selection: Bindable(appState).menuBarTint) {
+                    ForEach(MenuBarTint.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                if appState.menuBarTint == .custom {
+                    ColorPicker("Custom color", selection: menuBarColor, supportsOpacity: false)
+                }
             }
             Section {
                 Toggle("Launch at login", isOn: launchAtLogin)
@@ -89,6 +96,15 @@ private struct GeneralTab: View {
         }
     }
 
+    /// FR-51: kept as `RRGGBB`.
+    private var menuBarColor: Binding<Color> {
+        Binding {
+            Color(nsColor: NSColor(hex: appState.menuBarColor) ?? .controlAccentColor)
+        } set: {
+            appState.menuBarColor = NSColor($0).hex
+        }
+    }
+
     /// Shows the provider the label uses (FR-12).
     private var menuBarProvider: Binding<ProviderID?> {
         Binding {
@@ -123,6 +139,66 @@ extension MenuBarMode {
         case .githubToday: "GitHub contributions today"
         case .primaryAndGitHub: "Current session and GitHub"
         case .iconOnly: "Icon only"
+        }
+    }
+}
+
+/// FR-51: each style as a tile that shows the label as it would draw now, in the chosen color.
+private struct MenuBarStylePicker: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Style")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 10) {
+                ForEach(MenuBarStyle.allCases, id: \.self) { style in
+                    let selected = appState.menuBarStyle == style
+                    Button {
+                        appState.menuBarStyle = style
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(nsImage: appState.menuBarImage(at: .now, style: style))
+                                .frame(maxWidth: .infinity, minHeight: 30)
+                                .background(.quaternary.opacity(0.6), in: .rect(cornerRadius: 7))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 7)
+                                        .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2)
+                                }
+                            Text(style.title).font(.caption).foregroundStyle(selected ? .primary : .secondary)
+                        }
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(style.title)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+    }
+}
+
+extension MenuBarStyle {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .prompt: "Prompt"
+        case .rings: "Rings"
+        case .ring: "Ring"
+        case .line: "Line"
+        case .heatmap: "Heatmap"
+        case .sharedHeatmap: "Shared heatmap"
+        case .text: "Text"
+        }
+    }
+}
+
+extension MenuBarTint {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .provider: "Provider color"
+        case .usage: "By usage"
+        case .accent: "Accent color"
+        case .monochrome: "Monochrome"
+        case .custom: "Custom"
         }
     }
 }

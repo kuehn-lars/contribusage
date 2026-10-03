@@ -322,3 +322,12 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] fix | Menu bar label no longer loops on launch
 - A `TimelineView` in the `MenuBarExtra` label made SwiftUI re-request label updates endlessly: 100 % CPU, memory growing without bound, no menu bar item. A `.task` loop now ticks a `@State` date each minute ([[modules/app]]).
+
+## [2026-10-04] feat | Menu bar styles and colors (T-5.19)
+- The label is one drawn, colored image: the `prompt` mark, rings, ring, line, heatmap and text; provider, usage, accent, monochrome or custom color (FR-51, [[decisions/0035-drawn-menu-bar-label]]).
+- `MenuBarLabel` carries meter, companion window, stale flag, title and source instead of a gauge symbol; `iconOnly` keeps the meter.
+- Settings shows each style as a live preview tile; the heatmap style watches the provider's activity (FR-46).
+
+## [2026-10-04] feat | Shared heatmap in the menu bar
+- New `sharedHeatmap` style: the shared heatmap's layers (for example Claude Code and GitHub) over the last three weeks, a stripe per active layer as in FR-49 Combined (FR-51, [[decisions/0035-drawn-menu-bar-label]]).
+- The heatmap styles keep their hues from 90 %; the value text turns red instead, since red beside GitHub's green fails ADR-032's rule.

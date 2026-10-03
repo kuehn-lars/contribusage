@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-031]
 tags: [app, core, localization]
 tracks: [App/Resources/Localizable.xcstrings, Packages/ContribusageKit/Sources/ContribusageCore/Resources/Localizable.xcstrings, .github/workflows/ci.yml]
@@ -33,3 +33,4 @@ NFR-10 wants every user facing string in a String Catalog, English first. Two ta
 - Text a tool prints stays English inside German sentences, except the known window labels, insights periods, counts and note since [[decisions/0033-provider-tool-texts]] ("Claude Code: Aktuelle Sitzung bei 80 %").
 - A further language is a catalog edit, one more line in the CI check and a pseudo-localization run.
 - Counted nouns built in the core ("5 contributions" in the heatmap line) are plural variations in the core's catalog, like the app's (T-5.16).
+- T-5.19's style and color names went in through the `xcstringstool sync` above after a command-line build, with their German texts.

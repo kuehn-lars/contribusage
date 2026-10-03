@@ -116,6 +116,16 @@
     "@%@" : {
       "shouldTranslate" : false
     },
+    "Accent color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzentfarbe"
+          }
+        }
+      }
+    },
     "Account" : {
       "localizations" : {
         "de" : {
@@ -196,6 +206,16 @@
         }
       }
     },
+    "By usage" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Auslastung"
+          }
+        }
+      }
+    },
     "Cache read" : {
       "localizations" : {
         "de" : {
@@ -272,6 +292,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entfernen"
+          }
+        }
+      }
+    },
+    "Color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Farbe"
           }
         }
       }
@@ -402,6 +432,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktuelle Sitzung und GitHub"
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene"
+          }
+        }
+      }
+    },
+    "Custom color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Farbe"
           }
         }
       }
@@ -699,6 +749,16 @@
         }
       }
     },
+    "Line" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linie"
+          }
+        }
+      }
+    },
     "Locate…" : {
       "localizations" : {
         "de" : {
@@ -715,6 +775,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Menüleiste"
+          }
+        }
+      }
+    },
+    "Monochrome" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monochrom"
           }
         }
       }
@@ -959,12 +1029,32 @@
         }
       }
     },
+    "Prompt" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prompt"
+          }
+        }
+      }
+    },
     "Provider" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anbieter"
+          }
+        }
+      }
+    },
+    "Provider color" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieterfarbe"
           }
         }
       }
@@ -1049,6 +1139,26 @@
         }
       }
     },
+    "Ring" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring"
+          }
+        }
+      }
+    },
+    "Rings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ringe"
+          }
+        }
+      }
+    },
     "Script" : {
       "localizations" : {
         "de" : {
@@ -1075,6 +1185,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Shared heatmap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemeinsame Heatmap"
           }
         }
       }
@@ -1139,6 +1259,16 @@
         }
       }
     },
+    "Style" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stil"
+          }
+        }
+      }
+    },
     "Test" : {
       "localizations" : {
         "de" : {
@@ -1155,6 +1285,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wird getestet …"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
           }
         }
       }

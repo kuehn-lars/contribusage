@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-034]
 tags: [popover, layout, settings]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Models/PopoverLayout.swift, App/Settings/PopoverTab.swift]
@@ -28,3 +28,4 @@ T-5.15 built the Popover tab with blocks that move by drag and sections that onl
 - A section's drag payload names its provider, so a drop in another group or on a block does nothing.
 - Layouts saved before this change lack `sectionOrder` and decode as the default layout once; no release had shipped them.
 - Layer order in the shared heatmap is block order, so dragging a block also moves its stripe or grid (T-5.16, FR-49).
+- `PopoverLayout.swift` also holds `demand(on:menuBar:)`, which since T-5.19 watches a provider's activity when the menu bar names it ([[decisions/0035-drawn-menu-bar-label]]); sections are unaffected.

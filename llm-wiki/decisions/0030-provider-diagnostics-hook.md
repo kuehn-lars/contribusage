@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-030]
 tags: [core, provider, diagnostics]
 tracks: [App/Popover/PopoverView.swift, App/AppState+Copy.swift, App/Settings/SettingsView.swift, Packages/ContribusageKit/Sources/ContribusageCore/Providers/Provider.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
@@ -31,3 +31,4 @@ US-10 asks "Copy diagnostics" for provider specific facts: for Claude Code the l
 - Claude Code's diagnostics lines stay English after [[decisions/0033-provider-tool-texts]]: `toolText` serves the popover, Copy statistics and notifications, never diagnostics.
 - Copy statistics gives the heatmap one line per layer with its 26 week total, through the core's `HeatmapLayer.text` the tooltips use (T-5.16).
 - The menu bar mode and provider (T-5.10, Settings' General tab) appear in neither Copy statistics nor diagnostics; Copy follows the popover.
+- T-5.19 changed `SettingsView.swift` only in the General tab's menu bar section; the Advanced tab's Copy Diagnostics is as described here.

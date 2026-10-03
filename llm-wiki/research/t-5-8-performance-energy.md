@@ -1,7 +1,7 @@
 ---
 type: research
 status: answered
-updated: 2026-10-03
+updated: 2026-10-04
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/Schedule.swift, App/AppState.swift, App/Popover/PopoverView.swift]
 tags: [research, performance, energy]
 ---
@@ -40,3 +40,4 @@ Does the Release build meet NFR-1 to NFR-4 and NFR-14 with one provider and real
 - Measured before T-5.13: since then an activity source nobody uses (section hidden, layer out of the heatmap) is not watched, and GitHub skips passes while nothing uses it or it is switched off (T-5.14), so the idle figures are an upper bound.
 
 Measured before the shared heatmap block (T-5.16), which draws up to 182 cells per grid; re-measure if the popover feels slower.
+- T-5.19 draws the menu bar label as an image, redrawn once a minute and on data changes; a Debug run sampled with `ps` over 20 s stayed at about 0 % CPU and 88 MB.
