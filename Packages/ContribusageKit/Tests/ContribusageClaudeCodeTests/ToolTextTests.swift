@@ -5,8 +5,12 @@ import Testing
 
 private let de = Locale(identifier: "de")
 
+/// Some SwiftPM versions (CI's among them) copy a String Catalog into the bundle uncompiled, so every lookup returns
+/// its key; the app build compiles it, and CI checks the catalog itself (ADR-031).
+private let compiled = Bundle(url: ClaudeCodeProvider.resources)?.localizations.contains("de") == true
+
 /// NFR-10, ADR-033: the texts `/usage` prints that the app translates; anything else stays as printed.
-@Test func windowLabelsInGerman() {
+@Test(.enabled(if: compiled, "SwiftPM copied the String Catalog uncompiled")) func windowLabelsInGerman() {
     #expect(ClaudeCodeProvider.toolText("Current session", locale: de) == "Aktuelle Sitzung")
     #expect(ClaudeCodeProvider.toolText("Current week (all models)", locale: de) == "Aktuelle Woche (alle Modelle)")
     #expect(ClaudeCodeProvider.toolText("Current week (Opus)", locale: de) == "Aktuelle Woche (Opus)")
@@ -14,7 +18,8 @@ private let de = Locale(identifier: "de")
     #expect(ClaudeCodeProvider.toolText("Current session", locale: Locale(identifier: "en")) == "Current session")
 }
 
-@Test func insightsPeriodsAndSummariesInGerman() {
+@Test(.enabled(if: compiled, "SwiftPM copied the String Catalog uncompiled")) func insightsPeriodsAndSummariesInGerman()
+{
     #expect(ClaudeCodeProvider.toolText("Last 24h", locale: de) == "Letzte 24 Std.")
     #expect(ClaudeCodeProvider.toolText("Last 7d", locale: de) == "Letzte 7 Tage")
     #expect(ClaudeCodeProvider.toolText("668 requests · 8 sessions", locale: de) == "668 Anfragen · 8 Sitzungen")
@@ -29,7 +34,7 @@ private let de = Locale(identifier: "de")
 }
 
 /// The insights note, sentence by sentence; both separators the tool has printed are known.
-@Test func insightsNoteInGerman() {
+@Test(.enabled(if: compiled, "SwiftPM copied the String Catalog uncompiled")) func insightsNoteInGerman() {
     let german =
         "Ungefähr, basierend auf lokalen Sitzungen auf diesem Mac; andere Geräte und claude.ai sind nicht enthalten. "
         + "Verhaltensweisen sind unabhängige Merkmale, keine Aufschlüsselung."

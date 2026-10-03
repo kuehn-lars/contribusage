@@ -27,7 +27,7 @@ tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Provider.sw
 ## Consequences
 - `NotificationPlanner.plan` requires `windowTitle`; the coordinator passes the provider's `toolText`.
 - A new fixed text is a catalog entry with `extractionState: manual`, no code; a new pattern needs a branch with a literal key.
-- The lookup takes a `Locale` (default `.current`, the app's language), which is how the tests read German from the package bundle.
+- The lookup takes a `Locale` (default `.current`, the app's language), which is how the tests read German from the package bundle. CI's SwiftPM copies the catalog into the bundle uncompiled (the app build compiles it), so `ToolTextTests` run only where the bundle has a `de` localization; on CI the catalog check covers the translations.
 - A new text the tool prints shows in English until the table learns it; a model name inside `Current week (…)` and an unknown summary part stay as printed.
 - The same change replaced the core catalog's German "Reset in %@" and "Reset %@" with "Zurücksetzung in %@" and "Zurücksetzung %@".
 - Revisit if the tool localizes its own output: then the labels arrive translated and the table matches nothing.

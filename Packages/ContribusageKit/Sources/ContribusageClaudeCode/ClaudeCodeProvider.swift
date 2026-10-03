@@ -185,5 +185,7 @@ extension ClaudeCodeProvider {
         return String(localized: resource)
     }
 
-    private nonisolated static var bundle: LocalizedStringResource.BundleDescription { .atURL(Bundle.module.bundleURL) }
+    /// The target's resource bundle, which holds the String Catalog.
+    nonisolated static let resources = Bundle.module.bundleURL
+    private nonisolated static var bundle: LocalizedStringResource.BundleDescription { .atURL(resources) }
 }

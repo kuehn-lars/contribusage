@@ -28,3 +28,4 @@ US-10 asks "Copy diagnostics" for provider specific facts: for Claude Code the l
 - A provider that has not probed since launch reports "Last probe: none since launch"; a probe that timed out keeps the previous result.
 - GitHub switched off (T-5.14) keeps its last state, so its diagnostics line still reports that state.
 - Copying diagnostics for a disabled provider may run `claude --version`, as opening the Providers tab already does.
+- Claude Code's diagnostics lines stay English after [[decisions/0033-provider-tool-texts]]: `toolText` serves the popover, Copy statistics and notifications, never diagnostics.
