@@ -76,3 +76,21 @@ private func day(_ n: Int) -> DayKey { DayKey(rawValue: "2026-09-\(10 + n)") }
     #expect(days.last == DayKey(rawValue: "2026-09-30"))
     #expect(days.first == DayKey(rawValue: "2026-04-05"))  // a Sunday
 }
+
+/// SPEC §11.7: the container label and Copy name each layer's total over the shown range.
+@Test func theTotalSumsTheShownDays() {
+    let layer = HeatmapLayer.quartiled(.provider(a), name: "A", values: [day(0): 0, day(1): 10, day(2): 32])
+    #expect(layer.total == 42)
+}
+
+/// NFR-8, SPEC §11.7: arrow keys move a day within its week column and a week across columns, stopping at the edges.
+@Test func keyboardStepsStayInTheGrid() {
+    // 9 days: one full week column, then two days.
+    #expect(HeatmapLayer.step(from: 0, by: (x: 0, y: 1), count: 9) == 1)
+    #expect(HeatmapLayer.step(from: 6, by: (x: 0, y: 1), count: 9) == 6)  // bottom of a column
+    #expect(HeatmapLayer.step(from: 7, by: (x: 0, y: -1), count: 9) == 7)  // top of a column
+    #expect(HeatmapLayer.step(from: 8, by: (x: 0, y: 1), count: 9) == 8)  // after the last day
+    #expect(HeatmapLayer.step(from: 1, by: (x: 1, y: 0), count: 9) == 8)
+    #expect(HeatmapLayer.step(from: 3, by: (x: 1, y: 0), count: 9) == 3)  // the last column is short
+    #expect(HeatmapLayer.step(from: 2, by: (x: -1, y: 0), count: 9) == 2)
+}

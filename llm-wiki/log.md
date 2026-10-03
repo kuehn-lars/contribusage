@@ -335,3 +335,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] refactor | Menu bar label review
 - One rule for the layers a heatmap style draws, `menuBarHeatmapSources(_:style:)`, read by the image and the demand ([[decisions/0035-drawn-menu-bar-label]]).
 - `MenuBarArt`: one value-based meter color, straight bars instead of path trimming, layers captured by the glyph; every style renders byte-identical in light and dark.
+
+## [2026-10-04] feat | T-5.11 heatmap keyboard and VoiceOver
+- The heatmap grids are one focusable control: arrow keys move the reached day through `HeatmapLayer.step`, which is outlined and read as its FR-49 line under the grids.
+- Every day is a VoiceOver element read as its line; the container reads SPEC §11.7's summary with `HeatmapLayer.total`, shared with Copy; Stacked exposes its first grid only.
+- Review: the reached day is kept as a `DayKey`, so it stays on its date when the range moves on.
