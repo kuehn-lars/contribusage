@@ -57,14 +57,14 @@ struct HeatmapLegend: View {
 
 /// FR-49: Combined is one grid with a stripe per layer active that day in each cell; Stacked one grid per layer,
 /// sharing the week columns. `line` is the tooltip and VoiceOver label of a day; `nil` (the Settings preview) shows none
-/// and hides the grids from VoiceOver.
+/// and takes no focus.
 struct HeatmapGrids: View {
     let days: [DayKey]
     let layers: [ShownLayer]
     let style: HeatmapStyle
     var line: ((DayKey) -> String)?
-    /// The day the arrow keys reached, an index into `days` (NFR-8).
-    @State private var selected: Int?
+    /// The day the arrow keys reached (NFR-8).
+    @State private var selected: DayKey?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -81,22 +81,23 @@ struct HeatmapGrids: View {
                             case .upArrow: (0, -1)
                             default: (0, 1)
                             }
-                        selected = HeatmapLayer.step(from: shownDay, by: move, count: days.count)
+                        guard let day = shownDay, let index = days.firstIndex(of: day) else { return .ignored }
+                        selected = days[HeatmapLayer.step(from: index, by: move, count: days.count)]
                         return .handled
                     }
                 // A tooltip cannot be raised from the keyboard, so the reached day's line shows below the grid.
-                if focused, days.indices.contains(shownDay) {
-                    Text(line(days[shownDay])).font(.caption).foregroundStyle(.secondary)
+                if focused, let day = shownDay {
+                    Text(line(day)).font(.caption).foregroundStyle(.secondary)
                 }
             }
         } else {
-            grids.accessibilityHidden(true)
+            grids
         }
     }
 
     /// The reached day; today until an arrow key moves, and again after the range moved on.
-    private var shownDay: Int {
-        selected.flatMap { days.indices.contains($0) ? $0 : nil } ?? days.count - 1
+    private var shownDay: DayKey? {
+        selected.flatMap { days.contains($0) ? $0 : nil } ?? days.last
     }
 
     @ViewBuilder private var grids: some View {
@@ -114,8 +115,10 @@ struct HeatmapGrids: View {
     }
 
     private func grid(_ layers: [ShownLayer]) -> some View {
-        WeekColumns {
-            ForEach(Array(days.enumerated()), id: \.element) { index, day in
+        let outlined = focused ? shownDay : nil
+        return WeekColumns {
+            ForEach(days, id: \.self) { day in
+                let text = line?(day) ?? ""
                 // Stripes only for the layers active that day: one active layer fills the cell (FR-49).
                 let active = layers.filter { ($0.layer.levels[day] ?? 0) > 0 }
                 HStack(spacing: 0) {
@@ -129,13 +132,13 @@ struct HeatmapGrids: View {
                 }
                 .clipShape(.rect(cornerRadius: 2))
                 .overlay {
-                    if focused, index == shownDay {
+                    if day == outlined {
                         RoundedRectangle(cornerRadius: 2).strokeBorder(.primary, lineWidth: 1.5)
                     }
                 }
-                .help(line?(day) ?? "")
+                .help(text)
                 .accessibilityElement()
-                .accessibilityLabel(line?(day) ?? "")
+                .accessibilityLabel(text)
             }
         }
     }

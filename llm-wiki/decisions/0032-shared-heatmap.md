@@ -35,4 +35,4 @@ The heatmap is its own block with one layer per source that is on and in the hea
 - Built in T-5.16: [[modules/core]] holds the levels and the FR-49 line, [[modules/app]] the drawing.
 - Revisit if Claude Code documents its stats data, or if a layer needs a different metric than total tokens (for example a provider without token counts, T-5.17).
 - A source's layer is built by `AppState.layer(_:days:at:)`, shared by this block and the menu bar's heatmap style, which draws the label source's last three weeks ([[decisions/0035-drawn-menu-bar-label]]).
-- Keyboard and VoiceOver (T-5.11): one day per element, read as its FR-49 line; Stacked exposes only its first grid to VoiceOver, since every line reads all layers.
+- Keyboard and VoiceOver (T-5.11): one day per element, read as its FR-49 line; Stacked exposes only its first grid to VoiceOver, since every line reads all layers; the keyboard's reached day is a date, not a grid position.

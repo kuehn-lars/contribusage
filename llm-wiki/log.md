@@ -339,3 +339,4 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] feat | T-5.11 heatmap keyboard and VoiceOver
 - The heatmap grids are one focusable control: arrow keys move the reached day through `HeatmapLayer.step`, which is outlined and read as its FR-49 line under the grids.
 - Every day is a VoiceOver element read as its line; the container reads SPEC §11.7's summary with `HeatmapLayer.total`, shared with Copy; Stacked exposes its first grid only.
+- Review: the reached day is kept as a `DayKey`, so it stays on its date when the range moves on.
