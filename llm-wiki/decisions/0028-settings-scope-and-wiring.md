@@ -31,3 +31,4 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - Status and error texts the tabs build as `String` go through `String(localized:)`; paths and versions stay as found ([[decisions/0031-string-catalogs]]).
 - A probe running when its provider is turned off still finishes (at most 30 s); its result lands in a group that is no longer shown.
 - T-5.13 makes `AppState.layout` settable for the Popover tab (T-5.15): its `didSet` saves the `popoverLayout` default and applies the demand of FR-46.
+- T-5.14 adds the GitHub tab's switch, bound to `AppState.gitHubEnabled` (`githubEnabled` default); its `didSet` saves and applies the demand like `layout`.

@@ -1209,6 +1209,16 @@
         }
       }
     },
+    "While off, GitHub gets no requests; the token stays saved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgeschaltet bekommt GitHub keine Anfragen; das Token bleibt gespeichert."
+          }
+        }
+      }
+    },
     "Works: %@" : {
       "localizations" : {
         "de" : {

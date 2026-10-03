@@ -31,6 +31,13 @@ import Observation
             applyDemand()
         }
     }
+    /// FR-43: off sends no requests and hides GitHub's block; the token stays. Saved under `githubEnabled`.
+    var gitHubEnabled = UserDefaults.standard.object(forKey: "githubEnabled") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(gitHubEnabled, forKey: "githubEnabled")
+            applyDemand()
+        }
+    }
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private(set) var registry: ProviderRegistry?
     /// `nil` in previews.
@@ -148,9 +155,11 @@ import Observation
         applyDemand()
     }
 
-    /// The sources that are on: the enabled providers and GitHub.
-    // ponytail: GitHub always on and the menu bar using nothing until T-5.14 and T-5.10 add the switch and the modes.
-    private var on: Set<BlockID> { Set(enabledIDs.map(BlockID.provider)).union([.github]) }
+    /// The sources that are on: the enabled providers and GitHub while switched on (FR-2, FR-43).
+    // ponytail: the menu bar uses nothing until T-5.10 adds the modes.
+    private var on: Set<BlockID> {
+        Set(enabledIDs.map(BlockID.provider)).union(gitHubEnabled ? [.github] : [])
+    }
 
     /// FR-46: activity is watched as long as a task consumes its stream (ADR-016); applying the same demand twice
     /// changes nothing.

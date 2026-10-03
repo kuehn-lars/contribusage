@@ -36,4 +36,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - The GitHub job's `interval` reads the `githubInterval` setting before every decision ([[decisions/0028-settings-scope-and-wiring]]).
 - Offline replaces neither a waiting token nor a rate limit (`Record.outlastsOffline`, T-5.6): reconnecting before the reset still waits for it.
 - T-5.13 (FR-46): `setGitHubWanted(_:)` takes the app's `Demand.github`; while false, passes skip the GitHub job, and wanting it again runs what is due at once.
+- T-5.14 (FR-43): the GitHub switch removes GitHub from the sources that are on, so `Demand.github` turns false and the job is skipped; the token stays in the Keychain.
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.

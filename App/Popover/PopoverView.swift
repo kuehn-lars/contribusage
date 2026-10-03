@@ -23,7 +23,7 @@ struct PopoverView: View {
                 } else {
                     measuredGroups
                 }
-                GitHubSection(state: appState.github).padding(12)
+                if appState.gitHubEnabled { GitHubSection(state: appState.github).padding(12) }
                 Divider()
                 Footer().padding(8)
             }

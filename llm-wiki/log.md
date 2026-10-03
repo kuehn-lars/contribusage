@@ -281,3 +281,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] feat | Popover layout and demand in the core (T-5.13)
 - `PopoverLayout`, `BlockID`, `SectionKind`, `HeatmapStyle` and `Demand` (SPEC §10.8): block order with appended new providers, hidden blocks and sections, the heatmap's "on" rule, and FR-46's demand.
 - Activity watching and GitHub follow the demand; the layout persists as JSON under the `popoverLayout` default (SPEC §10.7).
+
+## [2026-10-03] feat | GitHub on/off switch (T-5.14)
+- `githubEnabled` setting (SPEC §10.7) feeds the sources that are on; off stops the GitHub job and hides its section, the token stays.
