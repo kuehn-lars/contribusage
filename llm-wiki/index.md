@@ -58,6 +58,8 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0035-drawn-menu-bar-label]]: ADR-035, the menu bar label as one drawn, colored image in six styles; the `prompt` mark
 - [[decisions/0036-pushed-limits-and-debug-fake-provider]]: ADR-036, the coordinator consumes pushed limits; `DebugFakeProvider` is an app file under its flag
 - [[decisions/0037-no-second-provider-for-v1]]: ADR-037, v1 ships with Claude Code only; Codex CLI is the next candidate
+- [[decisions/0038-notification-cycles-and-delivery]]: ADR-038, a reset time moving by up to 1 h keeps the notification cycle; only the highest threshold per refresh; delivery 3 s apart, grouped per provider
+- [[decisions/0039-one-minute-probe]]: ADR-039, the Claude Code probe runs every minute by default; R-1 checked before it ships
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

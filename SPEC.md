@@ -196,6 +196,8 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 - **Given** notifications are enabled and a window crosses a threshold (defaults 80 % and 95 %), **then** exactly one notification is sent per threshold per window per reset cycle. The notification names the provider and the window ("Claude Code: Current session at 80 %").
 - **Given** the window resets, **then** thresholds re-arm. An optional "limit has reset" notification is off by default.
+- **Given** a tool prints a window's reset time slightly differently between two refreshes ("6:59pm", then "7pm"), **then** it is the same cycle: no "has reset" notification and no threshold notification a second time (FR-15).
+- **Given** one refresh brings notifications for several windows, **then** they appear one after another a few seconds apart, and Notification Center groups each provider's notifications (FR-52).
 
 ### US-4 (P1): See my GitHub contributions
 
@@ -302,9 +304,10 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-13 | P2 | Notify when a window's percentage crosses a threshold upward. Defaults: 80 and 95. Configurable list of up to 3 values between 50 and 99, shared by all providers. |
+| FR-13 | P2 | Notify when a window's percentage crosses a threshold upward. Defaults: 80 and 95. Configurable list of up to 3 values between 50 and 99, shared by all providers. When one refresh crosses several thresholds of a window, only the highest is notified. |
 | FR-14 | P2 | Optional notification when a window that had crossed a threshold resets. Off by default. |
-| FR-15 | P2 | De-duplication key: `providerID + label + resetsAt + threshold`; once a threshold is sent, every lower threshold of the same cycle counts as sent (ADR-027). Keys are persisted so an app restart does not repeat notifications. Keys older than 8 days are pruned. |
+| FR-15 | P2 | De-duplication key: `providerID + label + resetsAt + threshold`; once a threshold is sent, every lower threshold of the same cycle counts as sent (ADR-027). Keys are persisted so an app restart does not repeat notifications. Keys older than 8 days are pruned. A cycle ends only when the reported reset time differs from the cycle's by more than 1 h; a missing reset time on either side keeps the cycle (ADR-038). |
+| FR-52 | P2 | **Delivery.** The notifications of one refresh are delivered one at a time, 3 s apart, in the order the provider reports its windows. All notifications of a provider share one thread (its provider ID), so Notification Center stacks them; each keeps its own identifier per window and cycle (ADR-038). |
 
 ### 5.5 GitHub
 
@@ -349,7 +352,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 |---|---|---|
 | FR-38 | P3 | Insights area showing the Claude Code `/usage` "What's contributing" block, structured by period (US-8, ADR-023). Period labels, the request and session counts of a summary and the known sentences of the note show translated, shares and rankings as printed (ADR-033). Generic: any provider with the `insights` capability supplies an `Insights` value (10.3). |
 | FR-39 | P3 | Claude Code status line bridge support: watch the bridge file, merge its windows with probe data (US-9, [8.2](#82-claude-code-status-line-bridge-optional)). Guided installer that backs up `~/.claude/settings.json`, never overwrites an existing `statusLine` without showing a diff and getting consent, and can uninstall cleanly. |
-| FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
+| FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. It covers the last 7 days: the tokens per category and the estimated money value, priced per model from `ActivityDay.byModel`; a model missing from the price table is counted in tokens and named as unpriced. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
 | FR-42 | P2 | "Copy" button in the popover footer (copy statistics): copies what the popover shows as plain text, in its block order and only the visible sections (FR-44): per provider its limits, activity and, while shown, insights with every period; the heatmap one line per layer with its 26 week total; GitHub's statistics; a section without values its error message, without diagnostics (ADR-030). |
 | FR-50 | P3 | **Plan (after v1).** A provider may report its plan: the tool's own name for it, verbatim (US-15). It comes only from an official interface named in the provider's section 8, never from credential files or Keychain items (section 2); Claude Code's source is open (R-6). The group header, copy statistics (FR-42) and diagnostics (FR-36) show it; without one the header stays as it is. Sections and windows still follow what the provider reports, so the app holds no per plan logic. A plan change raises no notification. Where the plan travels in the types (with the limits report or with detection) is decided with R-6. |
@@ -376,7 +379,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-2 | Memory | Typical resident memory below 80 MB with one provider; each additional provider adds at most 20 MB. | Activity Monitor after 24 h |
 | NFR-3 | Latency | Popover shows cached data within 150 ms of the click. Opening the popover never waits for a network call or a process. | Manual, Instruments |
 | NFR-4 | Main thread | App code never blocks the main thread longer than 16 ms. Process execution, file IO and parsing run off the main actor. | Thread Performance Checker, code review |
-| NFR-5 | Probe budget | Automatic Claude Code probes at most every 15 min by default, never more often than every 5 min. Manual refresh at most every 30 s. | Unit tests on the scheduler |
+| NFR-5 | Probe budget | Automatic Claude Code probes every 1 min by default, never more often than every 1 min (ADR-039). Manual refresh at most every 30 s. | Unit tests on the scheduler |
 | NFR-6 | GitHub budget | Automatic GitHub fetches at most every 30 min by default, never more often than every 10 min. Rate limit headers respected. | Unit tests |
 | NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
@@ -523,13 +526,13 @@ Classification is a pure function in the Claude Code target with its own tests. 
 
 Token categories reported by Claude Code: `input`, `output`, `cacheWrite`, `cacheRead` (all four).
 
-Schedule policy for the probe: default 15 min, minimum 5 min, maximum 60 min, stale after 30 min, manual floor 30 s ([section 12](#12-refresh-policy)).
+Schedule policy for the probe: default 1 min, minimum 1 min, maximum 60 min (ADR-039), stale after 30 min, manual floor 30 s ([section 12](#12-refresh-policy)).
 
 #### 8.1.5 Limitations (documented, accepted)
 
 - The `/usage` text is written for humans and is not a documented, stable format. Claude Code updates frequently. The parser is generic and fixture tested so a wording change is detected immediately (principles 4 and 6).
 - Values are as fresh as the last probe. Usage from claude.ai, Claude Desktop or other devices shares the same plan limits and is reflected by the next probe.
-- Whether a probe consumes any plan quota is unverified (research R-1). Until verified, the conservative default interval (15 min) applies.
+- Whether a probe consumes any plan quota is unverified (research R-1). The 1 min default (ADR-039) is checked against R-1 in T-5.21: if a probe costs quota, the default goes back up.
 
 ### 8.2 Claude Code: status line bridge (optional)
 
@@ -1159,7 +1162,7 @@ The percentage is always shown as text next to the bar. Each heatmap layer draws
 |---|---|
 | General | Menu bar display mode, offering only modes whose source is on (FR-12), and menu bar provider (hidden while only one provider exists), both with T-5.10 (ADR-028); menu bar style as live previews and color, with a color well for the custom one (FR-51); launch at login; notification thresholds; notify on reset |
 | Popover | Block list in popover order, reorderable by drag (FR-44); per block a visibility toggle and, for a source with daily data, "In heatmap" (FR-48); a provider row expands into toggles for the sections its capabilities declare, reorderable by drag within the row (ADR-034); a drop target lights up and rows slide into place, without motion under Reduce Motion; a block whose source is off is greyed out with a note pointing to Providers or GitHub; heatmap style Combined or Stacked with a legend preview and the three-layer hint (FR-49) |
-| Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
+| Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (1 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
 | GitHub | On/off switch, keeping the token (FR-43); account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
 | Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics |
 
@@ -1175,7 +1178,7 @@ The percentage is always shown as text next to the bar. Each heatmap layer draws
 
 | Source | Automatic interval (default / min / max) | Extra triggers | Stale after | On failure |
 |---|---|---|---|---|
-| Claude Code limits probe | 15 min / 5 min / 60 min | Popover opened and data older than 5 min; a window's reset time reached; wake (after 10 s); manual | 30 min | Exponential backoff: 2×, 4×, 8× the interval, capped at 60 min; reset on success |
+| Claude Code limits probe | 1 min / 1 min / 60 min | Popover opened and data older than 5 min; a window's reset time reached; wake (after 10 s); manual | 30 min | Exponential backoff: 2×, 4×, 8× the interval, capped at 60 min; reset on success |
 | Claude Code bridge file | Event driven (file watch) | none | 30 min | Ignore file, fall back to probe |
 | Claude Code transcripts | Event driven (FSEvents, 5 s debounce) | Popover opened; wake | not applicable | Retry on next event |
 | GitHub | 30 min / 10 min / 6 h | Popover opened and data older than 10 min; wake (after 10 s); token changed; manual | 2 h | Rate limit: run again at the reset, not earlier even manually; other errors: 2×, 4×, 8× backoff capped at 6 h; no token or 401: no automatic run until the token changes, manual refresh still runs (ADR-022) |
@@ -1192,6 +1195,7 @@ Global rules:
 7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:manual:triggers:) -> Date?`, fully unit tested and provider neutral. `conditions` carries online, Low Power Mode, asleep and the last wake; `nil` means not scheduled (asleep, or offline for a source that needs the network). The coordinator runs the unsupported-plan recheck (section 13) through it as a 6 h policy (ADR-018).
 8. An extra trigger ("popover opened", "a window's reset time reached", and the last wake plus 10 s from `conditions`) is a date in `triggers`: the first one after the last run runs the source then, or once the minimum interval since its last run has passed, skipping interval and backoff. The coordinator passes its snapshot's `resetsAt` dates; the app reports the popover opening, which only the pass it starts sees, so a trigger not due at that moment is dropped (ADR-019).
 9. Pushed limits are not scheduled: the coordinator consumes every enabled provider's `pushedUpdates()` while it runs and treats each report as a success (shown with origin `push`, persisted, planned for notifications). A push also counts as the polled source's last success. `start()` starts and stops the consumers when providers are enabled or disabled (ADR-036).
+10. A polled source that runs the tool's own CLI or reads local files may run every minute (ADR-039); a source behind a network API keeps the budget its service allows (GitHub: NFR-6).
 
 ---
 
@@ -1481,7 +1485,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - Truncated file and replaced file (identity change) during incremental reading.
 - Day freezing after 48 h; deleted transcript does not change frozen history.
 - Scheduler: minimum intervals, backoff growth and cap, Low Power Mode doubling, offline skip, wake delay, manual refresh floor, global process single flight across two providers, disabled providers never scheduled.
-- Notification planner: thresholds fire once per provider, window and reset cycle, survive restart, re-arm after reset; identical labels from two providers produce separate notifications.
+- Notification planner: thresholds fire once per provider, window and reset cycle, survive restart, re-arm after reset; identical labels from two providers produce separate notifications; a reset time moving by up to 1 h (or missing) keeps the cycle and sends nothing, one moving further re-arms; several thresholds crossed in one refresh send only the highest.
 - Persistence: atomic write, schema version mismatch handling, history never discarded, provider data deletion removes only that provider's folder.
 - Menu bar selection: `primary` falls back to `highest`, then `?`; `highest` across two providers.
 - Popover layout: default order; a new provider appended and shown; saved keys of unknown providers kept; hidden blocks and sections left out; sections in their saved order, moving within their group only; "Nothing to show" when no visible block has a source that is on.
@@ -1611,8 +1615,10 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)* *Outcome:* no second provider for v1 (ADR-037); Codex CLI is the candidate after v1, its interfaces surveyed in the vault's research page for T-5.17.
 - [x] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID. *Outcome:* 2026-10-04, the name is free in the App Stores, the domains `.com`, `.dev`, `.app`, `.io` and `.org`, GitHub, the package registries, the web, USPTO and TMview; ADR-011 stands. Method in the vault's research page for T-5.18.
 - [x] **T-5.19** Menu bar styles and colors: the `prompt` mark, rings, ring, line, heatmap, shared heatmap and text, five colors, live previews in Settings; the label carries its meter, companion window and source instead of a gauge symbol. *(FR-51, FR-12, FR-46, 11.1)* Depends: T-5.10. Done 2026-10-04: `MenuBarStyle`, `MenuBarTint` and the new `MenuBarLabel` in the core, `MenuBarArt` and `MenuBarItem` in the app (ADR-035).
+- [ ] **T-5.20** Notification fixes: a cycle ends only when the reset time moves more than 1 h (the false "has reset" and repeated "at 80 %" after background probes), only the highest threshold crossed in one refresh, delivery 3 s apart and grouped per provider. *(FR-13, FR-15, FR-52, US-3, ADR-038)* Seam: `NotificationPlanner.plan` for the cycle and threshold rules; delivery checked by hand. Accept: the 16.3 notification planner cases.
+- [ ] **T-5.21** Claude Code probe every minute: `SchedulePolicy` 1 min default and minimum, Settings from 1 min; answer R-1 (does a probe cost plan quota) before the default ships, and re-measure NFR-1 with the 1 min probe. *(NFR-5, NFR-1, section 12, 11.6, ADR-039)* Seam: `Schedule.nextRun` with Claude Code's `limitsPolicy`.
 
-Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check.
+Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20 and T-5.21 before the M4 check.
 - [ ] **M4 check:** manual matrix 16.5 passes.
 
 ### 17.6 Phase 6: Optional and release (M5)
@@ -1620,7 +1626,7 @@ Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T
 - [x] **T-6.1** Insights area: structured parse and period picker, done before Phase 4 (ADR-023). *(FR-38, US-8)*
 - [ ] **T-6.2** Status line bridge reader and merge, plus manual setup instructions in Settings. *(FR-39, 8.2)*
 - [ ] **T-6.3** Guided bridge installer with backup, diff and uninstall. *(FR-39)*
-- [ ] **T-6.4** API-equivalent value estimate. *(FR-40)*
+- [ ] **T-6.4** API-equivalent value estimate for the last 7 days: tokens per category and money per model from a price table. *(FR-40)* Seam: a pure estimate over `ActivityDay`s and a price table in the core.
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
 - [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
@@ -1651,7 +1657,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 
 | ID | Question | Blocks | Status |
 |---|---|---|---|
-| R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values | Open |
+| R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values; the 1 min default (T-5.21) | Open |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
