@@ -349,3 +349,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] research | T-5.17 second provider evaluation
 - [[research/t-5-17-second-provider]]: Codex CLI passes the gate for limits and activity through its own session files; Copilot CLI only for activity; Gemini CLI not assessed.
 - [[decisions/0037-no-second-provider-for-v1]]: no second provider for v1; Codex CLI is the next candidate. SPEC T-5.17 ticked, Q-7 answered, §7.6 updated.
+
+## [2026-10-04] research | T-5.18 name availability
+- "contribusage" is free: App Stores, five domains, GitHub, package registries, web, USPTO and TMview ([[research/t-5-18-name-availability]]).
+- SPEC T-5.18 ticked, Q-6 answered for the name; ADR-011 stands.

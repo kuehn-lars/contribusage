@@ -64,6 +64,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[research/nfr-7-transcript-scan]]: NFR-7 and memory: a generated 520 MB tree scans in under 2 s and adds 27 MB
 - [[research/t-5-8-performance-energy]]: T-5.8, the Release build idles at 0.07 % CPU and 47 MB; transcript writes cost about 0.2 %
 - [[research/t-5-17-second-provider]]: T-5.17, Codex, Copilot and Gemini CLI against the provider gate; Codex limits and tokens from its own session files
+- [[research/t-5-18-name-availability]]: T-5.18, "contribusage" is free in the App Stores, domains, registries, USPTO and TMview
 
 ## Guides
 - [[guides/llm-wiki-tooling]]: `wiki.sh`, Claude Code hooks, lint findings, reuse in another repository

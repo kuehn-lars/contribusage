@@ -1609,7 +1609,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
 - [x] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip, the legend preview in the Popover tab, and the heatmap's line per layer in copy statistics; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
 - [x] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)* *Outcome:* no second provider for v1 (ADR-037); Codex CLI is the candidate after v1, its interfaces surveyed in the vault's research page for T-5.17.
-- [ ] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID.
+- [x] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID. *Outcome:* 2026-10-04, the name is free in the App Stores, the domains `.com`, `.dev`, `.app`, `.io` and `.org`, GitHub, the package registries, the web, USPTO and TMview; ADR-011 stands. Method in the vault's research page for T-5.18.
 - [x] **T-5.19** Menu bar styles and colors: the `prompt` mark, rings, ring, line, heatmap, shared heatmap and text, five colors, live previews in Settings; the label carries its meter, companion window and source instead of a gauge symbol. *(FR-51, FR-12, FR-46, 11.1)* Depends: T-5.10. Done 2026-10-04: `MenuBarStyle`, `MenuBarTint` and the new `MenuBarLabel` in the core, `MenuBarArt` and `MenuBarItem` in the app (ADR-035).
 
 Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check.
@@ -1656,7 +1656,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
-| Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-6.7 (icon) | Open |
+| Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-6.7 (icon) | Name answered: free (T-5.18); icon open |
 | Q-7 | Which AI coding tool becomes the second provider | T-5.17 | Answered: none for v1; Codex CLI after v1 (ADR-037) |
 | R-6 | Which official interface reports a tool's plan; for Claude Code, whether `claude auth status` names it and what else it prints | T-6.10 | Open |
 | Q-8 | Could Claude Code's `stats-cache.json` (behind `/stats`) fill heatmap days that Claude Code already deleted from its transcripts? It is undocumented, versioned and updated with a lag; not used (ADR-032) | Nothing | Open |
