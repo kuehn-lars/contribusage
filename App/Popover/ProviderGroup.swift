@@ -2,32 +2,37 @@ import Charts
 import ContribusageCore
 import SwiftUI
 
-/// One provider: header, then limits, activity and insights, each unless hidden in the Popover tab (FR-4, FR-31, FR-44).
+/// One provider: header, then the sections the Popover tab shows, in its order (FR-4, FR-31, FR-44).
 struct ProviderGroup: View {
     let group: AppState.ProviderGroupState
     @Environment(AppState.self) private var appState
 
     var body: some View {
         let descriptor = group.descriptor
-        let layout = appState.layout
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(
                 title: descriptor.displayName, symbolName: descriptor.symbolName,
                 fetchedAt: group.limits?.snapshot?.fetchedAt)
-            if let limits = group.limits, layout[shows: .limits, of: group.id] {
-                SectionStateView(
-                    state: limits, displayName: descriptor.displayName,
-                    staleAfter: descriptor.limitsPolicy?.staleAfter, placeholder: .placeholder(descriptor.id),
-                    retry: appState.refresh,
-                    content: { LimitsSection(report: $0, descriptor: descriptor) })
-            }
-            if let activity = group.activity, layout[shows: .activity, of: group.id] {
-                SectionStateView(
-                    state: activity, displayName: descriptor.displayName, placeholder: .placeholder(descriptor.id),
-                    content: { ActivitySection(report: $0, descriptor: descriptor) })
-            }
-            if layout[shows: .insights, of: group.id], let insights = group.insights {
-                InsightsSection(insights: insights, descriptor: descriptor)
+            ForEach(appState.layout.shownSections(of: group.id), id: \.self) { section in
+                switch section {
+                case .limits:
+                    if let limits = group.limits {
+                        SectionStateView(
+                            state: limits, displayName: descriptor.displayName,
+                            staleAfter: descriptor.limitsPolicy?.staleAfter, placeholder: .placeholder(descriptor.id),
+                            retry: appState.refresh,
+                            content: { LimitsSection(report: $0, descriptor: descriptor) })
+                    }
+                case .activity:
+                    if let activity = group.activity {
+                        SectionStateView(
+                            state: activity, displayName: descriptor.displayName,
+                            placeholder: .placeholder(descriptor.id),
+                            content: { ActivitySection(report: $0, descriptor: descriptor) })
+                    }
+                case .insights:
+                    if let insights = group.insights { InsightsSection(insights: insights, descriptor: descriptor) }
+                }
             }
         }
     }

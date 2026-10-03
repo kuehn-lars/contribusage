@@ -76,15 +76,17 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     #expect(!layout.demand(on: [], menuBar: [.github]).github)
 }
 
-/// FR-44, FR-45: the Popover tab lists every known block, hidden or off ones too; reordering them keeps the saved keys
-/// of providers that are not registered.
-@Test func reorderingKeepsUnknownKeys() {
+/// FR-44, FR-45: the Popover tab lists every known block, hidden or off ones too; a block dropped on another takes its
+/// place, up or down, and the saved keys of providers that are not registered are kept.
+@Test func movingKeepsUnknownKeys() {
     let unknown = ProviderID(rawValue: "gone")
     var layout = PopoverLayout()
     layout.order = [.provider(unknown), .github]
     layout.hiddenBlocks = [.provider(a)]
     #expect(layout.arranged(registered: [a]) == [.github, .provider(a), .heatmap])
-    layout.arrange([.heatmap, .provider(a), .github])
+    layout.move(.heatmap, to: .github, registered: [a])
+    #expect(layout.order == [.heatmap, .github, .provider(a), .provider(unknown)])
+    layout.move(.github, to: .provider(a), registered: [a])
     #expect(layout.order == [.heatmap, .provider(a), .github, .provider(unknown)])
     #expect(layout.blocks(registered: [a], on: [.provider(a), .github]) == [.heatmap, .github])
 }
@@ -108,4 +110,17 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     layout[shows: .insights, of: a] = true
     #expect(layout == PopoverLayout())
     #expect(SectionKind.allCases.map(\.capability) == [.limits, .activity, .insights])
+}
+
+/// FR-44 (ADR-034): a provider's sections default to limits, activity, insights and move like blocks, per provider.
+@Test func sectionsMoveWithinTheirGroup() {
+    var layout = PopoverLayout()
+    #expect(layout.sections(of: a) == [.limits, .activity, .insights])
+    layout.move(.insights, to: .limits, of: a)
+    #expect(layout.sections(of: a) == [.insights, .limits, .activity])
+    layout.move(.insights, to: .activity, of: a)
+    #expect(layout.sections(of: a) == [.limits, .activity, .insights])
+    layout.move(.activity, to: .limits, of: a)
+    #expect(layout.sections(of: a) == [.activity, .limits, .insights])
+    #expect(layout.sections(of: b) == [.limits, .activity, .insights])
 }

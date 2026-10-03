@@ -291,3 +291,9 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] feat | Popover tab and blocks in order (T-5.15)
 - The popover and Copy statistics follow `PopoverLayout`: block order, hidden blocks and sections, "Nothing to show"; Settings gets the Popover tab ([[modules/app]]).
 - Advanced's `showInsights` toggle dropped: the Popover tab's Insights toggle replaces it (SPEC §10.7, §11.6, [[decisions/0028-settings-scope-and-wiring]]).
+
+## [2026-10-03] fix | Popover tab blocks can be dragged
+- `onMove` does nothing in a grouped `Form`; rows are now draggable and drop targets, and `PopoverLayout.move(_:to:registered:)` puts the dragged block in the target's place.
+
+## [2026-10-03] decision | Sections reorder within their group (ADR-034)
+- `PopoverLayout.sectionOrder` and drag within a provider row; the popover and Copy follow it. The Popover tab's drag gets a handle, a card preview, a lit drop target and sliding rows (none under Reduce Motion).

@@ -18,37 +18,37 @@ extension AppState {
         .map { $0.joined(separator: "\n") }.joined(separator: "\n\n")
     }
 
-    /// A provider group's lines: its header, then the sections the Popover tab shows.
+    /// A provider group's lines: its header, then the sections the Popover tab shows, in its order.
     private func statistics(of group: ProviderGroupState, at now: Date) -> [String] {
         let name = group.descriptor.displayName
-        var lines = [header(name, group.limits?.snapshot?.fetchedAt)]
-        if layout[shows: .limits, of: group.id] {
-            lines += values(group.limits, name) { report in
-                report.windows.map { window in
-                    [
-                        "\(group.descriptor.toolText(window.label)): \(window.percentText(at: now))",
-                        window.resetText(at: now),
-                    ]
-                    .compactMap(\.self).joined(separator: " · ")
+        return [header(name, group.limits?.snapshot?.fetchedAt)]
+            + layout.shownSections(of: group.id).flatMap { section -> [String] in
+                switch section {
+                case .limits:
+                    values(group.limits, name) { report in
+                        report.windows.map { window in
+                            [
+                                "\(group.descriptor.toolText(window.label)): \(window.percentText(at: now))",
+                                window.resetText(at: now),
+                            ]
+                            .compactMap(\.self).joined(separator: " · ")
+                        }
+                    }
+                case .activity:
+                    values(group.activity, name) { report in
+                        let figures = ActivitySection.Figures(report: report, now: now)
+                        let week = figures.week.map {
+                            "\($0.day.formatted(.dateTime.weekday())) \(ActivitySection.Figures.compact($0.tokens))"
+                        }
+                        return [
+                            figures.todayText, figures.categoriesText(group.descriptor.tokenCategories),
+                            String(localized: "Last 7 days: \(week.joined(separator: " · "))"),
+                        ]
+                    }
+                case .insights:
+                    group.insights.map { insightsLines($0, group.descriptor.toolText) } ?? []
                 }
             }
-        }
-        if layout[shows: .activity, of: group.id] {
-            lines += values(group.activity, name) { report in
-                let figures = ActivitySection.Figures(report: report, now: now)
-                let week = figures.week.map {
-                    "\($0.day.formatted(.dateTime.weekday())) \(ActivitySection.Figures.compact($0.tokens))"
-                }
-                return [
-                    figures.todayText, figures.categoriesText(group.descriptor.tokenCategories),
-                    String(localized: "Last 7 days: \(week.joined(separator: " · "))"),
-                ]
-            }
-        }
-        if layout[shows: .insights, of: group.id], let insights = group.insights {
-            lines += insightsLines(insights, group.descriptor.toolText)
-        }
-        return lines
     }
 
     /// FR-42: copies `statistics(at:)` to the clipboard.

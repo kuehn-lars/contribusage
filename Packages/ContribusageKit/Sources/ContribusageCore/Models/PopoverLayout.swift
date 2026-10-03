@@ -51,6 +51,8 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
     public var order: [BlockID] = []
     public var hiddenBlocks: Set<BlockID> = []
     public var hiddenSections: [ProviderID: Set<SectionKind>] = [:]
+    /// A provider group's saved section order (ADR-034); sections missing from it follow in default order.
+    public var sectionOrder: [ProviderID: [SectionKind]] = [:]
     /// `.provider(_)` or `.github`.
     public var outOfHeatmap: Set<BlockID> = []
     public var heatmapStyle: HeatmapStyle = .combined
@@ -75,13 +77,32 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
     /// Every registered block in order, hidden or off ones included, as the Popover tab lists them. Blocks missing from
     /// `order` follow in default order: providers, heatmap, GitHub (FR-45).
     public func arranged(registered: [ProviderID]) -> [BlockID] {
-        let known = registered.map(BlockID.provider) + [.heatmap, .github]
-        return order.filter(known.contains) + known.filter { !order.contains($0) }
+        (registered.map(BlockID.provider) + [.heatmap, .github]).ordered(by: order)
     }
 
-    /// Saves `blocks` as the order; saved keys not among them, such as unregistered providers, follow (FR-45).
-    public mutating func arrange(_ blocks: [BlockID]) {
+    /// Puts `block` in `target`'s place among the registered blocks, as a drop in the Popover tab does (FR-44). Saved
+    /// keys of unregistered providers follow them (FR-45).
+    public mutating func move(_ block: BlockID, to target: BlockID, registered: [ProviderID]) {
+        var blocks = arranged(registered: registered)
+        blocks.move(block, to: target)
         order = blocks + order.filter { !blocks.contains($0) }
+    }
+
+    /// A provider group's sections in order, hidden ones included (FR-44, ADR-034).
+    public func sections(of provider: ProviderID) -> [SectionKind] {
+        SectionKind.allCases.ordered(by: sectionOrder[provider, default: []])
+    }
+
+    /// The sections a provider group shows, in order (FR-31, FR-44).
+    public func shownSections(of provider: ProviderID) -> [SectionKind] {
+        sections(of: provider).filter { self[shows: $0, of: provider] }
+    }
+
+    /// Puts `section` in `target`'s place within the provider's group, as a drop in the Popover tab does (ADR-034).
+    public mutating func move(_ section: SectionKind, to target: SectionKind, of provider: ProviderID) {
+        var sections = sections(of: provider)
+        sections.move(section, to: target)
+        sectionOrder[provider] = sections
     }
 
     /// Whether a block's source is on; the heatmap's while one of its layers is (FR-47).
@@ -106,5 +127,18 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
 
     private func inShownHeatmap(_ block: BlockID) -> Bool {
         !hiddenBlocks.contains(.heatmap) && !outOfHeatmap.contains(block)
+    }
+}
+
+extension Array where Element: Equatable {
+    /// The elements `saved` names, in its order, then the others in theirs; `saved`'s unknown entries are skipped.
+    fileprivate func ordered(by saved: [Element]) -> [Element] {
+        saved.filter(contains) + filter { !saved.contains($0) }
+    }
+
+    /// Puts `element` in `target`'s place; the elements between shift by one.
+    fileprivate mutating func move(_ element: Element, to target: Element) {
+        guard let from = firstIndex(of: element), let to = firstIndex(of: target) else { return }
+        insert(remove(at: from), at: to)
     }
 }
