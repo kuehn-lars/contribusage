@@ -319,3 +319,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] refactor | Menu bar label review
 - `MenuBarMode.usesProviders`/`usesGitHub` replace the mode lists in `offered` and the app's demand; one `limits(_:)` path for every limits mode, no recursive init.
 - The menu bar provider fallback lives once, in `AppState.shownMenuBarProvider` ([[modules/app]], [[modules/core]]).
+
+## [2026-10-03] fix | Menu bar label no longer loops on launch
+- A `TimelineView` in the `MenuBarExtra` label made SwiftUI re-request label updates endlessly: 100 % CPU, memory growing without bound, no menu bar item. A `.task` loop now ticks a `@State` date each minute ([[modules/app]]).

@@ -21,16 +21,20 @@ struct ContribusageApp: App {
 }
 
 /// SPEC §11.1: a template symbol and the text of the chosen mode, re-read every minute for staleness and resets.
+/// A `TimelineView` in a `MenuBarExtra` label makes SwiftUI request label updates in an endless loop, so a task ticks.
 private struct MenuBarItem: View {
     @Environment(AppState.self) private var appState
+    @State private var now = Date.now
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
-            let label = appState.menuBarLabel(at: context.date)
-            HStack(spacing: 4) {
-                Image(systemName: label.symbol)
-                if !label.text.isEmpty { Text(label.text).monospacedDigit() }
+        let label = appState.menuBarLabel(at: now)
+        Image(systemName: label.symbol)
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(60))
+                    now = .now
+                }
             }
-        }
+        if !label.text.isEmpty { Text(label.text).monospacedDigit() }
     }
 }
