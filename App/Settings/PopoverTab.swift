@@ -3,7 +3,6 @@ import SwiftUI
 
 /// SPEC §11.6 Popover tab (FR-44, FR-48, FR-49, US-13, ADR-034): every block in popover order, and every provider's
 /// sections in theirs, reordered by drag. The open popover follows each change at once through `AppState.layout`.
-// ponytail: the style picker's legend preview comes with the layer hues in T-5.16.
 struct PopoverTab: View {
     @Environment(AppState.self) private var appState
 
@@ -27,6 +26,7 @@ struct PopoverTab: View {
                     Text("Combined").tag(HeatmapStyle.combined)
                     Text("Stacked").tag(HeatmapStyle.stacked)
                 }
+                StylePreview()
             } footer: {
                 Text("Stacked reads better from three layers on.").foregroundStyle(.secondary)
             }
@@ -34,6 +34,29 @@ struct PopoverTab: View {
         .formStyle(.grouped)
         .labelStyle(RowLabel())
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// FR-49: the chosen style and the legend for the layers the heatmap has, over four sample weeks.
+private struct StylePreview: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        let days = (0..<28).map { DayKey(rawValue: "\($0)") }
+        let layers = appState.heatmap(at: .now).layers.enumerated().map { index, shown in
+            ShownLayer(
+                layer: HeatmapLayer(
+                    id: shown.layer.id, name: shown.layer.name, values: [:],
+                    levels: Dictionary(uniqueKeysWithValues: days.enumerated().map { ($1, ($0 * 3 + index * 2) % 5) })),
+                color: shown.color)
+        }
+        if !layers.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                HeatmapLegend(layers: layers)
+                HeatmapGrids(days: days, layers: layers, style: appState.layout.heatmapStyle).frame(width: 60)
+            }
+            .accessibilityHidden(true)
+        }
     }
 }
 

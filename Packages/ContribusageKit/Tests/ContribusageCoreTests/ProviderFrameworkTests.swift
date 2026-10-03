@@ -103,7 +103,8 @@ private struct ActivityOnlyProvider: UsageProvider {
     let base: FakeProvider
     var descriptor: ProviderDescriptor {
         ProviderDescriptor(
-            id: base.descriptor.id, displayName: "Activity Only", symbolName: "chart.bar", capabilities: .activity,
+            id: base.descriptor.id, displayName: "Activity Only", symbolName: "chart.bar", heatmapHue: .teal,
+            capabilities: .activity,
             tokenCategories: [.input], limitsPolicy: nil
         )
     }

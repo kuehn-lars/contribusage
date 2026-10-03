@@ -80,66 +80,6 @@
         }
       }
     },
-    "%@: %lld contributions" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: %#@contributions@"
-          },
-          "substitutions" : {
-            "contributions" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg Beitrag"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg Beiträge"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: %#@contributions@"
-          },
-          "substitutions" : {
-            "contributions" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg contribution"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg contributions"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "%lld h" : {
       "localizations" : {
         "de" : {
@@ -605,6 +545,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Heatmap-Stil"
+          }
+        }
+      }
+    },
+    "Heatmap, last 26 weeks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heatmap, letzte 26 Wochen"
           }
         }
       }

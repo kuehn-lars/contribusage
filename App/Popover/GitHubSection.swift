@@ -23,7 +23,6 @@ private struct GitHubContent: View {
     let report: GitHubReport
 
     var body: some View {
-        Heatmap(weeks: report.calendar.weeks.suffix(26))  // FR-20
         Text(report.statsText).font(.caption)
     }
 }
@@ -35,56 +34,6 @@ extension GitHubReport {
             localized:
                 "Today \(stats.today) · Streak \(stats.currentStreak) days · Year \(calendar.totalContributions.formatted())"
         )
-    }
-}
-
-// ponytail: plain grid of weeks; T-5.11 owns keyboard and VoiceOver.
-/// SPEC §11.4: system green in four steps from 40 % to full, over the window's glass; level 0 is the neutral fill.
-private struct Heatmap: View {
-    let weeks: ArraySlice<[ContributionDay]>
-
-    var body: some View {
-        WeekColumns {
-            ForEach(Array(weeks.joined()), id: \.date) { day in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        day.level == .none
-                            ? AnyShapeStyle(.quaternary)
-                            : AnyShapeStyle(.green.opacity(0.2 + 0.2 * Double(day.level.rawValue)))
-                    )
-                    .help("\(day.date.rawValue): \(day.count) contributions")
-            }
-        }
-    }
-}
-
-/// Days in columns of 7, top-aligned, as square cells sharing the proposed width; every column but the last is full, as
-/// in GitHub's weeks after the first. The height follows from the width and never from the proposal: the menu bar window
-/// proposes too little height, and `aspectRatio` cells shrank to dots.
-private struct WeekColumns: Layout {
-    private let gap: CGFloat = 3
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        guard !subviews.isEmpty else { return .zero }
-        let columns = (subviews.count + 6) / 7
-        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? CGFloat(columns) * (10 + gap) - gap
-        let rows = min(subviews.count, 7)
-        return CGSize(width: width, height: CGFloat(rows) * (side(width, columns) + gap) - gap)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let side = side(bounds.width, (subviews.count + 6) / 7)
-        for (index, subview) in subviews.enumerated() {
-            subview.place(
-                at: CGPoint(
-                    x: bounds.minX + CGFloat(index / 7) * (side + gap),
-                    y: bounds.minY + CGFloat(index % 7) * (side + gap)),
-                proposal: ProposedViewSize(width: side, height: side))
-        }
-    }
-
-    private func side(_ width: CGFloat, _ columns: Int) -> CGFloat {
-        max((width - gap * CGFloat(columns - 1)) / CGFloat(columns), 0)
     }
 }
 

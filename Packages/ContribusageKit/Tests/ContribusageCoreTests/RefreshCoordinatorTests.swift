@@ -17,7 +17,8 @@ private struct PolledProvider: UsageProvider, LimitsSource {
 
     var descriptor: ProviderDescriptor {
         ProviderDescriptor(
-            id: id, displayName: "Polled", symbolName: "gauge", capabilities: .limits, tokenCategories: [],
+            id: id, displayName: "Polled", symbolName: "gauge", heatmapHue: .blue, capabilities: .limits,
+            tokenCategories: [],
             limitsPolicy: SchedulePolicy(
                 defaultInterval: .seconds(900), minimumInterval: .seconds(300), maximumInterval: .seconds(3600),
                 staleAfter: .seconds(1800), manualFloor: .seconds(30), needsNetwork: true))

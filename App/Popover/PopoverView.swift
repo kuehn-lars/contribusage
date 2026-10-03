@@ -41,7 +41,7 @@ struct PopoverView: View {
             ForEach(appState.blocks, id: \.self) { block in
                 switch block {
                 case .provider(let id): ProviderGroup(group: appState.group(id)).padding(12)
-                case .heatmap: EmptyView()  // unreachable until T-5.16 draws the heatmap
+                case .heatmap: HeatmapBlock().padding(12)
                 case .github: GitHubSection(state: appState.github).padding(12)
                 }
                 Divider()

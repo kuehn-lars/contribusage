@@ -4,7 +4,7 @@ status: accepted
 updated: 2026-10-03
 aliases: [ADR-032]
 tags: [app, core, ui, heatmap]
-tracks: [App/Popover/GitHubSection.swift]
+tracks: [App/Popover/HeatmapBlock.swift, Packages/ContribusageKit/Sources/ContribusageCore/Models/HeatmapLayer.swift]
 ---
 # ADR-032: One shared heatmap with a layer per source, Combined or Stacked, levels per source
 
@@ -25,10 +25,12 @@ The heatmap belonged to the GitHub section (FR-20). With the popover becoming a 
 | Read provider days from `stats-cache.json` | Might hold days already cleaned from transcripts | Second undocumented format; lags; same data otherwise |
 
 ## Decision
-The heatmap is its own block with one layer per source that is on and in the heatmap. It offers two styles: **Combined** (default, split cells, one vertical stripe per layer in block order) and **Stacked** (one grid per layer). Each layer has its own levels: GitHub keeps its `contributionLevel`, so cells match the user's GitHub profile; a provider's layer uses the quartiles of its non-zero days in the shown range, the same kind of rule GitHub uses. Each provider declares a fixed `heatmapHue`. GitHub is green, Claude Code orange, and red is never a layer hue. The tooltip and VoiceOver read every layer's value for the day. Provider layers come from the activity data the provider already keeps, not from `stats-cache.json` (open as Q-8).
+The heatmap is its own block with one layer per source that is on and in the heatmap. It offers two styles: **Combined** (default, split cells, one vertical stripe per layer with activity that day in block order, so a day with one active source fills the cell) and **Stacked** (one grid per layer). Each layer has its own levels: GitHub keeps its `contributionLevel`, so cells match the user's GitHub profile; a provider's layer uses the quartiles of its non-zero days in the shown range, the same kind of rule GitHub uses. Each provider declares a fixed `heatmapHue`. GitHub is green, Claude Code orange, and red is never a layer hue. The tooltip and VoiceOver read every layer's value for the day. Provider layers come from the activity data the provider already keeps, not from `stats-cache.json` (open as Q-8).
 
 ## Consequences
 - A busy GitHub day and a busy Claude Code day both reach level 4: the levels compare days within a source, not sources with each other.
 - A new provider needs a hue that isn't green or red; `HeatmapHue` lists the allowed ones.
 - With three or more layers the Combined style gets narrow; Settings points to Stacked, and the style is never switched automatically.
+- No month labels: the grid never had any, and Stacked reads without them (dropped from FR-49 after T-5.16).
+- Built in T-5.16: [[modules/core]] holds the levels and the FR-49 line, [[modules/app]] the drawing.
 - Revisit if Claude Code documents its stats data, or if a layer needs a different metric than total tokens (for example a provider without token counts, T-5.17).

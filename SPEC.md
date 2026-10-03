@@ -363,7 +363,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-46 | P2 | **Work follows use.** A source's data is fetched only while the source is on and something uses it: a visible section, its heatmap layer, the menu bar mode, or notifications. In v1: a provider's limits are fetched while it is on, because notifications use them; its activity is watched only while its activity section is visible or its heatmap layer is on; GitHub is fetched only while its block is visible, its layer is on or the menu bar mode shows it. A source nobody uses behaves like a disabled one (FR-2). |
 | FR-47 | P2 | **Nothing to show.** While no visible block has a source that is on, the popover shows "Nothing to show" with "Open Settings…" above the footer. |
 | FR-48 | P2 | **Shared heatmap.** The heatmap block shows the last 26 weeks, with one layer per source that is on and in the heatmap ("In heatmap" in the Popover tab, default on): GitHub's contributions, and for every provider with the `activity` capability its total tokens per day. Levels 0 to 4: GitHub's layer uses `contributionLevel` (FR-20); a provider's layer uses 0 for a day without tokens and otherwise the quartile of that day among the layer's non-zero days in the shown range. Days a source has no data for (before its history begins) are drawn like 0. Layers are never summed (7.7). The block is hidden while it has no layer (ADR-032). |
-| FR-49 | P2 | **Heatmap styles.** "Combined" (default): one grid, each cell split into equal vertical stripes, one per layer in block order. "Stacked": one grid per layer in block order, sharing the week columns and month labels. The style is chosen in the Popover tab, which notes that Stacked reads better from three layers on. A legend names each layer in its hue. Tooltip and VoiceOver read one line per day with every layer in block order: "2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"; a layer without data for that day reads "no data". |
+| FR-49 | P2 | **Heatmap styles.** "Combined" (default): one grid, each cell split into equal vertical stripes, one per layer with activity that day, in block order; a day with one active layer fills the cell with it, a day with none is level 0. "Stacked": one grid per layer in block order, sharing the week columns; there are no month labels. The style is chosen in the Popover tab, which notes that Stacked reads better from three layers on. A legend names each layer in its hue. Tooltip and VoiceOver read one line per day with every layer in block order: "2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"; a layer without data for that day reads "no data". |
 
 ---
 
@@ -1048,6 +1048,8 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
     public func blocks(registered: [ProviderID], on: Set<BlockID>) -> [BlockID]
     /// What must run (FR-46); the menu bar's sources come from its mode.
     public func demand(on: Set<BlockID>, menuBar: Set<BlockID>) -> Demand
+    /// The heatmap's layers in block order: sources that are on and in the heatmap; `sources` have daily data (FR-48).
+    public func heatmapLayers(sources: [ProviderID], on: Set<BlockID>) -> [BlockID]
 }
 
 public struct Demand: Sendable, Equatable {        // limits need none: they run while their provider is on (FR-46)
@@ -1057,9 +1059,13 @@ public struct Demand: Sendable, Equatable {        // limits need none: they run
 
 public struct HeatmapLayer: Sendable, Equatable {
     public let id: BlockID
+    public let name: String                            // "GitHub" or the provider's display name
     public let values: [DayKey: Int]                   // tokens or contributions; a missing day is "no data"
     public let levels: [DayKey: Int]                   // 0...4
-    public static func quartiled(_ id: BlockID, values: [DayKey: Int]) -> HeatmapLayer   // providers (FR-48)
+    public static func quartiled(_ id: BlockID, name: String, values: [DayKey: Int]) -> HeatmapLayer   // providers (FR-48)
+    public static func days(through now: Date, calendar: Calendar) -> [DayKey]          // 26 weeks from a Sunday
+    public func text(on day: DayKey, locale: Locale) -> String                           // "1.2M tokens", "no data"
+    public static func line(_ day: DayKey, layers: [HeatmapLayer], locale: Locale) -> String   // the FR-49 line
 }
 ```
 
@@ -1594,7 +1600,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
 - [x] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
 - [x] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
-- [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip, the legend preview in the Popover tab, and the heatmap's line per layer in copy statistics; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
+- [x] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip, the legend preview in the Popover tab, and the heatmap's line per layer in copy statistics; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
 - [ ] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)*
 - [ ] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID.
 

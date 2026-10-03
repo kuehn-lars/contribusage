@@ -23,7 +23,8 @@ public final class FakeProvider: UsageProvider {
         }
     ) {
         descriptor = ProviderDescriptor(
-            id: id, displayName: "Fake Tool", symbolName: "hammer", capabilities: [.limits, .activity],
+            id: id, displayName: "Fake Tool", symbolName: "hammer", heatmapHue: .blue,
+            capabilities: [.limits, .activity],
             tokenCategories: [.input, .output], limitsPolicy: nil
         )
         limits = FakeLimitsSource(id: id, fetch: fetch)

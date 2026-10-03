@@ -27,3 +27,4 @@ SPEC §10.2 sketched `ActivitySource` with `start()`, `stop()`, `rescan()` and `
 - Disabling a provider (FR-2) is cancelling the task that consumes its stream.
 - Revisit if a source needs to keep state across a pause that a re-subscription cannot rebuild cheaply.
 - `Provider.swift` also gained `ProviderDescriptor.toolText` ([[decisions/0033-provider-tool-texts]]); the activity contract is unchanged.
+- A provider's heatmap layer keeps its activity watched while its activity section is hidden (FR-46); the layer reads the same stream's last report (T-5.16).

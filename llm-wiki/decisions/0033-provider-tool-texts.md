@@ -31,3 +31,4 @@ tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Provider.sw
 - A new text the tool prints shows in English until the table learns it; a model name inside `Current week (…)` and an unknown summary part stay as printed.
 - The same change replaced the core catalog's German "Reset in %@" and "Reset %@" with "Zurücksetzung in %@" and "Zurücksetzung %@".
 - Revisit if the tool localizes its own output: then the labels arrive translated and the table matches nothing.
+- The descriptor's other display values (name, symbol, heatmap hue) are the app's own, not tool texts.

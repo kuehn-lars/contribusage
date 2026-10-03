@@ -297,3 +297,16 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] decision | Sections reorder within their group (ADR-034)
 - `PopoverLayout.sectionOrder` and drag within a provider row; the popover and Copy follow it. The Popover tab's drag gets a handle, a card preview, a lit drop target and sliding rows (none under Reduce Motion).
+
+## [2026-10-03] feat | Shared heatmap block (T-5.16)
+- Core: `HeatmapLayer` (quartile levels, 26 week range, FR-49 line), `PopoverLayout.heatmapLayers`, `ProviderDescriptor.heatmapHue`.
+- App: `HeatmapBlock` in Combined and Stacked styles with legend and tooltips; the grid left GitHub's block; Copy lists each layer's total; the Popover tab previews the style.
+
+## [2026-10-03] spec | Combined cells stripe only active layers; no month labels
+- FR-49: a Combined cell splits only among the layers active that day, so one active source fills the cell; month labels dropped.
+
+## [2026-10-03] refactor | One switch builds each heatmap layer
+- `HeatmapLayer` carries its `name`; `AppState.heatmap(at:)` returns `ShownLayer`s with hue and dimming, so the per-layer `name`, `color` and `isDimmed` lookups are gone.
+
+## [2026-10-03] fix | Heatmap test no longer reads a catalog plural
+- CI's SwiftPM leaves the core's String Catalog uncompiled, so "1 contribution" read "1 contributions"; the assertion is dropped, the catalog step covers the key.

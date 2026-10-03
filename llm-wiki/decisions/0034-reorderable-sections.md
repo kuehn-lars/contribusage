@@ -27,3 +27,4 @@ T-5.15 built the Popover tab with blocks that move by drag and sections that onl
 - Blocks and sections share one "saved order plus missing ones" rule and one "take the target's place" move in `PopoverLayout.swift`.
 - A section's drag payload names its provider, so a drop in another group or on a block does nothing.
 - Layouts saved before this change lack `sectionOrder` and decode as the default layout once; no release had shipped them.
+- Layer order in the shared heatmap is block order, so dragging a block also moves its stripe or grid (T-5.16, FR-49).

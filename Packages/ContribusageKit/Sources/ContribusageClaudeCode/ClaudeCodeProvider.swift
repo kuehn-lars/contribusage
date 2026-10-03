@@ -135,7 +135,7 @@ public actor ClaudeCodeProvider: UsageProvider, LimitsSource {
 extension ProviderDescriptor {
     /// SPEC §7.5, §8.1.4.
     fileprivate static let claudeCode = ProviderDescriptor(
-        id: .claudeCode, displayName: "Claude Code", symbolName: "terminal",
+        id: .claudeCode, displayName: "Claude Code", symbolName: "terminal", heatmapHue: .orange,
         capabilities: [.limits, .activity, .insights],
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(

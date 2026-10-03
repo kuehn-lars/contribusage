@@ -29,3 +29,4 @@ US-10 asks "Copy diagnostics" for provider specific facts: for Claude Code the l
 - GitHub switched off (T-5.14) keeps its last state, so its diagnostics line still reports that state.
 - Copying diagnostics for a disabled provider may run `claude --version`, as opening the Providers tab already does.
 - Claude Code's diagnostics lines stay English after [[decisions/0033-provider-tool-texts]]: `toolText` serves the popover, Copy statistics and notifications, never diagnostics.
+- Copy statistics gives the heatmap one line per layer with its 26 week total, through the core's `HeatmapLayer.text` the tooltips use (T-5.16).
