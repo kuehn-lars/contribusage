@@ -261,3 +261,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - String Catalogs in the app and the core, English and German (an English-only app formats as `en_<region>`), checked by a CI sync step (ADR-031); percents follow the locale.
 - VoiceOver: §11.7 chart summary, header traits; provider groups scroll only when they overflow, since VoiceOver stopped at the scroll area.
 - Popover keeps the system's Liquid Glass; heatmap in system green at 40 to 100 %; footer shows icons with tooltips (SPEC §11.2).
+
+## [2026-10-03] research | Performance and energy verification (T-5.8)
+- Release build on an M3: 0.07 % CPU idle with the popover closed (NFR-1), 43 to 47 MB footprint (NFR-2), 3 idle wakeups per minute; NFR-3, NFR-4 and NFR-14 checked in code ([[research/t-5-8-performance-energy]]).
+- A Claude Code session writing transcripts raises CPU to about 0.2 %, because each incremental pass opens every transcript.

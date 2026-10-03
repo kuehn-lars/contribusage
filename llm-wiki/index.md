@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-10-02
+updated: 2026-10-03
 ---
 # Index
 
@@ -56,6 +56,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary
 - [[research/nfr-7-transcript-scan]]: NFR-7 and memory: a generated 520 MB tree scans in under 2 s and adds 27 MB
+- [[research/t-5-8-performance-energy]]: T-5.8, the Release build idles at 0.07 % CPU and 47 MB; transcript writes cost about 0.2 %
 
 ## Guides
 - [[guides/llm-wiki-tooling]]: `wiki.sh`, Claude Code hooks, lint findings, reuse in another repository
