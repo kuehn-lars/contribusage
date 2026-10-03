@@ -273,3 +273,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - New in SPEC: Source, Section, Block and Heatmap layer (§3); US-13, US-14; FR-43 to FR-49 (GitHub switch, blocks the user orders and hides, work follows use, shared heatmap with Combined and Stacked styles); layout types in §10.8.
 - Heatmap design, levels per source and hues recorded as [[decisions/0032-shared-heatmap]]; `stats-cache.json` left open as Q-8.
 - T-6.9 and the name check moved into Phase 5 (T-5.17, T-5.18); T-5.10 to T-5.12 now follow the layout tasks.
+
+## [2026-10-03] spec | Plan display after v1 (FR-50, R-6, T-6.10)
+- Providers may report their plan as the tool names it (US-15, FR-50); a provider whose data differs by plan lists what each plan delivers (SPEC §7.3).
+- Claude Code's `/usage` doesn't name the plan; R-6 checks whether `claude auth status` does. Credential files stay off limits.

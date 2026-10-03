@@ -90,6 +90,7 @@ One glance at the menu bar tells me how much of my AI coding plan I have left an
 - No data from claude.ai chat history, other devices, or tools that are not integrated as a provider.
 - No team or organization dashboards, no Admin API usage.
 - No cloud sync, no telemetry, no backend server.
+- No plan display in v1: showing the plan a tool runs on comes after v1 (FR-50).
 - No exact billing. Any "API-equivalent cost" is an estimate and optional ([FR-40](#58-optional-features-p3)).
 - No combined or summed limits across providers. Each tool's limits are shown as that tool reports them.
 
@@ -164,6 +165,7 @@ Before any code for a new AI coding tool is written, all of the following must b
 | **Source** | Something that fetches data and can be switched on or off: each provider (FR-2) and GitHub (FR-43). Nothing runs for a source that is off. |
 | **Section** | One part of the popover the user can show or hide: a provider's limits, activity and insights, the heatmap, GitHub's statistics. Hiding changes only what is shown; whether work runs follows FR-46. |
 | **Block** | A top-level part of the popover the user can reorder: one provider group, the heatmap, GitHub (FR-44). The sections inside a provider group keep a fixed order. |
+| **Plan** | The subscription tier a provider's tool runs on, as the tool itself names it (for Claude Code for example "Pro" or "Max"). Shown verbatim, never inferred from usage (FR-50). |
 | **Heatmap layer** | One source's per day values in the shared heatmap, drawn in that source's hue (FR-48). |
 
 ---
@@ -256,6 +258,14 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 - Hovering a day lists every layer ("2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"); VoiceOver reads the same line, so no value depends on color alone.
 - I can take a source out of the heatmap without hiding its other sections.
 
+### US-15 (P3, after v1): See which plan each tool runs on
+
+*Plans decide what a tool reports: a free plan can lack windows a paid plan has. Once a second provider exists (T-5.17), the popover must make clear why one group shows less than another.*
+
+- **Given** a provider reports its plan, **then** its group header shows it next to the display name ("Claude Code · Max").
+- **Given** a plan delivers fewer windows or capabilities, **then** the group shows only what the plan delivers, and the plan in the header explains the gap.
+- Copy statistics and diagnostics include the plan.
+
 ---
 
 ## 5. Functional requirements
@@ -341,6 +351,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
 | FR-42 | P2 | "Copy" button in the popover footer (copy statistics): copies what the popover shows as plain text, in its block order and only the visible sections (FR-44): per provider its limits, activity and, while shown, insights with every period; the heatmap one line per layer with its 26 week total; GitHub's statistics; a section without values its error message, without diagnostics (ADR-030). |
+| FR-50 | P3 | **Plan (after v1).** A provider may report its plan: the tool's own name for it, verbatim (US-15). It comes only from an official interface named in the provider's section 8, never from credential files or Keychain items (section 2); Claude Code's source is open (R-6). The group header, copy statistics (FR-42) and diagnostics (FR-36) show it; without one the header stays as it is. Sections and windows still follow what the provider reports, so the app holds no per plan logic. A plan change raises no notification. Where the plan travels in the types (with the limits report or with detection) is decided with R-6. |
 
 ### 5.9 Popover layout and shared heatmap
 
@@ -408,8 +419,9 @@ Every provider module must supply:
 3. Zero or one `LimitsSource` and zero or one `ActivitySource` ([10.2](#102-provider-types)).
 4. Window classification: a pure function from label to `WindowKind`, fixture tested.
 5. Error mapping from tool specific failures to the shared `SourceError`.
-6. Its own fixtures and tests, plus a passing run of the shared provider conformance suite ([16.4](#164-provider-conformance-suite)).
-7. A provider section in [section 8](#8-data-sources) with the compliance note required by the provider gate ([2.4](#24-provider-gate)).
+6. If the tool's data differs by plan: a table in its section 8 of what each plan delivers (windows, capabilities), and its plan reported per FR-50.
+7. Its own fixtures and tests, plus a passing run of the shared provider conformance suite ([16.4](#164-provider-conformance-suite)).
+8. A provider section in [section 8](#8-data-sources) with the compliance note required by the provider gate ([2.4](#24-provider-gate)).
 
 A provider must not: talk to the network, read files outside the roots declared in its spec section, touch credentials, deliver notifications, or render UI.
 
@@ -1520,6 +1532,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
+- [ ] **R-6 Plan source.** For Claude Code: `/usage` says only that a subscription is used, not which. Check whether `claude auth status` (an official CLI command) names the plan, in which format, and what personal data it prints that must not be stored or logged; the credential file's fields stay off limits (section 2). Running it from the app extends 8.1.1 and FR-6's argument list, so the outcome is a spec change. For later providers the same question is part of their provider gate (2.4). *Outcome:* FR-50's Claude Code source, or an ADR that it has none. After v1.
 
 ### 17.1 Phase 1: Foundation
 
@@ -1598,6 +1611,7 @@ Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T
 - [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
 - [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
 - [ ] ~~**T-6.9** Second provider evaluation (research only).~~ Moved to T-5.17.
+- [ ] **T-6.10** Plan display: the plan in the group header, copy statistics and diagnostics. *(FR-50, US-15)* Depends: R-6. After v1; becomes relevant with a second provider whose data differs by plan (T-5.17).
 
 ### 17.7 Definition of Done
 
@@ -1629,6 +1643,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
 | Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-6.7 (icon) | Open |
 | Q-7 | Which AI coding tool becomes the second provider | T-5.17 | Open |
+| R-6 | Which official interface reports a tool's plan; for Claude Code, whether `claude auth status` names it and what else it prints | T-6.10 | Open |
 | Q-8 | Could Claude Code's `stats-cache.json` (behind `/stats`) fill heatmap days that Claude Code already deleted from its transcripts? It is undocumented, versioned and updated with a lag; not used (ADR-032) | Nothing | Open |
 
 ### 19.2 Risks
