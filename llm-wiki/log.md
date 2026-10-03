@@ -345,3 +345,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `RefreshCoordinator` consumes every enabled provider's `pushedUpdates()`: a push is a success with origin `push`, persisted, planned and shown (SPEC §12 rule 9).
 - `App/DebugFakeProvider.swift` under `CONTRIBUSAGE_FAKE_PROVIDER` registers US-11's second provider ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
 - Checked by hand in the flagged Debug build (SPEC §16.5 row); T-5.12 ticked.
+
+## [2026-10-04] research | T-5.17 second provider evaluation
+- [[research/t-5-17-second-provider]]: Codex CLI passes the gate for limits and activity through its own session files; Copilot CLI only for activity; Gemini CLI not assessed.
+- [[decisions/0037-no-second-provider-for-v1]]: no second provider for v1; Codex CLI is the next candidate. SPEC T-5.17 ticked, Q-7 answered, §7.6 updated.
