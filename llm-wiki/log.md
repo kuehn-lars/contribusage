@@ -349,3 +349,12 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] research | T-5.17 second provider evaluation
 - [[research/t-5-17-second-provider]]: Codex CLI passes the gate for limits and activity through its own session files; Copilot CLI only for activity; Gemini CLI not assessed.
 - [[decisions/0037-no-second-provider-for-v1]]: no second provider for v1; Codex CLI is the next candidate. SPEC T-5.17 ticked, Q-7 answered, §7.6 updated.
+
+## [2026-10-04] research | T-5.18 name availability
+- "contribusage" is free: App Stores, five domains, GitHub, package registries, web, USPTO and TMview ([[research/t-5-18-name-availability]]).
+- SPEC T-5.18 ticked, Q-6 answered for the name; ADR-011 stands.
+
+## [2026-10-04] spec | Notification fixes, one-minute probe, 7 day cost
+- T-5.20 (FR-13, FR-15, new FR-52, US-3; [[decisions/0038-notification-cycles-and-delivery]]): false "has reset" and repeated threshold notifications traced to the exact reset time match; tolerance, highest threshold only, spaced and grouped delivery.
+- T-5.21 ([[decisions/0039-one-minute-probe]]): probe default and minimum 1 min (NFR-5, §12 rule 10), R-1 and NFR-1 checked in the task.
+- T-6.4 and FR-40 cover the last 7 days: tokens per category and money per model.

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-28
+updated: 2026-10-04
 aliases: [ADR-011]
 tags: [naming]
 ---
@@ -19,4 +19,4 @@ No alternatives were recorded.
 "contribusage" (*contrib*utions plus *usage*), always lowercase in the UI and documentation.
 
 ## Consequences
-Name availability (stores, domain, trademarks) is checked before the first public release (Q-6, T-6.7).
+Name availability (stores, domain, trademarks) was checked on 2026-10-04 and found free ([[research/t-5-18-name-availability]], T-5.18); the icon stays with T-6.7.

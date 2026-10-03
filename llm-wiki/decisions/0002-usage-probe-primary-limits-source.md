@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-28
+updated: 2026-10-04
 aliases: [ADR-002]
 tags: [claude-code, limits]
 ---
@@ -23,5 +23,5 @@ The probe is the primary source. The status line bridge is an optional second so
 
 ## Consequences
 - The parser must be generic and fixture-tested per Claude Code version, with raw output as a fallback (SPEC §8.1.5, §16.6).
-- Whether a probe consumes plan quota is open (R-1), so the default interval stays conservative at 15 minutes (NFR-5).
+- Whether a probe consumes plan quota is open (R-1), so the default interval stays conservative at 15 minutes (NFR-5). Superseded by [[decisions/0039-one-minute-probe]]: 1 minute, checked against R-1 in T-5.21.
 - Probes run in an empty folder with `--no-session-persistence`, so they neither run project configuration nor show up as sessions.
