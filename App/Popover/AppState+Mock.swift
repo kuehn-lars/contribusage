@@ -31,14 +31,14 @@ extension Snapshot {
 
 extension ProviderDescriptor {
     static let mockClaudeCode = ProviderDescriptor(
-        id: .claudeCode, displayName: "Claude Code", symbolName: "sparkle",
+        id: .claudeCode, displayName: "Claude Code", symbolName: "sparkle", heatmapHue: .orange,
         capabilities: [.limits, .activity, .insights],
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
             defaultInterval: .seconds(900), minimumInterval: .seconds(300), maximumInterval: .seconds(3600),
             staleAfter: .seconds(1800), manualFloor: .seconds(60), needsNetwork: true))
     static let mockOther = ProviderDescriptor(
-        id: ProviderID(rawValue: "other-tool"), displayName: "Other Tool", symbolName: "terminal",
+        id: ProviderID(rawValue: "other-tool"), displayName: "Other Tool", symbolName: "terminal", heatmapHue: .blue,
         capabilities: .limits,
         tokenCategories: [], limitsPolicy: mockClaudeCode.limitsPolicy)
 }
@@ -117,7 +117,8 @@ extension GitHubReport {
                     let index = week * 7 + day
                     let count = (index * 7 + index / 3) % 9
                     return ContributionDay(
-                        date: DayKey(rawValue: "d\(index)"), count: count,
+                        date: DayKey(.now.addingTimeInterval(Double(index - 181) * 86400), calendar: .current),
+                        count: count,
                         level: ContributionLevel(rawValue: count / 2) ?? .fourth)
                 }
             },

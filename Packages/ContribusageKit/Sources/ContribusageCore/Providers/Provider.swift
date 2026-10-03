@@ -40,6 +40,8 @@ public struct ProviderDescriptor: Sendable {
     public let displayName: String
     /// A neutral SF Symbol, never a vendor logo.
     public let symbolName: String
+    /// Its heatmap layer's color (FR-48, SPEC §11.4).
+    public let heatmapHue: HeatmapHue
     public let capabilities: ProviderCapabilities
     /// Categories the UI shows; the others stay 0 and are hidden (SPEC §10.4).
     public let tokenCategories: Set<TokenCategory>
@@ -50,19 +52,25 @@ public struct ProviderDescriptor: Sendable {
     public let toolText: @Sendable (String) -> String
 
     public init(
-        id: ProviderID, displayName: String, symbolName: String, capabilities: ProviderCapabilities,
+        id: ProviderID, displayName: String, symbolName: String, heatmapHue: HeatmapHue,
+        capabilities: ProviderCapabilities,
         tokenCategories: Set<TokenCategory>, limitsPolicy: SchedulePolicy?,
         toolText: @escaping @Sendable (String) -> String = { $0 }
     ) {
         self.id = id
         self.displayName = displayName
         self.symbolName = symbolName
+        self.heatmapHue = heatmapHue
         self.capabilities = capabilities
         self.tokenCategories = tokenCategories
         self.limitsPolicy = limitsPolicy
         self.toolText = toolText
     }
 }
+
+/// Named system hues; the app maps them to colors. Green is GitHub's and red means critical, so neither is a provider's
+/// (SPEC §11.4, ADR-032).
+public enum HeatmapHue: String, Sendable, Codable { case orange, blue, purple, teal, pink, indigo }
 
 /// FR-3.
 public enum ProviderAvailability: Sendable, Equatable {

@@ -65,8 +65,15 @@ import Observation
     }
 
     /// The popover's blocks in order (FR-44, FR-47); Copy follows them (FR-42).
-    // ponytail: the heatmap block is left out until T-5.16 draws it; its grid still sits in GitHub's block.
-    var blocks: [BlockID] { layout.blocks(registered: providers.map(\.id), on: on).filter { $0 != .heatmap } }
+    // ponytail: the heatmap counts as on for a provider without daily data, which has no layer (FR-48); move the rule
+    // into `PopoverLayout` when such a provider exists (T-5.17).
+    var blocks: [BlockID] { layout.blocks(registered: providers.map(\.id), on: on) }
+
+    /// FR-48: the heatmap's sources in block order; a provider has a layer when it has daily data.
+    var heatmapSources: [BlockID] {
+        let sources = providers.filter { $0.descriptor.capabilities.contains(.activity) }.map(\.id)
+        return layout.heatmapLayers(sources: sources, on: on)
+    }
 
     /// A registered provider's group; `providers` holds every registered one, so a block or layout ID always has one.
     func group(_ id: ProviderID) -> ProviderGroupState { providers.first { $0.id == id }! }

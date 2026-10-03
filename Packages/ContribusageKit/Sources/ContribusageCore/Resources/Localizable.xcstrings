@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ tokens" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Tokens"
+          }
+        }
+      }
+    },
     "%@: %@ at %lld %%" : {
       "localizations" : {
         "de" : {
@@ -29,6 +39,74 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@: %2$@ has reset"
+          }
+        }
+      }
+    },
+    "%lld contributions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@contributions@"
+          },
+          "substitutions" : {
+            "contributions" : {
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg Beitrag"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg Beiträge"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@contributions@"
+          },
+          "substitutions" : {
+            "contributions" : {
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg contribution"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg contributions"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "no data" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "keine Daten"
           }
         }
       }

@@ -110,6 +110,12 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
         block == .heatmap ? on.contains { !outOfHeatmap.contains($0) } : on.contains(block)
     }
 
+    /// The heatmap's layers in block order (FR-48, FR-49): every source that is on and in the heatmap, hidden blocks
+    /// included; `sources` are the providers with daily data, in registry order.
+    public func heatmapLayers(sources: [ProviderID], on: Set<BlockID>) -> [BlockID] {
+        arranged(registered: sources).filter { $0 != .heatmap && on.contains($0) && !outOfHeatmap.contains($0) }
+    }
+
     /// What must run (FR-46): a provider's activity while its section or its layer shows, GitHub while its block or
     /// layer shows or the menu bar uses it. Limits need no demand: they run while their provider is on, because
     /// notifications use them.
