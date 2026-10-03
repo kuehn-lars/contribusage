@@ -25,4 +25,5 @@ No onboarding: FR-37 and T-5.4 are struck. Each step is already covered where it
 ## Consequences
 - US-6 no longer offers launch at login on first run; it stays off until the user turns it on in Settings.
 - The §16.5 "fresh macOS user" check relies on the popover's not configured states instead of an onboarding text.
+- The not configured and error texts are the app's, worded once with the provider's display name; no provider supplies its own ([[decisions/0031-string-catalogs]]).
 - Revisit if the popover's states turn out not to explain a first run, for example once a provider needs a setup step the popover cannot offer.

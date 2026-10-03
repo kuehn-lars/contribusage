@@ -14,11 +14,16 @@ private func window(percent: Double = 23, belowOne: Bool = false, resetsIn secon
 }
 
 @Test func percentTextIsUnknownOnceTheWindowHasReset() {
-    #expect(window(resetsIn: 60).percentText(at: now) == "23%")
-    #expect(window(percent: 0, belowOne: true, resetsIn: 60).percentText(at: now) == "<1%")
-    #expect(window(resetsIn: nil).percentText(at: now) == "23%")
-    #expect(window(resetsIn: 0).percentText(at: now) == "–")
+    #expect(window(resetsIn: 60).percentText(at: now, locale: enUS) == "23%")
+    #expect(window(percent: 0, belowOne: true, resetsIn: 60).percentText(at: now, locale: enUS) == "<1%")
+    #expect(window(resetsIn: nil).percentText(at: now, locale: enUS) == "23%")
+    #expect(window(resetsIn: 0).percentText(at: now, locale: enUS) == "–")
     #expect(window(resetsIn: -60).isReset(at: now))
+}
+
+/// NFR-10: the number follows the locale ("23 %" in German, with a no-break space).
+@Test func percentTextFollowsTheLocale() {
+    #expect(window(resetsIn: 60).percentText(at: now, locale: Locale(identifier: "de_DE")) == "23\u{a0}%")
 }
 
 @Test func resetTextFollowsTheFormattingRules() {

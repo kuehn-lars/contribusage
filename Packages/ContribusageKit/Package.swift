@@ -3,6 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "ContribusageKit",
+    // English first; user facing strings live in String Catalogs (NFR-10).
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "ContribusageCore", targets: ["ContribusageCore"]),

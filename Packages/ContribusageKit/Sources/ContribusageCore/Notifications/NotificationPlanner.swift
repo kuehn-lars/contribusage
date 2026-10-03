@@ -57,7 +57,7 @@ public enum NotificationPlanner {
                     notes.append(
                         Note(
                             report.provider, window.label, ended.resetsAt,
-                            title: "\(displayName): \(window.label) has reset"))
+                            title: String(localized: "\(displayName): \(window.label) has reset", bundle: .module)))
                 }
                 cycle = nil
             }
@@ -66,7 +66,8 @@ public enum NotificationPlanner {
             cycles[window.label] = cycle
             notes += crossed.map {
                 Note(
-                    report.provider, window.label, window.resetsAt, title: "\(displayName): \(window.label) at \($0) %")
+                    report.provider, window.label, window.resetsAt,
+                    title: String(localized: "\(displayName): \(window.label) at \($0) %", bundle: .module))
             }
         }
         sent[report.provider] = cycles.isEmpty ? nil : cycles

@@ -32,7 +32,7 @@ private struct ProviderSection: View {
                 isOn: Binding(get: { enabled }, set: { on in Task { await appState.setEnabled(descriptor.id, on) } })
             ) {
                 Label(descriptor.displayName, systemImage: descriptor.symbolName)
-                Text(availability.map(Self.text) ?? "Checking…")
+                Text(availability.map(Self.text) ?? String(localized: "Checking…"))
             }
             if let claudeCode = provider as? ClaudeCodeProvider {
                 ClaudeCodeRows(provider: claudeCode, descriptor: descriptor)
@@ -67,9 +67,9 @@ private struct ProviderSection: View {
 
     private static func text(_ availability: ProviderAvailability) -> String {
         switch availability {
-        case .available: "Available"
-        case .notInstalled: "Not installed"
-        case .notSignedIn: "Not signed in"
+        case .available: String(localized: "Available")
+        case .notInstalled: String(localized: "Not installed")
+        case .notSignedIn: String(localized: "Not signed in")
         case .unsupportedPlan(let note): note
         case .unknown(let reason): reason
         }
@@ -105,7 +105,7 @@ private struct ClaudeCodeRows: View {
             }
         } label: {
             Text("Override")
-            Text(pathOverride ?? "None")
+            Text(pathOverride ?? String(localized: "None"))
             if let testResult { Text(testResult) }
         }
         .fileImporter(isPresented: $choosingPath, allowedContentTypes: [.item]) { result in
@@ -132,26 +132,27 @@ private struct ClaudeCodeRows: View {
 
     /// The provider locates again when the override changed; an override that fails `--version` falls through (FR-6).
     private func test() {
-        testResult = "Testing…"
+        testResult = String(localized: "Testing…")
         Task {
             let claude = await provider.located()
             lookup = Lookup(claude)
             testResult =
                 switch claude {
                 case let claude? where claude.executable.path(percentEncoded: false) == pathOverride:
-                    "Works: \(claude.version)"
-                case let claude?: "Doesn't run; using \(claude.executable.path(percentEncoded: false))"
-                case nil: "Doesn't run, and no other claude was found"
+                    String(localized: "Works: \(claude.version)")
+                case let claude?:
+                    String(localized: "Doesn't run; using \(claude.executable.path(percentEncoded: false))")
+                case nil: String(localized: "Doesn't run, and no other claude was found")
                 }
         }
     }
 
     private static func text(_ kind: ClaudeLocator.ExecutableKind) -> String {
         switch kind {
-        case .machOArm64: "Apple silicon"
-        case .machOIntel: "Intel, needs Rosetta"
-        case .script: "Script"
-        case .unknown: "Unknown type"
+        case .machOArm64: String(localized: "Apple silicon")
+        case .machOIntel: String(localized: "Intel, needs Rosetta")
+        case .script: String(localized: "Script")
+        case .unknown: String(localized: "Unknown type")
         }
     }
 }

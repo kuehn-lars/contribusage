@@ -256,3 +256,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - Wake plus 10 s is an extra trigger in `Schedule.nextRun`, as SPEC §12's table lists it; rule 8 names it.
 - A source marked offline runs on reconnect within its `manualFloor`; offline no longer replaces a rate limit, so its reset still holds (rule 2).
 - The coordinator logs each next pass with Low Power Mode for the §16.5 check.
+
+## [2026-10-03] feat | Accessibility and localization pass (T-5.7)
+- String Catalogs in the app and the core, English and German (an English-only app formats as `en_<region>`), checked by a CI sync step (ADR-031); percents follow the locale.
+- VoiceOver: §11.7 chart summary, header traits; provider groups scroll only when they overflow, since VoiceOver stopped at the scroll area.
+- Popover keeps the system's Liquid Glass; heatmap in system green at 40 to 100 %; footer shows icons with tooltips (SPEC §11.2).

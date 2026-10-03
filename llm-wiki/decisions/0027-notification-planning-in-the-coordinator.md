@@ -30,4 +30,5 @@ The limits job's `fetch` runs the planner after every fetch, so a restored snaps
 - Pushed limits (the status line bridge, T-6.2) are not planned yet; that task routes them through the same `notify`.
 - "Reset caches" keeps the keys, so the refetch after it cannot repeat a notification ([[decisions/0028-settings-scope-and-wiring]]).
 - A run on wake or reconnect (T-5.6) plans its report like any fetch; the keys keep it from repeating a note.
+- Titles are looked up in the core's String Catalog; the window label inside them is the tool's text ([[decisions/0031-string-catalogs]]).
 - Revisit if a provider's reset time is not stable within a cycle.

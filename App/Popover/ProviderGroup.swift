@@ -24,7 +24,7 @@ struct ProviderGroup: View {
             if let activity = group.activity {
                 SectionStateView(
                     state: activity, displayName: descriptor.displayName, placeholder: .placeholder(descriptor.id),
-                    content: { ActivitySection(report: $0, categories: descriptor.tokenCategories) })
+                    content: { ActivitySection(report: $0, descriptor: descriptor) })
             }
             if showInsights, let insights = group.insights {
                 InsightsSection(insights: insights)
@@ -72,8 +72,12 @@ struct LimitsSection: View {
 
     /// SPEC §11.7: "Claude Code, Current session, 23 percent used, resets in 2 hours 10 minutes".
     private func accessibilityLabel(_ window: UsageWindow, reset: Bool) -> String {
-        let used =
-            reset ? nil : window.isBelowOne ? "less than 1 percent used" : "\(Int(window.usedPercent)) percent used"
+        let used: String? =
+            if reset { nil } else if window.isBelowOne {
+                String(localized: "less than 1 percent used")
+            } else {
+                String(localized: "\(Int(window.usedPercent)) percent used")
+            }
         return [providerName, window.label, used, window.resetText(at: now, width: .wide)].compactMap(\.self)
             .joined(separator: ", ")
     }
@@ -114,7 +118,7 @@ struct InsightsSection: View {
     private func row(_ share: Insights.Share) -> some View {
         GridRow {
             Text(share.label).lineLimit(1).truncationMode(.middle).frame(maxWidth: .infinity, alignment: .leading)
-            Text(share.percent.map { "\($0)%" } ?? "").monospacedDigit().foregroundStyle(.secondary)
+            Text(share.percent?.formatted(.percent) ?? "").monospacedDigit().foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
     }
@@ -129,7 +133,7 @@ extension Insights.Ranking {
 /// (SPEC §10.4).
 struct ActivitySection: View {
     let report: ActivityReport
-    let categories: Set<TokenCategory>
+    let descriptor: ProviderDescriptor
     @Environment(\.now) private var now
 
     var body: some View {
@@ -137,19 +141,21 @@ struct ActivitySection: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("On this Mac").font(.subheadline).foregroundStyle(.secondary)
             Text(figures.todayText)
-            Text(figures.categoriesText(categories)).font(.caption).foregroundStyle(.secondary)
+            Text(figures.categoriesText(descriptor.tokenCategories)).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)  // wraps; the menu bar window proposes too little height
             HStack(alignment: .bottom) {
                 Chart(figures.week, id: \.day) {
-                    BarMark(x: .value("Day", $0.day, unit: .day), y: .value("Tokens", $0.tokens))
+                    // Today in full, the days before muted.
+                    BarMark(x: .value("Day", $0.day, unit: .day), y: .value("Tokens", $0.tokens), width: .ratio(0.6))
+                        .foregroundStyle(Color.accentColor.opacity($0.day == figures.week.last?.day ? 1 : 0.45))
+                        .cornerRadius(2)
                 }
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
                 .frame(height: 32)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Tokens, last 7 days")
-                .accessibilityValue(
-                    figures.week.map { "\($0.day.formatted(.dateTime.weekday(.wide))): \(Figures.compact($0.tokens))" }
-                        .joined(separator: ", "))
+                .accessibilityLabel("\(descriptor.displayName) tokens per day, last 7 days")
+                .accessibilityValue(figures.weekSummary)
                 Text("last 7 days").font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -174,13 +180,27 @@ struct ActivitySection: View {
         }
 
         var todayText: String {
-            "Today: \(today.requests) requests · \(today.sessions) sessions · \(Self.compact(today.tokens.total))"
+            String(
+                localized:
+                    "Today: \(today.requests) requests · \(today.sessions) sessions · \(Self.compact(today.tokens.total))"
+            )
+        }
+
+        /// SPEC §11.7: "highest Thursday with 5.1M", then every day.
+        var weekSummary: String {
+            func weekday(_ day: Date) -> String { day.formatted(.dateTime.weekday(.wide)) }
+            guard let highest = week.max(by: { $0.tokens < $1.tokens }), highest.tokens > 0 else {
+                return String(localized: "no tokens")
+            }
+            let days = week.map { "\(weekday($0.day)) \(Self.compact($0.tokens))" }.joined(separator: ", ")
+            return String(localized: "highest \(weekday(highest.day)) with \(Self.compact(highest.tokens)). \(days)")
         }
 
         func categoriesText(_ categories: Set<TokenCategory>) -> String {
             let shown: [(category: TokenCategory, label: String, count: KeyPath<TokenCounts, Int>)] = [
-                (.input, "Input", \.input), (.output, "Output", \.output), (.cacheRead, "Cache read", \.cacheRead),
-                (.cacheWrite, "Cache write", \.cacheWrite),
+                (.input, String(localized: "Input"), \.input), (.output, String(localized: "Output"), \.output),
+                (.cacheRead, String(localized: "Cache read"), \.cacheRead),
+                (.cacheWrite, String(localized: "Cache write"), \.cacheWrite),
             ]
             return shown.filter { categories.contains($0.category) }
                 .map { "\($0.label) \(Self.compact(today.tokens[keyPath: $0.count]))" }.joined(separator: " · ")

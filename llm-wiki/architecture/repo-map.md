@@ -12,14 +12,14 @@ Every top-level entry of the repository and of the vault, and what it is for. `w
 ```text
 contribusage/
 ├── .claude/settings.json   Claude Code hooks that run the wiki protocol
-├── .github/workflows/      CI: package tests (warnings as errors), app build, architecture checks, wiki lint
+├── .github/workflows/      CI: package tests (warnings as errors), app build, architecture checks, String Catalog sync check, wiki lint
 ├── .gitignore
 ├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules
-├── App/                    the app target: AppState and its live wiring, AppState+Copy (the copied statistics and diagnostics texts), ProviderRegistration (each provider with its live seams), SystemConditions, Popover/ (sections, the shared state views and buttons, mock data), Settings/ (the Settings scene: General (launch at login, notifications) and Advanced (data folder, caches, diagnostics) in `SettingsView`, `ProvidersTab`, `GitHubTab`), Notifications/ (delivery, which asks for permission on the first note); a folder synchronised with Xcode
+├── App/                    the app target: AppState and its live wiring, AppState+Copy (the copied statistics and diagnostics texts), ProviderRegistration (each provider with its live seams), SystemConditions, Popover/ (sections, the shared state views and buttons, mock data), Settings/ (the Settings scene: General (launch at login, notifications) and Advanced (data folder, caches, diagnostics) in `SettingsView`, `ProvidersTab`, `GitHubTab`), Notifications/ (delivery, which asks for permission on the first note), Resources/ (the app's String Catalog, ADR-031); a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
-├── Packages/               ContribusageKit: every target but the app; fixtures in a test target's `Fixtures/` (SPEC §16.2; so far Claude Code and GitHub)
+├── Packages/               ContribusageKit: every target but the app; fixtures in a test target's `Fixtures/` (SPEC §16.2; so far Claude Code and GitHub); the core's String Catalog in its `Resources/`
 ├── README.md
 ├── SPEC.md                 the contract: requirements, tasks, research items
 └── llm-wiki/               the memory: this Obsidian vault

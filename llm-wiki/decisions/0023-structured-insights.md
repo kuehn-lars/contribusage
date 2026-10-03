@@ -27,4 +27,5 @@ FR-38 showed the `/usage` "What's contributing" block verbatim in a disclosure g
 - `state.json` moves to schema version 2; an older cache is discarded once, as SPEC §10.7 prescribes for unknown versions.
 - A changed CLI wording degrades to unlabelled lines rather than a missing section; `rawOutput` still holds the verbatim text.
 - Settings' Advanced tab hides the area with `showInsights` (on by default, [[decisions/0028-settings-scope-and-wiring]]).
+- Labels, summaries and ranking titles are the CLI's text and stay untranslated; only the percents follow the locale ([[decisions/0031-string-catalogs]]).
 - Revisit when the CLI changes the block's shape, or when a second provider's insights do not fit periods.

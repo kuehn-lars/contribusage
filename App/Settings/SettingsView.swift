@@ -77,7 +77,7 @@ private struct GeneralTab: View {
                 try on ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
                 loginError = nil
             } catch {
-                loginError = "Couldn't change launch at login: \(error.localizedDescription)"
+                loginError = String(localized: "Couldn't change launch at login: \(error.localizedDescription)")
             }
             loginStatus = SMAppService.mainApp.status
         }
