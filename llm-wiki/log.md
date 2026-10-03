@@ -344,3 +344,4 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] feat | T-5.12 pushed limits and the debug fake provider
 - `RefreshCoordinator` consumes every enabled provider's `pushedUpdates()`: a push is a success with origin `push`, persisted, planned and shown (SPEC §12 rule 9).
 - `App/DebugFakeProvider.swift` under `CONTRIBUSAGE_FAKE_PROVIDER` registers US-11's second provider ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
+- Checked by hand in the flagged Debug build (SPEC §16.5 row); T-5.12 ticked.
