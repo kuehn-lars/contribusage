@@ -30,6 +30,7 @@ tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoo
 The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the default [[decisions/0021-stats-calendar-parameter]] named; R-4 no longer blocks T-3.6.
 
 ## Consequences
+- A GitHub menu bar mode (T-5.10) keeps GitHub wanted through `Demand.github` (FR-46), whatever the popover shows.
 - R-4 changes one argument in `AppState.live`, not the coordinator.
 - `GitHubReport.staleAfter` became `GitHubReport.policy.staleAfter`.
 - `ContributionCalendar` keeps GitHub's `weeks` (SPEC §10.5), so the heatmap's columns are `weeks.suffix(26)` with no weekday arithmetic; `days` is derived.

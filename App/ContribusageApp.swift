@@ -10,10 +10,27 @@ struct ContribusageApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("contribusage", systemImage: "gauge.with.dots.needle.33percent") {
+        MenuBarExtra {
             PopoverView().environment(appState)
+        } label: {
+            MenuBarItem().environment(appState)
         }
         .menuBarExtraStyle(.window)
         Settings { SettingsView().environment(appState) }
+    }
+}
+
+/// SPEC §11.1: a template symbol and the text of the chosen mode, re-read every minute for staleness and resets.
+private struct MenuBarItem: View {
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            let label = appState.menuBarLabel(at: context.date)
+            HStack(spacing: 4) {
+                Image(systemName: label.symbol)
+                if !label.text.isEmpty { Text(label.text).monospacedDigit() }
+            }
+        }
     }
 }

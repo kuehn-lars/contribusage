@@ -386,6 +386,26 @@
         }
       }
     },
+    "Current session" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuelle Sitzung"
+          }
+        }
+      }
+    },
+    "Current session and GitHub" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuelle Sitzung und GitHub"
+          }
+        }
+      }
+    },
     "Data" : {
       "localizations" : {
         "de" : {
@@ -529,6 +549,16 @@
     "GitHub" : {
       "shouldTranslate" : false
     },
+    "GitHub contributions today" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub-Beiträge heute"
+          }
+        }
+      }
+    },
     "Heatmap" : {
       "localizations" : {
         "de" : {
@@ -559,12 +589,32 @@
         }
       }
     },
+    "Highest limit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchstes Limit"
+          }
+        }
+      }
+    },
     "History and caches" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verlauf und Caches"
+          }
+        }
+      }
+    },
+    "Icon only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Symbol"
           }
         }
       }
@@ -655,6 +705,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suchen …"
+          }
+        }
+      }
+    },
+    "Menu bar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menüleiste"
           }
         }
       }
@@ -899,6 +959,16 @@
         }
       }
     },
+    "Provider" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbieter"
+          }
+        }
+      }
+    },
     "Providers" : {
       "localizations" : {
         "de" : {
@@ -1005,6 +1075,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einstellungen"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzeigen"
           }
         }
       }
@@ -1309,6 +1389,16 @@
         }
       }
     },
+    "Weekly limit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wöchentliches Limit"
+          }
+        }
+      }
+    },
     "While off, GitHub gets no requests; the token stays saved." : {
       "localizations" : {
         "de" : {
@@ -1330,9 +1420,6 @@
       }
     },
     "claude" : {
-      "shouldTranslate" : false
-    },
-    "contribusage" : {
       "shouldTranslate" : false
     },
     "github_pat_…" : {

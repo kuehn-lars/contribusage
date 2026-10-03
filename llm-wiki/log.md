@@ -310,3 +310,12 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] fix | Heatmap test no longer reads a catalog plural
 - CI's SwiftPM leaves the core's String Catalog uncompiled, so "1 contribution" read "1 contributions"; the assertion is dropped, the catalog step covers the key.
+
+## [2026-10-03] feat | Menu bar label and its settings (T-5.10)
+- Core `MenuBarMode` and `MenuBarLabel`: modes, fallbacks, stale `~`, gauge variants, stable width ([[modules/core]]).
+- App `MenuBarItem`, `AppState.menuBarLabel(at:)`, Settings' Menu bar section; a GitHub mode puts GitHub in the demand ([[modules/app]]).
+- SPEC: US-1 stale wording, FR-12 not-offered mode, §11.1 GitHub mode text.
+
+## [2026-10-03] refactor | Menu bar label review
+- `MenuBarMode.usesProviders`/`usesGitHub` replace the mode lists in `offered` and the app's demand; one `limits(_:)` path for every limits mode, no recursive init.
+- The menu bar provider fallback lives once, in `AppState.shownMenuBarProvider` ([[modules/app]], [[modules/core]]).

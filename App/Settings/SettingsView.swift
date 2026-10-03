@@ -3,7 +3,7 @@ import ContribusageGitHub
 import ServiceManagement
 import SwiftUI
 
-/// SPEC §11.6. The menu bar settings (T-5.10) and the status line bridge (T-6.2) join their tabs with their tasks.
+/// SPEC §11.6. The status line bridge (T-6.2) joins its tab with its task.
 struct SettingsView: View {
     /// Shared with `SettingsButton`, which opens a given tab.
     @AppStorage("settingsTab") private var tab = SettingsTab.general
@@ -24,8 +24,9 @@ enum SettingsTab: String {
     case general, popover, providers, github, advanced
 }
 
-/// FR-13, FR-14, FR-34.
+/// FR-12, FR-13, FR-14, FR-34.
 private struct GeneralTab: View {
+    @Environment(AppState.self) private var appState
     /// Read from `SMAppService`, never stored (SPEC §10.7); re-read on activation, since System Settings can change it.
     @State private var loginStatus = SMAppService.mainApp.status
     @State private var loginError: String?
@@ -36,6 +37,16 @@ private struct GeneralTab: View {
 
     var body: some View {
         Form {
+            Section("Menu bar") {
+                Picker("Show", selection: menuBarMode) {
+                    ForEach(appState.menuBarModes, id: \.self) { Text($0.title).tag($0) }
+                }
+                if appState.providers.count > 1 {
+                    Picker("Provider", selection: menuBarProvider) {
+                        ForEach(appState.menuBarProviders) { Text($0.descriptor.displayName).tag(Optional($0.id)) }
+                    }
+                }
+            }
             Section {
                 Toggle("Launch at login", isOn: launchAtLogin)
                 if loginStatus == .requiresApproval {
@@ -69,6 +80,24 @@ private struct GeneralTab: View {
         }
     }
 
+    /// A saved mode that is not offered shows as the one the label falls back to (FR-12).
+    private var menuBarMode: Binding<MenuBarMode> {
+        Binding {
+            appState.resolvedMenuBarMode
+        } set: {
+            appState.menuBarMode = $0
+        }
+    }
+
+    /// Shows the provider the label uses (FR-12).
+    private var menuBarProvider: Binding<ProviderID?> {
+        Binding {
+            appState.shownMenuBarProvider
+        } set: {
+            appState.menuBarProvider = $0
+        }
+    }
+
     /// On while registered, including while it waits for approval. After a failed call it shows the real status.
     private var launchAtLogin: Binding<Bool> {
         Binding {
@@ -81,6 +110,19 @@ private struct GeneralTab: View {
                 loginError = String(localized: "Couldn't change launch at login: \(error.localizedDescription)")
             }
             loginStatus = SMAppService.mainApp.status
+        }
+    }
+}
+
+extension MenuBarMode {
+    fileprivate var title: LocalizedStringKey {
+        switch self {
+        case .primary: "Current session"
+        case .weekly: "Weekly limit"
+        case .highest: "Highest limit"
+        case .githubToday: "GitHub contributions today"
+        case .primaryAndGitHub: "Current session and GitHub"
+        case .iconOnly: "Icon only"
         }
     }
 }

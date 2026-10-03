@@ -38,6 +38,17 @@ import Observation
             applyDemand()
         }
     }
+    /// FR-12: saved under `menuBarMode`; the label shows `resolvedMenuBarMode`. A GitHub mode makes GitHub fetch (FR-46).
+    var menuBarMode = UserDefaults.standard.string(forKey: "menuBarMode").flatMap(MenuBarMode.init) ?? .primary {
+        didSet {
+            UserDefaults.standard.set(menuBarMode.rawValue, forKey: "menuBarMode")
+            applyDemand()
+        }
+    }
+    /// FR-12: saved under `menuBarProvider`; `shownMenuBarProvider` is the one in use.
+    var menuBarProvider = UserDefaults.standard.string(forKey: "menuBarProvider").map(ProviderID.init) {
+        didSet { UserDefaults.standard.set(menuBarProvider?.rawValue, forKey: "menuBarProvider") }
+    }
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private(set) var registry: ProviderRegistry?
     /// `nil` in previews.
@@ -80,6 +91,34 @@ import Observation
 
     /// FR-47: whether a block's source is on.
     func isOn(_ block: BlockID) -> Bool { layout.isOn(block, on: on) }
+
+    /// FR-12: the enabled providers with limits, in registry order.
+    var menuBarProviders: [ProviderGroupState] {
+        providers.filter { enabledIDs.contains($0.id) && $0.limits != nil }
+    }
+
+    /// FR-12: the modes Settings offers, those whose source is on.
+    var menuBarModes: [MenuBarMode] {
+        MenuBarMode.offered(providers: !menuBarProviders.isEmpty, github: gitHubEnabled)
+    }
+
+    var resolvedMenuBarMode: MenuBarMode { menuBarMode.resolved(among: menuBarModes) }
+
+    /// FR-12: the saved menu bar provider while it is on, else the first enabled one.
+    var shownMenuBarProvider: ProviderID? {
+        let ids = menuBarProviders.map(\.id)
+        return ids.first { $0 == menuBarProvider } ?? ids.first
+    }
+
+    /// SPEC §11.1; hiding a section changes nothing here (FR-46).
+    func menuBarLabel(at now: Date) -> MenuBarLabel {
+        let github = github.snapshot.map {
+            (today: $0.value.stats.today, isStale: $0.isStale(at: now, after: GitHubReport.policy.staleAfter))
+        }
+        return MenuBarLabel(
+            mode: resolvedMenuBarMode, provider: shownMenuBarProvider,
+            providers: menuBarProviders.map { ($0.descriptor, $0.limits?.snapshot) }, github: github, at: now)
+    }
 
     /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
     static func live() -> AppState {
@@ -170,7 +209,6 @@ import Observation
     }
 
     /// The sources that are on: the enabled providers and GitHub while switched on (FR-2, FR-43).
-    // ponytail: the menu bar uses nothing until T-5.10 adds the modes.
     private var on: Set<BlockID> {
         Set(enabledIDs.map(BlockID.provider)).union(gitHubEnabled ? [.github] : [])
     }
@@ -178,7 +216,7 @@ import Observation
     /// FR-46: activity is watched as long as a task consumes its stream (ADR-016); applying the same demand twice
     /// changes nothing.
     private func applyDemand() {
-        let demand = layout.demand(on: on, menuBar: [])
+        let demand = layout.demand(on: on, menuBar: resolvedMenuBarMode.usesGitHub ? [.github] : [])
         for (id, activity) in activities where !demand.activity.contains(id) {
             activity.watch.cancel()
             activities[id] = nil

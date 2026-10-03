@@ -180,7 +180,7 @@ Priorities: **P1** = MVP (Milestones M1 and M2), **P2** = v1.0, **P3** = later /
 
 - **Given** Claude Code is installed and logged in with a subscription, **when** the app has completed a probe, **then** the menu bar shows the primary window's percentage (default: the Claude Code window of kind `session`, "Current session"), for example `23%`.
 - **Given** no probe has succeeded yet, **then** the menu bar shows the icon with `?` and the popover explains why.
-- **Given** the last successful probe is older than the staleness threshold, **then** the value is shown dimmed and the popover says "updated 42 min ago".
+- **Given** the last successful probe is older than the staleness threshold, **then** the menu bar marks the value stale (`~23%`, 11.1), the popover dims it and says "updated 42 min ago".
 
 The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar shows a static icon and the popover carries US-1.
 
@@ -295,7 +295,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-12 | P2 | **Menu bar label.** Display modes: `primary` (default: the `session` window of the menu bar provider), `weekly` (the first `weekly` window of the menu bar provider), `highest` (the window with the highest percentage across all enabled providers), `githubToday`, `primaryAndGitHub`, `iconOnly`. The menu bar provider is a setting; it defaults to the first available provider and is hidden in Settings while only one provider exists. If the chosen window is missing, fall back to `highest`, then to `?`. Settings offers only the modes whose source is on (FR-2, FR-43); with every source off the label is `iconOnly`. Hiding a section does not change the label (FR-46). |
+| FR-12 | P2 | **Menu bar label.** Display modes: `primary` (default: the `session` window of the menu bar provider), `weekly` (the first `weekly` window of the menu bar provider), `highest` (the window with the highest percentage across all enabled providers), `githubToday`, `primaryAndGitHub`, `iconOnly`. The menu bar provider is a setting; it defaults to the first available provider and is hidden in Settings while only one provider exists. If the chosen window is missing, fall back to `highest`, then to `?`. Settings offers only the modes whose source is on (FR-2, FR-43); a saved mode that is not offered shows the first one that is, so with every source off the label is `iconOnly`. Hiding a section does not change the label (FR-46). |
 
 ### 5.4 Notifications
 
@@ -1078,7 +1078,8 @@ public struct HeatmapLayer: Sendable, Equatable {
 - Monochrome template rendering (system handles light/dark and highlight).
 - Content by mode (FR-12), for example `primary`: SF Symbol `gauge.with.dots.needle.33percent` (variant chosen by nearest of 0/33/50/67/100 %) plus `23%`.
 - Stale value: prefixed with `~` (`~23%`). Unknown: `?`. At 90 % or more the symbol switches to `exclamationmark.gauge` or a similar filled warning variant (pick an existing SF Symbol, verify availability for macOS 14).
-- With more than one enabled provider and mode `highest`, the provider's symbol replaces the gauge symbol.
+- With more than one enabled provider and mode `highest` (or a fallback to it), the provider's symbol replaces the gauge symbol.
+- `githubToday`: the GitHub symbol and today's count (`7`); `primaryAndGitHub`: the primary label followed by ` · 7`. GitHub without data yet reads `?`.
 - Width stays stable: reserve space for three digits and `%` using monospaced digits.
 
 ### 11.2 Popover (width 360 pt)
@@ -1594,7 +1595,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)* String Catalogs in the app and the core, English and German, with a CI sync check (ADR-031); provider groups scroll only when they overflow, so VoiceOver reaches them directly; the popover keeps the system's Liquid Glass, the heatmap uses system green in four steps (11.4), the footer shows icons with tooltips; heatmap keyboard and VoiceOver stay with T-5.11; VoiceOver, keyboard and appearance are checked with the 16.5 matrix.
 - [x] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)* Done 2026-10-03 on an M3 as the stand-in (ADR-026): Release build with the popover closed and no transcript writes, 0.07 % CPU over 7.7 min; with a Claude Code session writing transcripts, 0.2 %; footprint 43 to 47 MB; 3 idle wakeups per minute; NFR-3, NFR-4 and NFR-14 checked in code. Method and results in `llm-wiki/research/t-5-8-performance-energy.md`.
 - [ ] ~~**T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end.~~ Moved to T-5.12.
-- [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.13 and T-5.14 for offering only the modes of sources that are on; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
+- [x] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.13 and T-5.14 for offering only the modes of sources that are on; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028). Done 2026-10-03: `MenuBarMode` and `MenuBarLabel` in the core, the label and the General tab's Menu bar section in the app.
 - [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver on the shared heatmap, in both styles, reading the FR-49 line; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, FR-49, NFR-8)* Depends: T-5.16.
 - [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
 - [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
