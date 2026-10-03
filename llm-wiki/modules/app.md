@@ -27,6 +27,8 @@ Popover layout wiring (T-5.13, FR-44 to FR-46): `AppState.layout` is the core's 
 
 GitHub switch (T-5.14, FR-43): `AppState.gitHubEnabled`, saved under the `githubEnabled` default (unset: on), puts `.github` into the `on` set; its `didSet` applies the demand, so switching off stops the GitHub job through `setGitHubWanted(false)` and keeps the token. The GitHub tab's first row is the switch, and the popover drops the GitHub section while it is off. Copy statistics still include GitHub until they follow the layout (T-5.15).
 
+Tool texts ([[decisions/0033-provider-tool-texts]]): `LimitsSection` takes the provider's descriptor and shows `descriptor.toolText(window.label)` in the row and its VoiceOver label; `InsightsSection` takes the descriptor too, whose `toolText` serves the period picker, the summary and the note (tooltip and VoiceOver hint); Copy statistics do the same. The printed texts stay the `ForEach` ids and the picked period.
+
 ## Things that bite
 - An app localized only in English runs as `en_<region>`: a German Mac gets German number and time conventions but English weekdays and units. German words in dates need the German localization, not a different `Locale`.
 - After a localization is added, an incremental build can keep a stale copy of the package's resource bundle inside the app (no `de.lproj`); delete the built `.app` and build again.

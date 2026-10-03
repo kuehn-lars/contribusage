@@ -23,7 +23,9 @@ private func titles(
     _ report: LimitsReport, _ sent: inout NotificationPlanner.Sent,
     settings: NotificationPlanner.Settings = .init(), at time: Date = now
 ) -> [String] {
-    NotificationPlanner.plan(report, displayName: "Claude Code", settings: settings, sent: &sent, now: time).map(
+    NotificationPlanner.plan(
+        report, displayName: "Claude Code", windowTitle: { $0 }, settings: settings, sent: &sent, now: time
+    ).map(
         \.title)
 }
 
@@ -42,7 +44,7 @@ private func titles(
 @Test func aJumpOverTwoThresholdsSendsBothUnderOneIdentifier() {
     var sent: NotificationPlanner.Sent = [:]
     let notes = NotificationPlanner.plan(
-        report(97), displayName: "Claude Code", settings: .init(), sent: &sent, now: now)
+        report(97), displayName: "Claude Code", windowTitle: { $0 }, settings: .init(), sent: &sent, now: now)
     #expect(notes.map(\.title) == ["Claude Code: Current session at 80 %", "Claude Code: Current session at 95 %"])
     #expect(Set(notes.map(\.id)).count == 1)
 }
@@ -86,4 +88,14 @@ private func titles(
 
     var passed: NotificationPlanner.Sent = [:]
     #expect(titles(report(85, resetsAt: now), &passed).isEmpty)
+}
+
+/// NFR-10: the title shows the provider's window title; the cycle stays keyed by the label as printed.
+@Test func titlesUseTheWindowTitleAndKeysTheLabel() {
+    var sent: NotificationPlanner.Sent = [:]
+    let notes = NotificationPlanner.plan(
+        report(80), displayName: "Claude Code", windowTitle: { $0 == "Current session" ? "Aktuelle Sitzung" : $0 },
+        settings: .init(), sent: &sent, now: now)
+    #expect(notes.map(\.title) == ["Claude Code: Aktuelle Sitzung at 80 %"])
+    #expect(sent[a]?.keys.first == "Current session")
 }

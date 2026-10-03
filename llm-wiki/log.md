@@ -284,3 +284,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] feat | GitHub on/off switch (T-5.14)
 - `githubEnabled` setting (SPEC §10.7) feeds the sources that are on; off stops the GitHub job and hides its section, the token stays.
+
+## [2026-10-03] feat | Claude Code tool texts in German (ADR-033)
+- `ProviderDescriptor.toolText` translates window labels, insights periods, counts and note at display time; the printed text stays the key ([[decisions/0033-provider-tool-texts]]).

@@ -26,3 +26,4 @@ SPEC §10.2 sketched `ActivitySource` with `start()`, `stop()`, `rescan()` and `
 - The conformance check "`stop()` releases all file watching" became "cancelling the consumer of `reports()` releases all file watching" (SPEC §16.4).
 - Disabling a provider (FR-2) is cancelling the task that consumes its stream.
 - Revisit if a source needs to keep state across a pause that a re-subscription cannot rebuild cheaply.
+- `Provider.swift` also gained `ProviderDescriptor.toolText` ([[decisions/0033-provider-tool-texts]]); the activity contract is unchanged.
