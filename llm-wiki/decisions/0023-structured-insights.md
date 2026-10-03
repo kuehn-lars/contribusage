@@ -26,7 +26,7 @@ FR-38 showed the `/usage` "What's contributing" block verbatim in a disclosure g
 ## Consequences
 - `state.json` moves to schema version 2; an older cache is discarded once, as SPEC §10.7 prescribes for unknown versions.
 - A changed CLI wording degrades to unlabelled lines rather than a missing section; `rawOutput` still holds the verbatim text.
-- Settings' Advanced tab hides the area with `showInsights` (on by default, [[decisions/0028-settings-scope-and-wiring]]).
+- The Popover tab hides the area per provider (FR-44) and can move it within the group ([[decisions/0034-reorderable-sections]]); the earlier Advanced `showInsights` toggle went with T-5.15 ([[decisions/0028-settings-scope-and-wiring]]).
 - Labels, summaries and ranking titles are the CLI's text and stay untranslated; only the percents follow the locale ([[decisions/0031-string-catalogs]]).
 - Revisit when the CLI changes the block's shape, or when a second provider's insights do not fit periods.
 - Insights stay as printed; only window labels are translated ([[decisions/0033-provider-tool-texts]]).

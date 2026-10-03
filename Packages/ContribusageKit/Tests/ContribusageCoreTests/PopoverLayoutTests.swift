@@ -75,3 +75,52 @@ private let allOn: Set<BlockID> = [.provider(a), .provider(b), .github]
     #expect(layout.demand(on: [.github], menuBar: [.github]).github)
     #expect(!layout.demand(on: [], menuBar: [.github]).github)
 }
+
+/// FR-44, FR-45: the Popover tab lists every known block, hidden or off ones too; a block dropped on another takes its
+/// place, up or down, and the saved keys of providers that are not registered are kept.
+@Test func movingKeepsUnknownKeys() {
+    let unknown = ProviderID(rawValue: "gone")
+    var layout = PopoverLayout()
+    layout.order = [.provider(unknown), .github]
+    layout.hiddenBlocks = [.provider(a)]
+    #expect(layout.arranged(registered: [a]) == [.github, .provider(a), .heatmap])
+    layout.move(.heatmap, to: .github, registered: [a])
+    #expect(layout.order == [.heatmap, .github, .provider(a), .provider(unknown)])
+    layout.move(.github, to: .provider(a), registered: [a])
+    #expect(layout.order == [.heatmap, .provider(a), .github, .provider(unknown)])
+    #expect(layout.blocks(registered: [a], on: [.provider(a), .github]) == [.heatmap, .github])
+}
+
+/// FR-47: a block is on while its source is; the heatmap while one of its layers is.
+@Test func aBlockIsOnWithItsSource() {
+    var layout = PopoverLayout()
+    layout.outOfHeatmap = [.github]
+    #expect(layout.isOn(.github, on: [.github]))
+    #expect(!layout.isOn(.heatmap, on: [.github]))
+    #expect(layout.isOn(.heatmap, on: [.github, .provider(a)]))
+    #expect(!layout.isOn(.provider(a), on: [.github]))
+}
+
+/// FR-44: a section shows until hidden; showing every section again leaves no empty entry behind.
+@Test func sectionsShowUntilHidden() {
+    var layout = PopoverLayout()
+    #expect(layout[shows: .insights, of: a])
+    layout[shows: .insights, of: a] = false
+    #expect(!layout[shows: .insights, of: a] && layout[shows: .limits, of: a] && layout[shows: .insights, of: b])
+    layout[shows: .insights, of: a] = true
+    #expect(layout == PopoverLayout())
+    #expect(SectionKind.allCases.map(\.capability) == [.limits, .activity, .insights])
+}
+
+/// FR-44 (ADR-034): a provider's sections default to limits, activity, insights and move like blocks, per provider.
+@Test func sectionsMoveWithinTheirGroup() {
+    var layout = PopoverLayout()
+    #expect(layout.sections(of: a) == [.limits, .activity, .insights])
+    layout.move(.insights, to: .limits, of: a)
+    #expect(layout.sections(of: a) == [.insights, .limits, .activity])
+    layout.move(.insights, to: .activity, of: a)
+    #expect(layout.sections(of: a) == [.limits, .activity, .insights])
+    layout.move(.activity, to: .limits, of: a)
+    #expect(layout.sections(of: a) == [.activity, .limits, .insights])
+    #expect(layout.sections(of: b) == [.limits, .activity, .insights])
+}

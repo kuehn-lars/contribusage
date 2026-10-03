@@ -11,6 +11,7 @@ struct SettingsView: View {
     var body: some View {
         TabView(selection: $tab) {
             GeneralTab().tabItem { Label("General", systemImage: "gearshape") }.tag(SettingsTab.general)
+            PopoverTab().tabItem { Label("Popover", systemImage: "rectangle.3.group") }.tag(SettingsTab.popover)
             ProvidersTab().tabItem { Label("Providers", systemImage: "square.stack") }.tag(SettingsTab.providers)
             GitHubTab().tabItem { Label("GitHub", systemImage: "square.grid.3x3.fill") }.tag(SettingsTab.github)
             AdvancedTab().tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }.tag(SettingsTab.advanced)
@@ -20,7 +21,7 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String {
-    case general, providers, github, advanced
+    case general, popover, providers, github, advanced
 }
 
 /// FR-13, FR-14, FR-34.
@@ -86,11 +87,9 @@ private struct GeneralTab: View {
 
 private struct AdvancedTab: View {
     @Environment(AppState.self) private var appState
-    @AppStorage("showInsights") private var showInsights = true
 
     var body: some View {
         Form {
-            Toggle("Show insights", isOn: $showInsights)
             LabeledContent("Data folder") {
                 Button("Open") { NSWorkspace.shared.open(AppPaths.live.root) }
             }

@@ -186,6 +186,16 @@
         }
       }
     },
+    "Activity" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivität"
+          }
+        }
+      }
+    },
     "Advanced" : {
       "localizations" : {
         "de" : {
@@ -232,6 +242,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verfügbar"
+          }
+        }
+      }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blöcke"
           }
         }
       }
@@ -312,6 +332,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entfernen"
+          }
+        }
+      }
+    },
+    "Combined" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kombiniert"
           }
         }
       }
@@ -516,6 +546,16 @@
         }
       }
     },
+    "Drag to change the order." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehen, um die Reihenfolge zu ändern."
+          }
+        }
+      }
+    },
     "Exited with code %d" : {
       "localizations" : {
         "de" : {
@@ -549,12 +589,42 @@
     "GitHub" : {
       "shouldTranslate" : false
     },
+    "Heatmap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heatmap"
+          }
+        }
+      }
+    },
+    "Heatmap style" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heatmap-Stil"
+          }
+        }
+      }
+    },
     "History and caches" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verlauf und Caches"
+          }
+        }
+      }
+    },
+    "In heatmap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Heatmap"
           }
         }
       }
@@ -619,6 +689,16 @@
         }
       }
     },
+    "Limits" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limits"
+          }
+        }
+      }
+    },
     "Locate…" : {
       "localizations" : {
         "de" : {
@@ -645,6 +725,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kein %@-Token gespeichert"
+          }
+        }
+      }
+    },
+    "No source that is on is in the heatmap." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine eingeschaltete Quelle ist in der Heatmap."
           }
         }
       }
@@ -699,6 +789,16 @@
         }
       }
     },
+    "Nothing to show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts anzuzeigen"
+          }
+        }
+      }
+    },
     "Notifications" : {
       "localizations" : {
         "de" : {
@@ -729,6 +829,26 @@
         }
       }
     },
+    "Off: turn it on in Providers." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus: in „Anbieter“ einschalten."
+          }
+        }
+      }
+    },
+    "Off: turn it on in the GitHub tab." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus: im Bereich „GitHub“ einschalten."
+          }
+        }
+      }
+    },
     "Offline" : {
       "localizations" : {
         "de" : {
@@ -755,6 +875,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Öffnen"
+          }
+        }
+      }
+    },
+    "Open Settings…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen öffnen …"
           }
         }
       }
@@ -805,6 +935,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Persönliches Zugriffstoken"
+          }
+        }
+      }
+    },
+    "Popover" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Popover"
           }
         }
       }
@@ -919,16 +1059,6 @@
         }
       }
     },
-    "Show insights" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einblicke anzeigen"
-          }
-        }
-      }
-    },
     "Show raw output" : {
       "localizations" : {
         "de" : {
@@ -945,6 +1075,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bei %@ ist etwas schiefgelaufen"
+          }
+        }
+      }
+    },
+    "Stacked" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestapelt"
+          }
+        }
+      }
+    },
+    "Stacked reads better from three layers on." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ab drei Ebenen ist „Gestapelt“ besser lesbar."
           }
         }
       }

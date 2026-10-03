@@ -164,7 +164,7 @@ Before any code for a new AI coding tool is written, all of the following must b
 | **Popover** | The window that opens when clicking the menu bar item (`MenuBarExtra` with `.window` style). |
 | **Source** | Something that fetches data and can be switched on or off: each provider (FR-2) and GitHub (FR-43). Nothing runs for a source that is off. |
 | **Section** | One part of the popover the user can show or hide: a provider's limits, activity and insights, the heatmap, GitHub's statistics. Hiding changes only what is shown; whether work runs follows FR-46. |
-| **Block** | A top-level part of the popover the user can reorder: one provider group, the heatmap, GitHub (FR-44). The sections inside a provider group keep a fixed order. |
+| **Block** | A top-level part of the popover the user can reorder: one provider group, the heatmap, GitHub (FR-44). The sections inside a provider group are reordered within it (ADR-034). |
 | **Plan** | The subscription tier a provider's tool runs on, as the tool itself names it (for Claude Code for example "Pro" or "Max"). Shown verbatim, never inferred from usage (FR-50). |
 | **Heatmap layer** | One source's per day values in the shared heatmap, drawn in that source's hue (FR-48). |
 
@@ -248,7 +248,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 ### US-13 (P2): Arrange the popover
 
-- **Given** the Popover tab in Settings, **then** I can drag the blocks (each provider group, the heatmap, GitHub) into any order, show or hide each block, and show or hide a provider group's limits, activity and insights sections. The open popover follows at once.
+- **Given** the Popover tab in Settings, **then** I can drag the blocks (each provider group, the heatmap, GitHub) into any order, show or hide each block, and show, hide and reorder a provider group's limits, activity and insights sections. The open popover follows at once.
 - Hiding a section never silences the menu bar or notifications: their data keeps coming (FR-46).
 - **Given** every block is hidden or every source is off, **then** the popover shows "Nothing to show" with "Open Settings…", and the menu bar shows only its icon.
 
@@ -334,7 +334,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | ID | Pri | Requirement |
 |---|---|---|
 | FR-30 | P1 | Agent app: `LSUIElement = YES` (no Dock icon, no app switcher entry). |
-| FR-31 | P1 | Popover layout: the visible blocks of FR-44 in their configured order (a provider group shows limits, then activity, then insights), then the footer. Each section renders its own loading, empty, error and stale states. |
+| FR-31 | P1 | Popover layout: the visible blocks of FR-44 in their configured order (a provider group shows its sections in their order, default limits, activity, insights), then the footer. Each section renders its own loading, empty, error and stale states. |
 | FR-32 | P1 | Manual refresh button in the footer (and `⌘R` while the popover is focused). Refreshes all sources of all enabled providers and GitHub, subject to minimum intervals ([section 12](#12-refresh-policy)). |
 | FR-33 | P2 | Settings window (SwiftUI `Settings` scene) covering US-7 and US-12. |
 | FR-34 | P2 | Launch at login via `SMAppService.mainApp`. |
@@ -358,8 +358,8 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | ID | Pri | Requirement |
 |---|---|---|
 | FR-43 | P2 | **GitHub switch.** GitHub can be switched on or off in Settings' GitHub tab; default on. Off: no requests, its block and heatmap layer are hidden and the GitHub menu bar modes are not offered; the token stays in the Keychain. "Disconnect" still deletes the token (11.6). |
-| FR-44 | P2 | **Blocks.** The popover consists of blocks: one per enabled provider, the heatmap, GitHub. In Settings' Popover tab the user sets their order and shows or hides each block, and shows or hides each section of a provider group (limits, activity, insights, as far as its capabilities declare them; their order inside the group is fixed). Default: everything visible, provider groups in registry order, then the heatmap, then GitHub. The footer always comes last. |
-| FR-45 | P2 | **Layout persistence.** The layout (order, hidden blocks and sections, heatmap membership, heatmap style) is saved with the other settings in UserDefaults. Blocks are keyed by provider ID, `heatmap` and `github`; these two IDs are reserved and no provider may use them. A block missing from the saved order (for example a newly registered provider) is appended at the end and shown. Saved keys of providers that are not registered are kept and ignored. |
+| FR-44 | P2 | **Blocks.** The popover consists of blocks: one per enabled provider, the heatmap, GitHub. In Settings' Popover tab the user sets their order and shows or hides each block, and shows or hides each section of a provider group (limits, activity, insights, as far as its capabilities declare them), and drags those sections into any order within their group (ADR-034). Default: everything visible, provider groups in registry order, then the heatmap, then GitHub. The footer always comes last. |
+| FR-45 | P2 | **Layout persistence.** The layout (order, section order per provider, hidden blocks and sections, heatmap membership, heatmap style) is saved with the other settings in UserDefaults. Blocks are keyed by provider ID, `heatmap` and `github`; these two IDs are reserved and no provider may use them. A block missing from the saved order (for example a newly registered provider) is appended at the end and shown. Saved keys of providers that are not registered are kept and ignored. |
 | FR-46 | P2 | **Work follows use.** A source's data is fetched only while the source is on and something uses it: a visible section, its heatmap layer, the menu bar mode, or notifications. In v1: a provider's limits are fetched while it is on, because notifications use them; its activity is watched only while its activity section is visible or its heatmap layer is on; GitHub is fetched only while its block is visible, its layer is on or the menu bar mode shows it. A source nobody uses behaves like a disabled one (FR-2). |
 | FR-47 | P2 | **Nothing to show.** While no visible block has a source that is on, the popover shows "Nothing to show" with "Open Settings…" above the footer. |
 | FR-48 | P2 | **Shared heatmap.** The heatmap block shows the last 26 weeks, with one layer per source that is on and in the heatmap ("In heatmap" in the Popover tab, default on): GitHub's contributions, and for every provider with the `activity` capability its total tokens per day. Levels 0 to 4: GitHub's layer uses `contributionLevel` (FR-20); a provider's layer uses 0 for a day without tokens and otherwise the quartile of that day among the layer's non-zero days in the shown range. Days a source has no data for (before its history begins) are drawn like 0. Layers are never summed (7.7). The block is hidden while it has no layer (ADR-032). |
@@ -1024,7 +1024,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubEnabled` (FR-43, default on), `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`, `popoverLayout` (the `PopoverLayout` of 10.8 as JSON, FR-45). Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubEnabled` (FR-43, default on), `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `popoverLayout` (the `PopoverLayout` of 10.8 as JSON, FR-45). Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ### 10.8 Popover layout and heatmap
 
@@ -1041,6 +1041,7 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
     public var order: [BlockID]
     public var hiddenBlocks: Set<BlockID>
     public var hiddenSections: [ProviderID: Set<SectionKind>]
+    public var sectionOrder: [ProviderID: [SectionKind]]   // missing sections follow in default order (ADR-034)
     public var outOfHeatmap: Set<BlockID>              // .provider(_) or .github
     public var heatmapStyle: HeatmapStyle              // .combined by default
     /// Visible blocks in order, given the registry order and the sources that are on (FR-44, FR-47).
@@ -1147,10 +1148,10 @@ The percentage is always shown as text next to the bar. Each heatmap layer draws
 | Tab | Controls |
 |---|---|
 | General | Menu bar display mode, offering only modes whose source is on (FR-12), and menu bar provider (hidden while only one provider exists), both with T-5.10 (ADR-028); launch at login; notification thresholds; notify on reset |
-| Popover | Block list in popover order, reorderable by drag (FR-44); per block a visibility toggle and, for a source with daily data, "In heatmap" (FR-48); a provider row expands into toggles for the sections its capabilities declare; a block whose source is off is greyed out with a note pointing to Providers or GitHub; heatmap style Combined or Stacked with a legend preview and the three-layer hint (FR-49) |
+| Popover | Block list in popover order, reorderable by drag (FR-44); per block a visibility toggle and, for a source with daily data, "In heatmap" (FR-48); a provider row expands into toggles for the sections its capabilities declare, reorderable by drag within the row (ADR-034); a drop target lights up and rows slide into place, without motion under Reduce Motion; a block whose source is off is greyed out with a note pointing to Providers or GitHub; heatmap style Combined or Stacked with a legend preview and the three-layer hint (FR-49) |
 | Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
 | GitHub | On/off switch, keeping the token (FR-43); account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
-| Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics; show insights toggle |
+| Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics |
 
 ### 11.7 Accessibility examples
 
@@ -1470,7 +1471,7 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - Notification planner: thresholds fire once per provider, window and reset cycle, survive restart, re-arm after reset; identical labels from two providers produce separate notifications.
 - Persistence: atomic write, schema version mismatch handling, history never discarded, provider data deletion removes only that provider's folder.
 - Menu bar selection: `primary` falls back to `highest`, then `?`; `highest` across two providers.
-- Popover layout: default order; a new provider appended and shown; saved keys of unknown providers kept; hidden blocks and sections left out; "Nothing to show" when no visible block has a source that is on.
+- Popover layout: default order; a new provider appended and shown; saved keys of unknown providers kept; hidden blocks and sections left out; sections in their saved order, moving within their group only; "Nothing to show" when no visible block has a source that is on.
 - Work follows use (FR-46): a hidden activity section with its heatmap layer off watches nothing; a hidden limits section keeps probing; a hidden GitHub block still fetches while its layer is on or the menu bar shows it.
 - Heatmap levels: quartiles over non-zero days, a range with one active day and an all-zero range, days without data, GitHub levels passed through unchanged; layer order follows block order; the FR-49 line including "no data".
 
@@ -1592,8 +1593,8 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
 - [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
 - [x] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
-- [ ] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
-- [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
+- [x] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
+- [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip, the legend preview in the Popover tab, and the heatmap's line per layer in copy statistics; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
 - [ ] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)*
 - [ ] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID.
 
