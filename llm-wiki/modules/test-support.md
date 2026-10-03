@@ -1,7 +1,7 @@
 ---
 type: module
 status: active
-updated: 2026-10-02
+updated: 2026-10-03
 tracks: [Packages/ContribusageKit/Tests/ContribusageTestSupport]
 tags: [testing]
 ---
@@ -12,7 +12,7 @@ Shared test code that never ships: a fake for every support seam, the `FakeProvi
 ## Spec
 - **Sections:** SPEC §10.6 (seams), §16.1 to §16.4 (levels, fixtures, must-have cases, conformance suite)
 - **Requirements:** US-11; NFR-15
-- **Tasks:** T-1.4, T-1.6, T-5.9
+- **Tasks:** T-1.4, T-1.6, T-5.12
 - **Path:** `Packages/ContribusageKit/Tests/ContribusageTestSupport/`; fixtures live in each test target's `Fixtures/`
 
 ## Depends on

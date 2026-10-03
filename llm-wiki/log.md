@@ -265,3 +265,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] research | Performance and energy verification (T-5.8)
 - Release build on an M3: 0.07 % CPU idle with the popover closed (NFR-1), 43 to 47 MB footprint (NFR-2), 3 idle wakeups per minute; NFR-3, NFR-4 and NFR-14 checked in code ([[research/t-5-8-performance-energy]]).
 - A Claude Code session writing transcripts raises CPU to about 0.2 %, because each incremental pass opens every transcript.
+
+## [2026-10-03] spec | T-5.9 moved to T-5.12
+- The check of the fake provider debug build (US-11) waits for a planned popover restructure, which would replace the layout it checks.

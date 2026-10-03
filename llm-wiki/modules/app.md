@@ -36,7 +36,7 @@ Localization and accessibility (T-5.7, NFR-8 to NFR-10, [[decisions/0031-string-
 - `MenuBarExtra` has no "is open" signal (SPEC §20); the popover-open trigger relies on `onAppear` of the window content firing on every open, which still needs a manual check (no automated way to click the menu bar item here).
 - In the `MenuBarExtra` window a `ScrollView` has no height of its own: a `ViewThatFits` over groups and a scroll view fell back to the scroll view and drew the groups at zero height once they arrived asynchronously (the mock data had hidden it). Hence the measured height.
 - Foundation's duration formatting rounds under 30 s to "0 min", hence the 1 min floor in the reset text; en_US abbreviates hours as "hr", not SPEC's "h".
-- SPEC §15.5 registers a `DebugFakeProvider` under `CONTRIBUSAGE_FAKE_PROVIDER`, but `FakeProvider` lives in `ContribusageTestSupport`, which is not a product and never links into the app. Decide in T-5.9 where the debug provider lives.
+- SPEC §15.5 registers a `DebugFakeProvider` under `CONTRIBUSAGE_FAKE_PROVIDER`, but `FakeProvider` lives in `ContribusageTestSupport`, which is not a product and never links into the app. Decide in T-5.12 where the debug provider lives.
 
 ## Related
 [[decisions/0001-native-swift-swiftui]] · [[decisions/0006-no-app-sandbox]] · [[decisions/0008-minimum-macos-14]] · [[decisions/0009-apple-silicon-only]]
