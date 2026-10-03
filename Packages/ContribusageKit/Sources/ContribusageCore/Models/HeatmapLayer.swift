@@ -37,6 +37,17 @@ public struct HeatmapLayer: Sendable, Equatable {
         return (1 - count...0).map { DayKey(calendar.date(byAdding: .day, value: $0, to: today)!, calendar: calendar) }
     }
 
+    /// The sum over the shown range, for Copy (FR-42) and the VoiceOver label (SPEC §11.7).
+    public var total: Int { values.values.reduce(0, +) }
+
+    /// The day `by` columns (weeks) and rows (weekdays) away in the grid of `days(through:calendar:)`, or `index` when
+    /// that leaves the grid (NFR-8).
+    public static func step(from index: Int, by move: (x: Int, y: Int), count: Int) -> Int {
+        let row = index % 7 + move.y
+        let target = index + 7 * move.x + move.y
+        return (0..<7).contains(row) && (0..<count).contains(target) ? target : index
+    }
+
     /// "1.2M tokens", "5 contributions", or "no data" (FR-49).
     public func text(on day: DayKey, locale: Locale = .autoupdatingCurrent) -> String {
         values[day].map { text($0, locale: locale) } ?? String(localized: "no data", bundle: .module, locale: locale)

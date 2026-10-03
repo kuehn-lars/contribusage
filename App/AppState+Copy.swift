@@ -14,7 +14,7 @@ extension AppState {
                 // One line per layer with its 26 week total.
                 [String(localized: "Heatmap, last 26 weeks")]
                     + heatmap(at: now).layers.map(\.layer).map {
-                        "\($0.name): \($0.text($0.values.values.reduce(0, +)))"
+                        "\($0.name): \($0.text($0.total))"
                     }
             case .github:
                 [header("GitHub" + login, github.snapshot?.fetchedAt)] + values(github, "GitHub") { [$0.statsText] }
