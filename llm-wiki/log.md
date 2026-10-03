@@ -251,3 +251,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-03] spec | diagnostics() may detect
 - SPEC §10.2: `UsageProvider.diagnostics()` may run detection (Claude Code runs `claude --version`), never a fetch; the earlier "no process" contradicted [[decisions/0030-provider-diagnostics-hook]].
+
+## [2026-10-03] feat | Wake, offline and Low Power Mode end to end (T-5.6)
+- Wake plus 10 s is an extra trigger in `Schedule.nextRun`, as SPEC §12's table lists it; rule 8 names it.
+- A source marked offline runs on reconnect within its `manualFloor`; offline no longer replaces a rate limit, so its reset still holds (rule 2).
+- The coordinator logs each next pass with Low Power Mode for the §16.5 check.

@@ -1082,13 +1082,13 @@ The percentage is always shown as text next to the bar. The heatmap uses 5 steps
 Global rules:
 
 1. Nothing runs while the Mac sleeps. On wake, wait 10 s (network), then run every source that is due.
-2. When offline (`NWPathMonitor`), network dependent sources (the Claude Code probe, GitHub) are skipped and marked "offline"; they run as soon as the path is satisfied. Each provider declares in its descriptor section whether its polled source needs the network (Claude Code: yes).
+2. When offline (`NWPathMonitor`), network dependent sources (the Claude Code probe, GitHub) are skipped and marked "offline"; they run as soon as the path is satisfied, within their `manualFloor`. A source waiting for a token or a rate limit's reset keeps that state and that wait. Each provider declares in its descriptor section whether its polled source needs the network (Claude Code: yes).
 3. Low Power Mode doubles automatic intervals.
 4. Manual refresh ignores intervals and backoff, but never runs a polled source more often than its `manualFloor` (Claude Code probe and GitHub: 30 s).
 5. At most one child process runs at a time across all providers (NFR-18). When several are due, they run in registry order.
 6. Disabled providers are never scheduled.
 7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:manual:triggers:) -> Date?`, fully unit tested and provider neutral. `conditions` carries online, Low Power Mode, asleep and the last wake; `nil` means not scheduled (asleep, or offline for a source that needs the network). The coordinator runs the unsupported-plan recheck (section 13) through it as a 6 h policy (ADR-018).
-8. An extra trigger ("popover opened", "a window's reset time reached") is a date in `triggers`: the first one after the last run runs the source then, or once the minimum interval since its last run has passed, skipping interval and backoff. The coordinator passes its snapshot's `resetsAt` dates; the app reports the popover opening, which only the pass it starts sees, so a trigger not due at that moment is dropped (ADR-019).
+8. An extra trigger ("popover opened", "a window's reset time reached", and the last wake plus 10 s from `conditions`) is a date in `triggers`: the first one after the last run runs the source then, or once the minimum interval since its last run has passed, skipping interval and backoff. The coordinator passes its snapshot's `resetsAt` dates; the app reports the popover opening, which only the pass it starts sees, so a trigger not due at that moment is dropped (ADR-019).
 
 ---
 
@@ -1486,7 +1486,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.3** Launch at login with `SMAppService.mainApp`. *(FR-34)*
 - [ ] ~~**T-5.4** First run onboarding. *(FR-37)*~~ Dropped with FR-37 (ADR-029).
 - [x] **T-5.5** Copy diagnostics in Settings, with provider lines through `UsageProvider.diagnostics()`, and copy statistics in the popover footer (ADR-030). *(FR-36, FR-42, US-10)*
-- [ ] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
+- [x] **T-5.6** Wake, offline and Low Power Mode behaviour end to end. *(section 12, NFR-12)*
 - [ ] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)*
 - [ ] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)*
 - [ ] **T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. *(US-11)*

@@ -73,11 +73,15 @@ func backoffGrowsAndIsCapped(failures: Int, minutes: Double) {
     #expect(next(local, conditions: offline) == now + 15 * minute)
 }
 
-@Test func nothingRunsWhileAsleepAndWakeWaitsTenSeconds() {
+/// SPEC §12 rule 1 and the wake trigger: 10 s after waking, a source runs once its minimum interval has passed; a run
+/// after the wake consumes it.
+@Test func nothingRunsWhileAsleepAndWakeTriggersAfterTenSeconds() {
     #expect(next(lastAttempt: nil, conditions: ScheduleConditions(isAsleep: true)) == nil)
     let woken = ScheduleConditions(lastWake: now)
     #expect(next(lastAttempt: now - 60 * minute, conditions: woken) == now + 10)
-    #expect(next(conditions: woken) == now + 15 * minute)
+    #expect(next(lastAttempt: now - 10 * minute, conditions: woken) == now + 10)
+    #expect(next(lastAttempt: now - 2 * minute, conditions: woken) == now + 3 * minute)
+    #expect(next(conditions: ScheduleConditions(lastWake: now - minute)) == now + 15 * minute)
 }
 
 /// Manual refresh ignores interval and backoff but not the floor.

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-02
+updated: 2026-10-03
 aliases: [ADR-027]
 tags: [notifications, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Notifications/NotificationPlanner.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift]
@@ -29,4 +29,5 @@ The limits job's `fetch` runs the planner after every fetch, so a restored snaps
 - A window past its `resetsAt` is skipped until the next fetch (FR-11), so a stale reading cannot warn.
 - Pushed limits (the status line bridge, T-6.2) are not planned yet; that task routes them through the same `notify`.
 - "Reset caches" keeps the keys, so the refetch after it cannot repeat a notification ([[decisions/0028-settings-scope-and-wiring]]).
+- A run on wake or reconnect (T-5.6) plans its report like any fetch; the keys keep it from repeating a note.
 - Revisit if a provider's reset time is not stable within a cycle.
