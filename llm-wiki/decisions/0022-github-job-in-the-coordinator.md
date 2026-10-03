@@ -42,3 +42,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.
 - GitHub's heatmap layer reads the job's last snapshot, stale or failed ones dimmed (T-5.16, SPEC §11.4).
 - T-5.19: the menu bar's demand set (`AppState.menuBarSources`) also names the activity the heatmap styles draw (`menuBarHeatmapSources(_:style:)`) ([[decisions/0035-drawn-menu-bar-label]]); GitHub's part of it is unchanged.
+
+`AppState.setEnabled` calls `start()` on disable as well, which stops a provider's pushed limits; GitHub's job is unaffected ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).

@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-10-03
+updated: 2026-10-04
 ---
 # Index
 
@@ -56,6 +56,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0033-provider-tool-texts]]: ADR-033, `ProviderDescriptor.toolText` translates known tool texts (window labels, insights periods and counts) at display time; the printed text stays the key
 - [[decisions/0034-reorderable-sections]]: ADR-034, a provider group's sections are reordered by drag within the group; `sectionOrder` per provider
 - [[decisions/0035-drawn-menu-bar-label]]: ADR-035, the menu bar label as one drawn, colored image in six styles; the `prompt` mark
+- [[decisions/0036-pushed-limits-and-debug-fake-provider]]: ADR-036, the coordinator consumes pushed limits; `DebugFakeProvider` is an app file under its flag
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

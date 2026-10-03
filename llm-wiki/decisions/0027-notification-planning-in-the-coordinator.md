@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-027]
 tags: [notifications, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Notifications/NotificationPlanner.swift, Packages/ContribusageKit/Sources/ContribusageCore/Scheduling/RefreshCoordinator.swift]
@@ -33,3 +33,5 @@ The limits job's `fetch` runs the planner after every fetch, so a restored snaps
 - Titles are looked up in the core's String Catalog; the window inside them is the provider's window title, while the cycle stays keyed by the label ([[decisions/0031-string-catalogs]], [[decisions/0033-provider-tool-texts]]).
 - Revisit if a provider's reset time is not stable within a cycle.
 - FR-46 (T-5.13): because notifications are planned from fetched limits, a provider's limits keep running while it is on, even with its limits section hidden.
+
+Pushed reports are planned like fetched ones; restored snapshots still never are ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).

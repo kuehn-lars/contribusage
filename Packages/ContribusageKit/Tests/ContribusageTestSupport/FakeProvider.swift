@@ -57,7 +57,7 @@ private struct FakeLimitsSource: LimitsSource {
     /// Pushes the current report on subscription, as a bridge pushes its file's current content.
     func pushedUpdates() -> AsyncStream<LimitsReport> {
         let window = UsageWindow(
-            label: "This week", kind: .weekly, usedPercent: 42, isBelowOne: false, resetsAt: nil
+            label: "This week", kind: .weekly, usedPercent: 62, isBelowOne: false, resetsAt: nil
         )
         let report = LimitsReport(provider: id, windows: [window], billingNote: nil, insights: nil, rawOutput: nil)
         return AsyncStream { $0.yield(report) }

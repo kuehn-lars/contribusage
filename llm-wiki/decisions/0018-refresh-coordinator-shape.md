@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-018]
 tags: [core, scheduling, persistence]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]
@@ -38,3 +38,5 @@ T-2.6 builds the scheduler of SPEC §12. Four points were open: how the neutral 
 - T-5.13: what runs follows use (FR-46); provider limits keep running while a provider is on, and GitHub skips passes while `setGitHubWanted(false)` ([[decisions/0022-github-job-in-the-coordinator]]).
 - Revisit if a provider's fetch is slow enough that queueing behind it matters: then passes per provider, with the process gate as the only global lock.
 - A provider's limits job hands the planner its whole descriptor, for the display name and the window title ([[decisions/0033-provider-tool-texts]]).
+
+Since T-5.12 the coordinator also consumes pushed limits, beside the passes rather than in them ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).

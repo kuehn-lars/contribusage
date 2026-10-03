@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-019]
 tags: [core, scheduling, app]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Scheduling]
@@ -33,3 +33,5 @@ SPEC §12 lists two extra triggers for polled limits: "popover opened and data o
 - A window whose reported reset never moves forward (the tool keeps printing a past time) triggers nothing after the first attempt, since the trigger must lie after the last run.
 - T-5.13: a popover-open pass skips GitHub while nothing uses it (FR-46); the trigger reaches it once `setGitHubWanted(true)`.
 - Unchanged by [[decisions/0033-provider-tool-texts]]: reset triggers still come from the windows' `resetsAt`, whatever their title.
+
+A pushed report becomes a polled source's last success like a fetch, so triggers count from it too ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
