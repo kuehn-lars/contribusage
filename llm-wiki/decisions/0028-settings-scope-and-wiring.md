@@ -35,3 +35,5 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - ADR-033 adds `toolText` to Claude Code's descriptor; its settings (path override, probe interval, config folder) are unchanged.
 - The Popover tab's style picker shows a legend preview of the heatmap's layers (T-5.16); a provider declares its layer's hue in its descriptor.
 - T-5.19 adds the menu bar style tiles and the color choice to the General tab, saved as `menuBarStyle`, `menuBarTint` and `menuBarColor`; the tiles and the label draw through the same `AppState.menuBarImage(at:style:)` ([[decisions/0035-drawn-menu-bar-label]]).
+
+Interval settings do not reach pushed limits, which are not scheduled ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).

@@ -12,7 +12,7 @@ The thin SwiftUI shell: menu bar label, popover, Settings, `AppState`, provider 
 ## Spec
 - **Sections:** SPEC §9.2 (responsibilities), §9.3 (concurrency), §11 (UI), §15.3 and §15.5 (project and entry point), §20 (pitfalls: Settings activation, `MenuBarExtra`, template labels, the notch, notifications, `SMAppService`)
 - **Requirements:** FR-4, FR-12, FR-30 to FR-36 (FR-37 dropped, [[decisions/0029-no-first-run-onboarding]]); NFR-3, NFR-8 to NFR-10, NFR-16
-- **Tasks:** T-1.1, T-1.7, T-2.7, T-3.2, T-3.5, T-3.6, T-4.6 (UI), T-5.1 to T-5.3, T-5.5, T-5.7, T-5.10, T-5.11, T-5.13 (wiring), T-5.15
+- **Tasks:** T-1.1, T-1.7, T-2.7, T-3.2, T-3.5, T-3.6, T-4.6 (UI), T-5.1 to T-5.3, T-5.5, T-5.7, T-5.10, T-5.11, T-5.12, T-5.13 (wiring), T-5.15
 - **Path:** `App/` and `Contribusage.xcodeproj`
 
 ## Depends on
@@ -47,7 +47,7 @@ Tool texts ([[decisions/0033-provider-tool-texts]]): `LimitsSection` takes the p
 - `MenuBarExtra` has no "is open" signal (SPEC §20); the popover-open trigger relies on `onAppear` of the window content firing on every open, which still needs a manual check (no automated way to click the menu bar item here).
 - In the `MenuBarExtra` window a `ScrollView` has no height of its own: a `ViewThatFits` over groups and a scroll view fell back to the scroll view and drew the groups at zero height once they arrived asynchronously (the mock data had hidden it). Hence the measured height.
 - Foundation's duration formatting rounds under 30 s to "0 min", hence the 1 min floor in the reset text; en_US abbreviates hours as "hr", not SPEC's "h".
-- SPEC §15.5 registers a `DebugFakeProvider` under `CONTRIBUSAGE_FAKE_PROVIDER`, but `FakeProvider` lives in `ContribusageTestSupport`, which is not a product and never links into the app. Decide in T-5.12 where the debug provider lives.
+- `App/DebugFakeProvider.swift` (T-5.12) is the US-11 second provider, compiled only with `CONTRIBUSAGE_FAKE_PROVIDER`, which no configuration sets: build with `'SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG CONTRIBUSAGE_FAKE_PROVIDER'` (SPEC §15.5). It pushes one weekly window at 85 % and every other day of the last 26 weeks as activity. The build lands in `.build/xcode`; copy it over the installed app. Once `enabledProviders` is stored, FR-2's first-run default no longer applies, so the fake starts disabled: switch it on in Settings → Providers. `ProviderRegistration` returns it after Claude Code; `setEnabled` calls `coordinator.start()` on enable and disable, so pushes stop with the provider ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
 
 ## Related
 [[decisions/0001-native-swift-swiftui]] · [[decisions/0006-no-app-sandbox]] · [[decisions/0008-minimum-macos-14]] · [[decisions/0009-apple-silicon-only]]

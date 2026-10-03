@@ -758,6 +758,7 @@ public struct Origin: RawRepresentable, Hashable, Sendable, Codable {
     public init(rawValue: String) { self.rawValue = rawValue }
     public static let cache = Origin(rawValue: "cache")
     public static let poll = Origin(rawValue: "poll")     // a limits source's fetch(), run by the coordinator (ADR-018)
+    public static let push = Origin(rawValue: "push")     // a limits source's pushedUpdates(), received by the coordinator (ADR-036)
     public static let github = Origin(rawValue: "github")
 }
 // In ContribusageClaudeCode:
@@ -1190,6 +1191,7 @@ Global rules:
 6. Disabled providers are never scheduled.
 7. The scheduling decision is a pure function, `nextRun(policy:lastSuccess:lastAttempt:failures:now:conditions:manual:triggers:) -> Date?`, fully unit tested and provider neutral. `conditions` carries online, Low Power Mode, asleep and the last wake; `nil` means not scheduled (asleep, or offline for a source that needs the network). The coordinator runs the unsupported-plan recheck (section 13) through it as a 6 h policy (ADR-018).
 8. An extra trigger ("popover opened", "a window's reset time reached", and the last wake plus 10 s from `conditions`) is a date in `triggers`: the first one after the last run runs the source then, or once the minimum interval since its last run has passed, skipping interval and backoff. The coordinator passes its snapshot's `resetsAt` dates; the app reports the popover opening, which only the pass it starts sees, so a trigger not due at that moment is dropped (ADR-019).
+9. Pushed limits are not scheduled: the coordinator consumes every enabled provider's `pushedUpdates()` while it runs and treats each report as a success (shown with origin `push`, persisted, planned for notifications). A push also counts as the polled source's last success. `start()` starts and stops the consumers when providers are enabled or disabled (ADR-036).
 
 ---
 
@@ -1398,6 +1400,8 @@ enum ProviderRegistration {
 }
 ```
 
+`DebugFakeProvider` lives in `App/DebugFakeProvider.swift`, wrapped in `#if CONTRIBUSAGE_FAKE_PROVIDER`, since `ContribusageTestSupport` never links into the app. No configuration sets the flag; build with it by adding it to the conditions: `xcodebuild … -configuration Debug build 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG CONTRIBUSAGE_FAKE_PROVIDER'` (ADR-036).
+
 ### 15.6 Everyday commands
 
 ```bash
@@ -1599,7 +1603,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] ~~**T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end.~~ Moved to T-5.12.
 - [x] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.13 and T-5.14 for offering only the modes of sources that are on; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028). Done 2026-10-03: `MenuBarMode` and `MenuBarLabel` in the core, the label and the General tab's Menu bar section in the app.
 - [x] **T-5.11** Heatmap keyboard navigation and VoiceOver on the shared heatmap, in both styles, reading the FR-49 line; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, FR-49, NFR-8)* Depends: T-5.16. The grids take focus as one control: arrow keys move a day or a week (`HeatmapLayer.step`), the reached day is outlined and its line shows below the grid; every day is a VoiceOver element read as its line, Stacked exposes only its first grid.
-- [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
+- [x] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)* Done 2026-10-04: the coordinator consumes pushed limits (§12 rule 9), `DebugFakeProvider` in the app under the flag (ADR-036); checked by hand.
 - [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
 - [x] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
 - [x] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.

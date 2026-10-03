@@ -161,6 +161,36 @@ private func coordinator(
     #expect(sent.withLock { $0 }.count == 1)
 }
 
+/// US-11: a push-only source's report shows as `push`, is planned for notifications and persisted like a fetched one.
+@Test func aPushedReportIsShownNotifiedAndPersisted() async throws {
+    let paths = AppPaths.temporary()
+    let log = Log()
+    let sent = OSAllocatedUnfairLock(initialState: [String]())
+    let notifications = RefreshCoordinator<Int>.Notifications(
+        settings: { NotificationPlanner.Settings(thresholds: [50]) },
+        deliver: { notes in sent.withLock { $0 += notes.map(\.title) } })
+    let pushing = coordinator([FakeProvider()], paths: paths, log: log, notifications: notifications)
+    await pushing.start()
+    for _ in 0..<200 where log.updates.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+    await pushing.stop()
+
+    guard case (.fake, .loaded(let snapshot))? = log.updates.first else {
+        Issue.record("no pushed snapshot: \(log.updates)")
+        return
+    }
+    #expect(snapshot.origin == .push)
+    #expect(snapshot.value.windows.map(\.usedPercent) == [62])
+    #expect(sent.withLock { $0 } == ["Fake Tool: This week at 50 %"])
+
+    let relaunchLog = Log()
+    await coordinator([FakeProvider()], paths: paths, log: relaunchLog).restore()
+    guard case (.fake, .loaded(let restored))? = relaunchLog.updates.first else {
+        Issue.record("no restored snapshot: \(relaunchLog.updates)")
+        return
+    }
+    #expect(restored.origin == .cache)
+}
+
 /// SPEC §11.6: an interval setting replaces the default interval, clamped to the policy's bounds.
 @Test(arguments: [(Duration.seconds(600), 600.0), (.seconds(60), 300), (.seconds(7200), 3600)])
 func anIntervalSettingReplacesTheDefault(setting: Duration, expected: TimeInterval) async {

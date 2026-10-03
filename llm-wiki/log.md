@@ -340,3 +340,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - The heatmap grids are one focusable control: arrow keys move the reached day through `HeatmapLayer.step`, which is outlined and read as its FR-49 line under the grids.
 - Every day is a VoiceOver element read as its line; the container reads SPEC §11.7's summary with `HeatmapLayer.total`, shared with Copy; Stacked exposes its first grid only.
 - Review: the reached day is kept as a `DayKey`, so it stays on its date when the range moves on.
+
+## [2026-10-04] feat | T-5.12 pushed limits and the debug fake provider
+- `RefreshCoordinator` consumes every enabled provider's `pushedUpdates()`: a push is a success with origin `push`, persisted, planned and shown (SPEC §12 rule 9).
+- `App/DebugFakeProvider.swift` under `CONTRIBUSAGE_FAKE_PROVIDER` registers US-11's second provider ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).

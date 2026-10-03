@@ -100,6 +100,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private var gitHubWanted = true
     private var pass: Task<Date?, Never>?
     private var loop: Task<Void, Never>?
+    /// US-11: one consumer of `pushedUpdates()` per enabled provider with limits.
+    private var pushes: [ProviderID: Task<Void, Never>] = [:]
 
     /// `limitsInterval` is a provider's interval setting (for Claude Code: `provider.claude-code.probeInterval`).
     public init(
@@ -117,9 +119,11 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         self.onUpdate = onUpdate
     }
 
-    /// Shows the persisted snapshots, then keeps running what is due. Call again after enabling a provider.
+    /// Shows the persisted snapshots, then keeps running what is due and receiving what is pushed. Call again after
+    /// enabling or disabling a provider.
     public func start() async {
         await restore()
+        await watchPushes()
         reschedule()
     }
 
@@ -127,6 +131,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         loop?.cancel()
         loop = nil
         pass?.cancel()
+        for push in pushes.values { push.cancel() }
+        pushes = [:]
     }
 
     /// FR-10: every enabled provider's and GitHub's last success shows at once, as `cache`; a snapshot already in
@@ -141,10 +147,10 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         if github.snapshot == nil { github.snapshot = persisted.github?.cached }
         if notificationKeys.isEmpty { notificationKeys = persisted.notificationKeys ?? [:] }
         for provider in await registry.enabledProviders() {
-            if let job = job(for: provider), let record = records[provider.descriptor.id], record.state == nil,
-                let snapshot = record.snapshot
-            {
-                await publish(job, record, .loaded(snapshot))
+            let id = provider.descriptor.id
+            if let record = records[id], record.state == nil, let snapshot = record.snapshot {
+                record.state = .loaded(snapshot)
+                await onUpdate(id, .loaded(snapshot))
             }
         }
         if let gitHubJob, github.state == nil, let snapshot = github.snapshot {
@@ -333,6 +339,34 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             },
             onUpdate: { [onUpdate] in await onUpdate(id, $0) }, triggers: { $0.windows.compactMap(\.resetsAt) },
             interval: { [limitsInterval] in limitsInterval(id) })
+    }
+
+    /// US-11: a disabled provider's pushes stop (US-12); an enabled one's start.
+    private func watchPushes() async {
+        let enabled = await registry.enabledProviders()
+        let ids = Set(enabled.map(\.descriptor.id))
+        for (id, push) in pushes where !ids.contains(id) {
+            push.cancel()
+            pushes[id] = nil
+        }
+        for provider in enabled where pushes[provider.descriptor.id] == nil {
+            guard let source = provider.limits else { continue }
+            let descriptor = provider.descriptor
+            pushes[descriptor.id] = Task {
+                for await report in source.pushedUpdates() { await self.received(report, descriptor) }
+            }
+        }
+    }
+
+    /// A pushed report counts as a success: shown as `push`, persisted and planned like a fetched one.
+    private func received(_ report: LimitsReport, _ descriptor: ProviderDescriptor) async {
+        let record = record(descriptor.id)
+        let snapshot = Snapshot(value: report, fetchedAt: time.now, origin: .push)
+        record.snapshot = snapshot
+        persist()
+        await notify(report, descriptor)
+        record.state = .loaded(snapshot)
+        await onUpdate(descriptor.id, .loaded(snapshot))
     }
 
     /// FR-15: the keys are persisted before delivery, so a restart cannot repeat a notification. Runs only on a fetch,

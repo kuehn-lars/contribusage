@@ -218,13 +218,13 @@ import Observation
     }
 
     /// FR-2, US-12: a disabled provider watches nothing and the coordinator skips it; its group leaves the popover.
-    /// Enabling it shows its cached snapshot and runs what is due.
+    /// Enabling it shows its cached snapshot and runs what is due; `start()` also starts or stops its pushed limits.
     // ponytail: a probe already running when the provider is disabled still finishes (at most 30 s, FR-7).
     func setEnabled(_ id: ProviderID, _ enabled: Bool) async {
         guard let registry, let coordinator else { return }
         await registry.setEnabled(id, enabled)
         apply(enabled: await registry.enabledProviders())
-        if enabled { await coordinator.start() }
+        await coordinator.start()
     }
 
     /// The one place the registry's enabled set takes effect: the setting, the popover and the work (FR-46).
