@@ -32,3 +32,4 @@ The limits job's `fetch` runs the planner after every fetch, so a restored snaps
 - A run on wake or reconnect (T-5.6) plans its report like any fetch; the keys keep it from repeating a note.
 - Titles are looked up in the core's String Catalog; the window label inside them is the tool's text ([[decisions/0031-string-catalogs]]).
 - Revisit if a provider's reset time is not stable within a cycle.
+- FR-46 (T-5.13): because notifications are planned from fetched limits, a provider's limits keep running while it is on, even with its limits section hidden.

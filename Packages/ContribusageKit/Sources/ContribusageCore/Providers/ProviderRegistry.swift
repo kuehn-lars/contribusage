@@ -14,6 +14,10 @@ public actor ProviderRegistry {
     /// `enabledIDs` is the stored `enabledProviders` setting, `nil` on first run.
     public init(providers: [any UsageProvider], enabledIDs: Set<ProviderID>?, time: any TimeSource) {
         precondition(Set(providers.map(\.descriptor.id)).count == providers.count, "duplicate provider ID")
+        // FR-45: `heatmap` and `github` name popover blocks.
+        precondition(
+            !providers.contains { BlockID(rawValue: $0.descriptor.id.rawValue) != .provider($0.descriptor.id) },
+            "reserved provider ID")
         self.providers = providers
         self.enabledIDs = enabledIDs
         self.time = time

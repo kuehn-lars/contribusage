@@ -96,6 +96,8 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private var conditions = ScheduleConditions()
     private var records: [ProviderID: Record<LimitsReport>] = [:]
     private var github = Record<GitHubValue>()
+    /// FR-46: whether anything uses GitHub's data.
+    private var gitHubWanted = true
     private var pass: Task<Date?, Never>?
     private var loop: Task<Void, Never>?
 
@@ -190,6 +192,15 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
         if loop != nil { reschedule() }
     }
 
+    /// FR-46: GitHub runs only while its block, its heatmap layer or the menu bar uses it (`Demand.github`). Wanted
+    /// again, it runs what is due at once.
+    public func setGitHubWanted(_ wanted: Bool) async {
+        guard wanted != gitHubWanted else { return }
+        gitHubWanted = wanted
+        if wanted { await runDue() }
+        if loop != nil { reschedule() }
+    }
+
     /// SPEC §12 extra trigger: the popover opened, so data older than its source's minimum interval is refreshed now.
     /// Only this pass sees the trigger, so data younger than the minimum interval is left alone rather than refreshed later.
     public func popoverOpened() async {
@@ -232,7 +243,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             guard let job = job(for: provider) else { continue }
             next.append(await run(job, record(provider.descriptor.id), openedAt: openedAt))
         }
-        if let gitHubJob { next.append(await run(gitHubJob, github, openedAt: openedAt)) }
+        if let gitHubJob, gitHubWanted { next.append(await run(gitHubJob, github, openedAt: openedAt)) }
         return next.compactMap(\.self).min()
     }
 

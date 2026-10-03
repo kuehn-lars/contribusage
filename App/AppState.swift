@@ -23,6 +23,14 @@ import Observation
     /// FR-2: only these groups show in the popover.
     private(set) var enabledIDs: Set<ProviderID>
     var github: SourceState<GitHubReport>
+    /// FR-44, FR-45: saved as JSON under `popoverLayout`; a change shows at once and starts or stops the work it
+    /// changes (FR-46, US-13).
+    var layout: PopoverLayout = .stored {
+        didSet {
+            PopoverLayout.stored = layout
+            applyDemand()
+        }
+    }
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private(set) var registry: ProviderRegistry?
     /// `nil` in previews.
@@ -30,8 +38,10 @@ import Observation
     /// `nil` in previews, which never open Settings.
     @ObservationIgnored private var gitHubAccount: GitHubAccount?
     @ObservationIgnored private var conditions: SystemConditions?
-    /// The enabled providers' activity sources and the tasks that consume their reports, rescanned on popover open
-    /// and wake (SPEC §12); cancelling a task stops the watching (ADR-016).
+    /// `Demand.github` to the coordinator, through one consumer so the values arrive in order.
+    @ObservationIgnored private var gitHubWanted: AsyncStream<Bool>.Continuation?
+    /// The watched activity sources (FR-46: `Demand.activity`) and the tasks that consume their reports, rescanned on
+    /// popover open and wake (SPEC §12); cancelling a task stops the watching (ADR-016).
     @ObservationIgnored private var activities: [ProviderID: (source: any ActivitySource, watch: Task<Void, Never>)] =
         [:]
     @ObservationIgnored private let time: any TimeSource
@@ -96,6 +106,9 @@ import Observation
                 }
             }
         }
+        let (wanted, want) = AsyncStream.makeStream(of: Bool.self)
+        state.gitHubWanted = want
+        Task { for await wanted in wanted { await coordinator.setGitHubWanted(wanted) } }
         Task {
             state.apply(enabled: await registry.enabledProviders())
             await coordinator.start()
@@ -128,20 +141,31 @@ import Observation
         if enabled { await coordinator.start() }
     }
 
-    /// The one place the registry's enabled set takes effect: the setting, the popover and the watching, which lasts
-    /// as long as a task consumes the stream (ADR-016). Applying the same set twice changes nothing.
+    /// The one place the registry's enabled set takes effect: the setting, the popover and the work (FR-46).
     private func apply(enabled: [any UsageProvider]) {
         UserDefaults.standard.set(enabled.map(\.descriptor.id.rawValue), forKey: "enabledProviders")
         enabledIDs = Set(enabled.map(\.descriptor.id))
-        for (id, activity) in activities where !enabledIDs.contains(id) {
+        applyDemand()
+    }
+
+    /// The sources that are on: the enabled providers and GitHub.
+    // ponytail: GitHub always on and the menu bar using nothing until T-5.14 and T-5.10 add the switch and the modes.
+    private var on: Set<BlockID> { Set(enabledIDs.map(BlockID.provider)).union([.github]) }
+
+    /// FR-46: activity is watched as long as a task consumes its stream (ADR-016); applying the same demand twice
+    /// changes nothing.
+    private func applyDemand() {
+        let demand = layout.demand(on: on, menuBar: [])
+        for (id, activity) in activities where !demand.activity.contains(id) {
             activity.watch.cancel()
             activities[id] = nil
         }
-        for provider in enabled where activities[provider.descriptor.id] == nil {
-            guard let source = provider.activity else { continue }
+        for provider in registry?.providers ?? [] where demand.activity.contains(provider.descriptor.id) {
+            guard activities[provider.descriptor.id] == nil, let source = provider.activity else { continue }
             let watch = Task { [time] in for await report in source.reports() { self.apply(report, at: time.now) } }
             activities[provider.descriptor.id] = (source, watch)
         }
+        gitHubWanted?.yield(demand.github)
     }
 
     /// US-12 "Delete data for this provider": its folder under the data folder, history included.
@@ -202,6 +226,17 @@ extension AppState.ProviderGroupState {
 /// An interval setting in minutes (SPEC §10.7); `nil` keeps the policy's default.
 nonisolated private func minutes(_ setting: Any?) -> Duration? {
     (setting as? Int).map { .seconds($0 * 60) }
+}
+
+extension PopoverLayout {
+    /// FR-45: unset or unreadable is the default layout.
+    static var stored: Self {
+        get {
+            (try? JSONDecoder().decode(Self.self, from: UserDefaults.standard.data(forKey: "popoverLayout") ?? Data()))
+                ?? Self()
+        }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "popoverLayout") }
+    }
 }
 
 extension NotificationPlanner.Settings {

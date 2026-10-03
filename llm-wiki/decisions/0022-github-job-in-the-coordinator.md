@@ -35,4 +35,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - Notification keys joined `state.json` the same way in T-5.1, as the optional field `notificationKeys` ([[decisions/0027-notification-planning-in-the-coordinator]]). The coordinator reads `state.json` through `JSONStore.read(_:using: LiveFileReader())`; the reader is explicit since T-4.7 ([[decisions/0025-read-roots-check-with-t-4-7]]).
 - The GitHub job's `interval` reads the `githubInterval` setting before every decision ([[decisions/0028-settings-scope-and-wiring]]).
 - Offline replaces neither a waiting token nor a rate limit (`Record.outlastsOffline`, T-5.6): reconnecting before the reset still waits for it.
+- T-5.13 (FR-46): `setGitHubWanted(_:)` takes the app's `Demand.github`; while false, passes skip the GitHub job, and wanting it again runs what is due at once.
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.

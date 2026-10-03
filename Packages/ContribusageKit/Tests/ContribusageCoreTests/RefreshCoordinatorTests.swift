@@ -518,3 +518,15 @@ private func isWaiting(_ state: SourceState<Int>?) -> Bool {
 private func isLoading(_ state: SourceState<LimitsReport>) -> Bool {
     if case .loading = state { true } else { false }
 }
+
+/// FR-46: GitHub runs only while something uses it; wanted again, it runs what is due at once.
+@Test func gitHubRunsOnlyWhileWanted() async {
+    let github = GitHubLog()
+    let coordinator = coordinator([], log: Log(), github: github.job)
+    await coordinator.setGitHubWanted(false)
+    #expect(await coordinator.runDue() == nil)
+    await coordinator.refreshNow()
+    #expect(github.fetches == 0)
+    await coordinator.setGitHubWanted(true)
+    #expect(github.fetches == 1)
+}

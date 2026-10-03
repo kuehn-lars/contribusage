@@ -31,3 +31,4 @@ SPEC §12 lists two extra triggers for polled limits: "popover opened and data o
 - An interval setting replaces only the policy's default interval; a trigger still waits for the minimum interval ([[decisions/0028-settings-scope-and-wiring]]).
 - The last wake plus 10 s is a trigger too (T-5.6, SPEC §12's table); `Schedule` takes it from `conditions.lastWake`, so the coordinator passes nothing extra.
 - A window whose reported reset never moves forward (the tool keeps printing a past time) triggers nothing after the first attempt, since the trigger must lie after the last run.
+- T-5.13: a popover-open pass skips GitHub while nothing uses it (FR-46); the trigger reaches it once `setGitHubWanted(true)`.
