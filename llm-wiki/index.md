@@ -52,6 +52,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0029-no-first-run-onboarding]]: ADR-029, FR-37 dropped; the popover's states and Settings cover each first run step
 - [[decisions/0030-provider-diagnostics-hook]]: ADR-030, providers add their own diagnostics lines through `UsageProvider.diagnostics()`
 - [[decisions/0031-string-catalogs]]: ADR-031, String Catalogs in the app and the core with a CI sync check; tool text stays as printed
+- [[decisions/0032-shared-heatmap]]: ADR-032, one heatmap with a layer per source, Combined or Stacked, levels per source, no red
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

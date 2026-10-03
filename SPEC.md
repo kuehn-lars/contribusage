@@ -90,6 +90,7 @@ One glance at the menu bar tells me how much of my AI coding plan I have left an
 - No data from claude.ai chat history, other devices, or tools that are not integrated as a provider.
 - No team or organization dashboards, no Admin API usage.
 - No cloud sync, no telemetry, no backend server.
+- No plan display in v1: showing the plan a tool runs on comes after v1 (FR-50).
 - No exact billing. Any "API-equivalent cost" is an estimate and optional ([FR-40](#58-optional-features-p3)).
 - No combined or summed limits across providers. Each tool's limits are shown as that tool reports them.
 
@@ -161,6 +162,11 @@ Before any code for a new AI coding tool is written, all of the following must b
 | **Snapshot** | A value plus `fetchedAt` timestamp plus origin (and provider where applicable). Everything the UI shows is a snapshot. |
 | **Stale** | A snapshot older than the staleness threshold of its source ([section 12](#12-refresh-policy)). |
 | **Popover** | The window that opens when clicking the menu bar item (`MenuBarExtra` with `.window` style). |
+| **Source** | Something that fetches data and can be switched on or off: each provider (FR-2) and GitHub (FR-43). Nothing runs for a source that is off. |
+| **Section** | One part of the popover the user can show or hide: a provider's limits, activity and insights, the heatmap, GitHub's statistics. Hiding changes only what is shown; whether work runs follows FR-46. |
+| **Block** | A top-level part of the popover the user can reorder: one provider group, the heatmap, GitHub (FR-44). The sections inside a provider group keep a fixed order. |
+| **Plan** | The subscription tier a provider's tool runs on, as the tool itself names it (for Claude Code for example "Pro" or "Max"). Shown verbatim, never inferred from usage (FR-50). |
+| **Heatmap layer** | One source's per day values in the shared heatmap, drawn in that source's hue (FR-48). |
 
 ---
 
@@ -193,7 +199,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 ### US-4 (P1): See my GitHub contributions
 
-- **Given** a valid GitHub token is stored, **then** the popover shows a contribution heatmap of the last 26 weeks, today's count, the current streak and the total for the last year.
+- **Given** a valid GitHub token is stored, **then** the popover shows GitHub's layer in the shared heatmap of the last 26 weeks (US-14), today's count, the current streak and the total for the last year.
 - **Given** no token is configured, **then** the GitHub section shows a "Connect GitHub" button that opens Settings.
 - **Given** the token is invalid or revoked, **then** the section says so and offers "Change token…", which opens Settings. Other sections keep working.
 
@@ -212,7 +218,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 ### US-7 (P2): Configure everything in one place
 
-- A Settings window lets me: enable or disable providers, paste/validate/remove the GitHub token, see and override the path to `claude`, choose what the menu bar shows, set refresh intervals within allowed bounds, set notification thresholds, toggle launch at login, and open the data folder.
+- A Settings window lets me: enable or disable providers, paste/validate/remove the GitHub token, see and override the path to `claude`, choose what the menu bar shows, set refresh intervals within allowed bounds, set notification thresholds, toggle launch at login, and open the data folder. It also lets me arrange the popover (US-13).
 
 ### US-8 (P3): See what is driving my Claude Code usage
 
@@ -238,6 +244,27 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 - **Given** I disable a provider in Settings, **then** nothing runs for it (no processes, no file watching), its popover group disappears, and the menu bar falls back to the next available source.
 - Its history is kept until I explicitly choose "Delete data for this provider" in Settings.
+- GitHub can be switched off the same way, without disconnecting: the token stays in the Keychain (FR-43).
+
+### US-13 (P2): Arrange the popover
+
+- **Given** the Popover tab in Settings, **then** I can drag the blocks (each provider group, the heatmap, GitHub) into any order, show or hide each block, and show or hide a provider group's limits, activity and insights sections. The open popover follows at once.
+- Hiding a section never silences the menu bar or notifications: their data keeps coming (FR-46).
+- **Given** every block is hidden or every source is off, **then** the popover shows "Nothing to show" with "Open Settings…", and the menu bar shows only its icon.
+
+### US-14 (P2): One heatmap for all my activity
+
+- **Given** GitHub and Claude Code are both in the heatmap, **then** each day shows GitHub's level in green and Claude Code's in orange: as stripes of one cell ("Combined", the default) or as one grid per source sharing the week columns ("Stacked").
+- Hovering a day lists every layer ("2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"); VoiceOver reads the same line, so no value depends on color alone.
+- I can take a source out of the heatmap without hiding its other sections.
+
+### US-15 (P3, after v1): See which plan each tool runs on
+
+*Plans decide what a tool reports: a free plan can lack windows a paid plan has. Once a second provider exists (T-5.17), the popover must make clear why one group shows less than another.*
+
+- **Given** a provider reports its plan, **then** its group header shows it next to the display name ("Claude Code · Max").
+- **Given** a plan delivers fewer windows or capabilities, **then** the group shows only what the plan delivers, and the plan in the header explains the gap.
+- Copy statistics and diagnostics include the plan.
 
 ---
 
@@ -250,7 +277,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-1 | P1 | **Registry.** The app registers providers at launch from a static list (v1: `claude-code`). Each provider supplies a `ProviderDescriptor` ([10.2](#102-provider-types)): ID, display name, SF Symbol, capabilities, token categories and schedule policies. Registration order defines display order. |
 | FR-2 | P1 | **Enablement.** Each provider can be enabled or disabled in Settings. A disabled provider starts no processes, watches no files and schedules nothing; only the Providers tab, while shown, may detect its availability (ADR-028). Default on first run: enabled if its detection reports `available`. |
 | FR-3 | P1 | **Detection.** Each provider reports its availability: `available(version)`, `notInstalled`, `notSignedIn`, `unsupportedPlan(note)` or `unknown`. Detection must be cheap and is re-run at most once per minute on popover open while not `available`. |
-| FR-4 | P1 | **Popover groups.** The popover shows one group per enabled provider, in registry order, each with its capability sections (limits, activity, insights). With a single provider no provider picker or extra chrome is shown. |
+| FR-4 | P1 | **Popover groups.** The popover shows one group per enabled provider, in the block order and visibility of FR-44 (default: registry order), each with its capability sections (limits, activity, insights). With a single provider no provider picker or extra chrome is shown. |
 | FR-5 | P1 | **Window kinds.** Every provider classifies each of its usage windows as `session`, `weekly` or `other`. Menu bar modes and settings use kinds; labels are displayed verbatim. |
 
 ### 5.2 Claude Code: plan limits
@@ -268,7 +295,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-12 | P2 | **Menu bar label.** Display modes: `primary` (default: the `session` window of the menu bar provider), `weekly` (the first `weekly` window of the menu bar provider), `highest` (the window with the highest percentage across all enabled providers), `githubToday`, `primaryAndGitHub`, `iconOnly`. The menu bar provider is a setting; it defaults to the first available provider and is hidden in Settings while only one provider exists. If the chosen window is missing, fall back to `highest`, then to `?`. |
+| FR-12 | P2 | **Menu bar label.** Display modes: `primary` (default: the `session` window of the menu bar provider), `weekly` (the first `weekly` window of the menu bar provider), `highest` (the window with the highest percentage across all enabled providers), `githubToday`, `primaryAndGitHub`, `iconOnly`. The menu bar provider is a setting; it defaults to the first available provider and is hidden in Settings while only one provider exists. If the chosen window is missing, fall back to `highest`, then to `?`. Settings offers only the modes whose source is on (FR-2, FR-43); with every source off the label is `iconOnly`. Hiding a section does not change the label (FR-46). |
 
 ### 5.4 Notifications
 
@@ -286,7 +313,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-17 | P1 | Validate a token by querying `viewer { login }`. Show the resolved login in Settings ("@login", "Connected"). |
 | FR-18 | P1 | Fetch the contribution calendar for the last 365 days via GraphQL ([8.4](#84-github-contributions)). |
 | FR-19 | P1 | Compute: today's count, this week's count (week starts per user locale), total for the range, current streak, longest streak within the range ([8.4.4](#844-statistics-rules)). |
-| FR-20 | P1 | Render a heatmap from `contributionLevel` (5 levels) using the app's own palette that adapts to light and dark mode. Range 26 weeks, not configurable. |
+| FR-20 | P1 | Render GitHub's `contributionLevel` (5 levels) as GitHub's layer of the shared heatmap (FR-48), using the app's own palette that adapts to light and dark mode. Range 26 weeks, not configurable. |
 | FR-21 | P3 | Optional import of the token from the GitHub CLI (`gh auth token`), only after an explicit button press, showing which account will be used. |
 
 ### 5.6 Claude Code: activity
@@ -307,7 +334,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | ID | Pri | Requirement |
 |---|---|---|
 | FR-30 | P1 | Agent app: `LSUIElement = YES` (no Dock icon, no app switcher entry). |
-| FR-31 | P1 | Popover layout in this order: one group per enabled provider (limits, then activity, then insights), GitHub, footer. Each section renders its own loading, empty, error and stale states. |
+| FR-31 | P1 | Popover layout: the visible blocks of FR-44 in their configured order (a provider group shows limits, then activity, then insights), then the footer. Each section renders its own loading, empty, error and stale states. |
 | FR-32 | P1 | Manual refresh button in the footer (and `⌘R` while the popover is focused). Refreshes all sources of all enabled providers and GitHub, subject to minimum intervals ([section 12](#12-refresh-policy)). |
 | FR-33 | P2 | Settings window (SwiftUI `Settings` scene) covering US-7 and US-12. |
 | FR-34 | P2 | Launch at login via `SMAppService.mainApp`. |
@@ -323,7 +350,20 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-39 | P3 | Claude Code status line bridge support: watch the bridge file, merge its windows with probe data (US-9, [8.2](#82-claude-code-status-line-bridge-optional)). Guided installer that backs up `~/.claude/settings.json`, never overwrites an existing `statusLine` without showing a diff and getting consent, and can uninstall cleanly. |
 | FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
-| FR-42 | P2 | "Copy" button in the popover footer (copy statistics): copies what the popover shows as plain text, in its order (per enabled provider its limits, activity and, while shown, insights with every period, then GitHub; a section without values its error message), without diagnostics (ADR-030). |
+| FR-42 | P2 | "Copy" button in the popover footer (copy statistics): copies what the popover shows as plain text, in its block order and only the visible sections (FR-44): per provider its limits, activity and, while shown, insights with every period; the heatmap one line per layer with its 26 week total; GitHub's statistics; a section without values its error message, without diagnostics (ADR-030). |
+| FR-50 | P3 | **Plan (after v1).** A provider may report its plan: the tool's own name for it, verbatim (US-15). It comes only from an official interface named in the provider's section 8, never from credential files or Keychain items (section 2); Claude Code's source is open (R-6). The group header, copy statistics (FR-42) and diagnostics (FR-36) show it; without one the header stays as it is. Sections and windows still follow what the provider reports, so the app holds no per plan logic. A plan change raises no notification. Where the plan travels in the types (with the limits report or with detection) is decided with R-6. |
+
+### 5.9 Popover layout and shared heatmap
+
+| ID | Pri | Requirement |
+|---|---|---|
+| FR-43 | P2 | **GitHub switch.** GitHub can be switched on or off in Settings' GitHub tab; default on. Off: no requests, its block and heatmap layer are hidden and the GitHub menu bar modes are not offered; the token stays in the Keychain. "Disconnect" still deletes the token (11.6). |
+| FR-44 | P2 | **Blocks.** The popover consists of blocks: one per enabled provider, the heatmap, GitHub. In Settings' Popover tab the user sets their order and shows or hides each block, and shows or hides each section of a provider group (limits, activity, insights, as far as its capabilities declare them; their order inside the group is fixed). Default: everything visible, provider groups in registry order, then the heatmap, then GitHub. The footer always comes last. |
+| FR-45 | P2 | **Layout persistence.** The layout (order, hidden blocks and sections, heatmap membership, heatmap style) is saved with the other settings in UserDefaults. Blocks are keyed by provider ID, `heatmap` and `github`; these two IDs are reserved and no provider may use them. A block missing from the saved order (for example a newly registered provider) is appended at the end and shown. Saved keys of providers that are not registered are kept and ignored. |
+| FR-46 | P2 | **Work follows use.** A source's data is fetched only while the source is on and something uses it: a visible section, its heatmap layer, the menu bar mode, or notifications. In v1: a provider's limits are fetched while it is on, because notifications use them; its activity is watched only while its activity section is visible or its heatmap layer is on; GitHub is fetched only while its block is visible, its layer is on or the menu bar mode shows it. A source nobody uses behaves like a disabled one (FR-2). |
+| FR-47 | P2 | **Nothing to show.** While no visible block has a source that is on, the popover shows "Nothing to show" with "Open Settings…" above the footer. |
+| FR-48 | P2 | **Shared heatmap.** The heatmap block shows the last 26 weeks, with one layer per source that is on and in the heatmap ("In heatmap" in the Popover tab, default on): GitHub's contributions, and for every provider with the `activity` capability its total tokens per day. Levels 0 to 4: GitHub's layer uses `contributionLevel` (FR-20); a provider's layer uses 0 for a day without tokens and otherwise the quartile of that day among the layer's non-zero days in the shown range. Days a source has no data for (before its history begins) are drawn like 0. Layers are never summed (7.7). The block is hidden while it has no layer (ADR-032). |
+| FR-49 | P2 | **Heatmap styles.** "Combined" (default): one grid, each cell split into equal vertical stripes, one per layer in block order. "Stacked": one grid per layer in block order, sharing the week columns and month labels. The style is chosen in the Popover tab, which notes that Stacked reads better from three layers on. A legend names each layer in its hue. Tooltip and VoiceOver read one line per day with every layer in block order: "2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"; a layer without data for that day reads "no data". |
 
 ---
 
@@ -374,13 +414,14 @@ A provider may implement any subset. The UI renders only the sections for the ca
 
 Every provider module must supply:
 
-1. A `ProviderDescriptor` with a stable ID, display name, neutral SF Symbol, capabilities, token categories it reports and a `SchedulePolicy` per polled source.
+1. A `ProviderDescriptor` with a stable ID, display name, neutral SF Symbol, heatmap hue, capabilities, token categories it reports and a `SchedulePolicy` per polled source.
 2. Availability detection (FR-3), cheap and side effect free.
 3. Zero or one `LimitsSource` and zero or one `ActivitySource` ([10.2](#102-provider-types)).
 4. Window classification: a pure function from label to `WindowKind`, fixture tested.
 5. Error mapping from tool specific failures to the shared `SourceError`.
-6. Its own fixtures and tests, plus a passing run of the shared provider conformance suite ([16.4](#164-provider-conformance-suite)).
-7. A provider section in [section 8](#8-data-sources) with the compliance note required by the provider gate ([2.4](#24-provider-gate)).
+6. If the tool's data differs by plan: a table in its section 8 of what each plan delivers (windows, capabilities), and its plan reported per FR-50.
+7. Its own fixtures and tests, plus a passing run of the shared provider conformance suite ([16.4](#164-provider-conformance-suite)).
+8. A provider section in [section 8](#8-data-sources) with the compliance note required by the provider gate ([2.4](#24-provider-gate)).
 
 A provider must not: talk to the network, read files outside the roots declared in its spec section, touch credentials, deliver notifications, or render UI.
 
@@ -393,14 +434,14 @@ A provider must not: talk to the network, read files outside the roots declared 
 | File watching | `FileEvents` | Which roots |
 | Persistence | Store, atomic writes, schema versions, folder layout | Content of files under `providers/<id>/` |
 | Notifications | `NotificationPlanner`, delivery | Nothing |
-| UI | All views, states, formatting | Descriptor values only (name, symbol, token categories) |
+| UI | All views, states, formatting, popover layout, heatmap levels | Descriptor values only (name, symbol, heatmap hue, token categories) |
 | Parsing | Nothing | Everything |
 
 ### 7.5 Registered providers
 
 | Provider ID | Display name | Capabilities | Priority | Spec |
 |---|---|---|---|---|
-| `claude-code` | Claude Code | `limits`, `activity`, `insights` | v1 | [8.1](#81-claude-code-plan-limits-via-usage-probe) to [8.3](#83-claude-code-activity-from-local-transcripts), mapping in [8.1.4](#814-window-classification-and-token-categories) |
+| `claude-code` | Claude Code (heatmap hue `orange`) | `limits`, `activity`, `insights` | v1 | [8.1](#81-claude-code-plan-limits-via-usage-probe) to [8.3](#83-claude-code-activity-from-local-transcripts), mapping in [8.1.4](#814-window-classification-and-token-categories) |
 
 ### 7.6 Future provider candidates
 
@@ -411,7 +452,8 @@ Other AI coding tools (for example other vendors' coding CLIs, IDE based coding 
 - Limits of different providers are never summed, averaged or merged. Merging is allowed only between sources of the same provider (for Claude Code: probe and bridge).
 - Notification titles always start with the provider's display name.
 - `highest` in the menu bar shows the provider's symbol next to the percentage when more than one provider is enabled.
-- Activity is shown per provider. A combined "all tools" activity total is out of scope for v1 (token semantics differ between tools).
+- Activity is shown per provider. A combined "all tools" activity total is out of scope for v1 (token semantics differ between tools). The shared heatmap shows each source as its own layer with its own levels and never sums them (FR-48, ADR-032).
+- Each provider has its own heatmap hue. Green stays GitHub's and red stays the critical limit color (11.4).
 - Global budgets (NFR-1, NFR-18) apply to the sum of all providers.
 
 ---
@@ -787,10 +829,14 @@ public struct ProviderDescriptor: Sendable {
     public let id: ProviderID
     public let displayName: String              // "Claude Code"
     public let symbolName: String               // neutral SF Symbol, never a vendor logo
+    public let heatmapHue: HeatmapHue           // its heatmap layer's color (FR-48, 11.4)
     public let capabilities: ProviderCapabilities
     public let tokenCategories: Set<TokenCategory>
     public let limitsPolicy: SchedulePolicy?    // nil if limits are push only or absent
 }
+
+/// Named system hues; the app maps them to colors. Green is GitHub's and never a provider's.
+public enum HeatmapHue: String, Sendable, Codable { case orange, blue, purple, teal, pink, indigo }
 
 public enum ProviderAvailability: Sendable, Equatable {
     case available(version: String)
@@ -979,6 +1025,43 @@ Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app wr
 
 Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`. Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
+### 10.8 Popover layout and heatmap
+
+Plain values in the core, so the rules of FR-44 to FR-49 are tested without the app ([16.3](#163-must-have-test-cases)). GitHub enters as an ID and its data as plain day values, so the core still imports no GitHub target (NFR-17).
+
+```swift
+public enum BlockID: Hashable, Sendable, Codable {   // persisted as the provider ID, "heatmap" or "github" (FR-45)
+    case provider(ProviderID), heatmap, github
+}
+public enum SectionKind: String, Sendable, Codable { case limits, activity, insights }
+public enum HeatmapStyle: String, Sendable, Codable { case combined, stacked }
+
+public struct PopoverLayout: Sendable, Codable, Equatable {
+    public var order: [BlockID]
+    public var hiddenBlocks: Set<BlockID>
+    public var hiddenSections: [ProviderID: Set<SectionKind>]
+    public var outOfHeatmap: Set<BlockID>              // .provider(_) or .github
+    public var heatmapStyle: HeatmapStyle              // .combined by default
+    /// Visible blocks in order, given the registry order and the sources that are on (FR-44, FR-47).
+    public func blocks(registered: [ProviderID], on: Set<BlockID>) -> [BlockID]
+    /// What must run (FR-46); the menu bar's sources come from its mode.
+    public func demand(on: Set<BlockID>, menuBar: Set<BlockID>) -> Demand
+}
+
+public struct Demand: Sendable, Equatable {
+    public var limits: Set<ProviderID>
+    public var activity: Set<ProviderID>
+    public var github: Bool
+}
+
+public struct HeatmapLayer: Sendable, Equatable {
+    public let id: BlockID
+    public let values: [DayKey: Int]                   // tokens or contributions; a missing day is "no data"
+    public let levels: [DayKey: Int]                   // 0...4
+    public static func quartiled(_ id: BlockID, values: [DayKey: Int]) -> HeatmapLayer   // providers (FR-48)
+}
+```
+
 ---
 
 ## 11. UI specification
@@ -1005,17 +1088,19 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 │ ▁ ▃ ▂ ▅ ▇ ▆ ▃   last 7 days                │
 │ ▸ Insights                                 │
 ├────────────────────────────────────────────┤
+│ Heatmap             ■ Claude Code ■ GitHub │
+│ ▚▞▚█░▞▚▒▞▚█▞▚░▞ … (26 weeks × 7 days)       │
+├────────────────────────────────────────────┤
 │ GitHub  @login                             │
-│ ░▒▓█░▒▒▓░░▒█▓▒░ … (26 weeks × 7 days)       │
 │ Today 5 · Streak 12 days · Year 1,234      │
 ├────────────────────────────────────────────┤
 │ ⟳             ⚙︎             ⧉             ⏻ │
 └────────────────────────────────────────────┘
 ```
 
-- Each provider group has a header with its symbol, display name and the age of its limits data. Additional providers appear as further groups above GitHub, separated by dividers.
+- Each provider group has a header with its symbol, display name and the age of its limits data. Additional providers appear as further groups; all blocks follow the order and visibility of FR-44, separated by dividers. The sketch shows the default order and the Combined heatmap style (FR-49).
 - Countdowns and ages update once per minute, only while the popover is visible (`TimelineView(.periodic(from: .now, by: 60))`).
-- Hovering a heatmap cell shows "2026-09-27: 5 contributions". Hovering a reset text shows the absolute local date and time. Both are tooltips that appear after 0.2 s.
+- Hovering a heatmap cell shows its FR-49 line ("2026-09-27 · Claude Code: 1.2M tokens · GitHub: 5 contributions"). Hovering a reset text shows the absolute local date and time. Both are tooltips that appear after 0.2 s.
 - The 7 day chart uses Swift Charts, total tokens per day, with an accessibility summary.
 - If the popover content exceeds the screen height (many providers), the provider groups scroll; the footer stays pinned.
 - The footer's buttons show only their icons, with the titles as tooltips and VoiceOver labels: the titles do not fit 360 pt in every language (German).
@@ -1026,6 +1111,7 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 | State | Limits | Activity | GitHub |
 |---|---|---|---|
 | Provider disabled | Group hidden | Group hidden | n/a |
+| Hidden by the user (FR-44), GitHub off (FR-43) | Section hidden | Section hidden | Block hidden |
 | Not configured | "Claude Code not found" + "Locate…" button | "No Claude Code sessions found on this Mac" | "Connect GitHub" button |
 | First load | Skeleton bars | Skeleton rows | Skeleton grid |
 | Loaded | Values | Values | Values |
@@ -1037,6 +1123,8 @@ Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `me
 
 The texts in this table show Claude Code as the example; the app words each state once with the provider's display name, so providers supply no strings, and the unsupported plan text is the tool's own note (ADR-017, ADR-031).
 
+The heatmap block takes each layer from its source's last snapshot, stale or failed ones included, and dims a stale layer like its section. A layer without any snapshot counts every day as "no data".
+
 ### 11.4 Colors and thresholds
 
 | Level | Range | Bar color |
@@ -1045,7 +1133,7 @@ The texts in this table show Claude Code as the example; the app words each stat
 | Warning | 70 to 89 % | System yellow/orange |
 | Critical | 90 % and above | System red |
 
-The percentage is always shown as text next to the bar. The heatmap uses 5 steps of one hue (level 0 is a neutral secondary fill) that work on light and dark backgrounds.
+The percentage is always shown as text next to the bar. Each heatmap layer draws levels 1 to 4 in four steps of its hue (40 to 100 % opacity, T-5.7) and level 0 in a neutral secondary fill, on light and dark backgrounds. GitHub's hue is system green; a provider's is its descriptor's `heatmapHue` (Claude Code: system orange). Red is not a layer hue: it means critical here, and red next to green fails the most common color blindness (ADR-032).
 
 ### 11.5 Formatting
 
@@ -1058,15 +1146,16 @@ The percentage is always shown as text next to the bar. The heatmap uses 5 steps
 
 | Tab | Controls |
 |---|---|
-| General | Menu bar display mode and menu bar provider (hidden while only one provider exists), both with T-5.10 (ADR-028); launch at login; notification thresholds; notify on reset |
+| General | Menu bar display mode, offering only modes whose source is on (FR-12), and menu bar provider (hidden while only one provider exists), both with T-5.10 (ADR-028); launch at login; notification thresholds; notify on reset |
+| Popover | Block list in popover order, reorderable by drag (FR-44); per block a visibility toggle and, for a source with daily data, "In heatmap" (FR-48); a provider row expands into toggles for the sections its capabilities declare; a block whose source is off is greyed out with a note pointing to Providers or GitHub; heatmap style Combined or Stacked with a legend preview and the three-layer hint (FR-49) |
 | Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (5 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
-| GitHub | Account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
+| GitHub | On/off switch, keeping the token (FR-43); account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
 | Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics; show insights toggle |
 
 ### 11.7 Accessibility examples
 
 - Limits bar: "Claude Code, Current session, 23 percent used, resets in 2 hours 10 minutes."
-- Heatmap: container label "GitHub contributions, last 26 weeks, 812 total, current streak 12 days"; individual cells reachable by keyboard with date and count.
+- Heatmap: container label "Heatmap, last 26 weeks, Claude Code 41M tokens, GitHub 812 contributions"; individual days reachable by keyboard, each read as its FR-49 line. GitHub's statistics: "GitHub, today 5, current streak 12 days, last year 1,234".
 - Chart: "Claude Code tokens per day, last 7 days, highest Thursday with 5.1 million."
 
 ---
@@ -1381,6 +1470,9 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 - Notification planner: thresholds fire once per provider, window and reset cycle, survive restart, re-arm after reset; identical labels from two providers produce separate notifications.
 - Persistence: atomic write, schema version mismatch handling, history never discarded, provider data deletion removes only that provider's folder.
 - Menu bar selection: `primary` falls back to `highest`, then `?`; `highest` across two providers.
+- Popover layout: default order; a new provider appended and shown; saved keys of unknown providers kept; hidden blocks and sections left out; "Nothing to show" when no visible block has a source that is on.
+- Work follows use (FR-46): a hidden activity section with its heatmap layer off watches nothing; a hidden limits section keeps probing; a hidden GitHub block still fetches while its layer is on or the menu bar shows it.
+- Heatmap levels: quartiles over non-zero days, a range with one active day and an all-zero range, days without data, GitHub levels passed through unchanged; layer order follows block order; the FR-49 line including "no data".
 
 ### 16.4 Provider conformance suite
 
@@ -1406,7 +1498,8 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 | `claude` renamed or uninstalled | Limits show "not found"; others unaffected |
 | `claude` installed as x86_64 binary on a Mac without Rosetta | Clear Rosetta message; others unaffected |
 | Claude Code provider disabled | Group hidden; no `claude` processes (check Activity Monitor); menu bar falls back |
-| Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider |
+| Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider; the heatmap shows three layers in both styles |
+| Popover tab: reorder, hide every block, switch GitHub off | Popover follows at once; "Nothing to show"; menu bar and notifications keep working while their sections are hidden |
 | Fresh macOS user without `~/.claude` | Popover sections explain ("Claude Code not found" with "Locate…", "No Claude Code sessions found on this Mac"); no crash |
 | Invalid GitHub token | GitHub section error with "Change token…", which opens Settings |
 | Dark mode, increased contrast, Reduce Motion | Readable, no animations beyond system defaults |
@@ -1439,6 +1532,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
+- [ ] **R-6 Plan source.** For Claude Code: `/usage` says only that a subscription is used, not which. Check whether `claude auth status` (an official CLI command) names the plan, in which format, and what personal data it prints that must not be stored or logged; the credential file's fields stay off limits (section 2). Running it from the app extends 8.1.1 and FR-6's argument list, so the outcome is a spec change. For later providers the same question is part of their provider gate (2.4). *Outcome:* FR-50's Claude Code source, or an ADR that it has none. After v1.
 
 ### 17.1 Phase 1: Foundation
 
@@ -1493,9 +1587,17 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.7** Accessibility and localization pass. *(NFR-8 to NFR-10)* String Catalogs in the app and the core, English and German, with a CI sync check (ADR-031); provider groups scroll only when they overflow, so VoiceOver reaches them directly; the popover keeps the system's Liquid Glass, the heatmap uses system green in four steps (11.4), the footer shows icons with tooltips; heatmap keyboard and VoiceOver stay with T-5.11; VoiceOver, keyboard and appearance are checked with the 16.5 matrix.
 - [x] **T-5.8** Performance and energy verification on an M1. *(NFR-1 to NFR-4, NFR-14)* Done 2026-10-03 on an M3 as the stand-in (ADR-026): Release build with the popover closed and no transcript writes, 0.07 % CPU over 7.7 min; with a Claude Code session writing transcripts, 0.2 %; footprint 43 to 47 MB; 3 idle wakeups per minute; NFR-3, NFR-4 and NFR-14 checked in code. Method and results in `llm-wiki/research/t-5-8-performance-energy.md`.
 - [ ] ~~**T-5.9** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end.~~ Moved to T-5.12.
-- [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
-- [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, NFR-8)*
-- [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: a planned restructure changes the popover layout that US-11 checks, so this check runs after it. *(US-11)*
+- [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.13 and T-5.14 for offering only the modes of sources that are on; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
+- [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver on the shared heatmap, in both styles, reading the FR-49 line; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, FR-49, NFR-8)* Depends: T-5.16.
+- [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
+- [ ] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
+- [ ] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
+- [ ] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
+- [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
+- [ ] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)*
+- [ ] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID.
+
+Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check.
 - [ ] **M4 check:** manual matrix 16.5 passes.
 
 ### 17.6 Phase 6: Optional and release (M5)
@@ -1506,9 +1608,10 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-6.4** API-equivalent value estimate. *(FR-40)*
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
-- [ ] **T-6.7** Distribution: name availability check (Q-6), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
+- [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), icon, Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
 - [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
-- [ ] **T-6.9** Second provider evaluation (research only): pick one candidate AI coding tool, run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated.
+- [ ] ~~**T-6.9** Second provider evaluation (research only).~~ Moved to T-5.17.
+- [ ] **T-6.10** Plan display: the plan in the group header, copy statistics and diagnostics. *(FR-50, US-15)* Depends: R-6. After v1; becomes relevant with a second provider whose data differs by plan (T-5.17).
 
 ### 17.7 Definition of Done
 
@@ -1538,8 +1641,10 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
-| Q-6 | Availability of the name "contribusage" and final icon | T-6.7 | Open |
-| Q-7 | Which AI coding tool becomes the second provider | T-6.9 | Open |
+| Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-6.7 (icon) | Open |
+| Q-7 | Which AI coding tool becomes the second provider | T-5.17 | Open |
+| R-6 | Which official interface reports a tool's plan; for Claude Code, whether `claude auth status` names it and what else it prints | T-6.10 | Open |
+| Q-8 | Could Claude Code's `stats-cache.json` (behind `/stats`) fill heatmap days that Claude Code already deleted from its transcripts? It is undocumented, versioned and updated with a lag; not used (ADR-032) | Nothing | Open |
 
 ### 19.2 Risks
 
