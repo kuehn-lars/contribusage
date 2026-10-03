@@ -26,6 +26,7 @@ T-5.10 shipped the label as an SF Symbol gauge plus text, rendered as a template
 ## Consequences
 - The label works in every menu bar appearance without template rendering; the screenshots and the light/dark matrix are the check, since no test can see the menu bar.
 - `MenuBarLabel` carries values (meter, companion, stale, title, source) instead of a symbol name, so a new style needs no core change.
-- The heatmap style adds the menu bar provider to the activity demand, the shared one every layer of the shared heatmap, its hidden block notwithstanding (FR-46).
+- The heatmap styles add what they draw to the activity demand (FR-46): `AppState.menuBarHeatmapSources(_:style:)` is the one rule, read by the image and the demand alike (the label's source; for the shared style every layer of the shared heatmap, its hidden block notwithstanding).
+- `MenuBarArt.paint` is the one meter color rule (tint, red from 90 %, half strength while stale), shared by the meter, the companion ring and the value text; the bar meters fill straight bars in order rather than trimming a path.
 - The heatmap styles never turn red: a red Claude Code stripe next to GitHub's green failed the color blindness rule of [[decisions/0032-shared-heatmap]] in the light and dark review render, so the value text carries the 90 % warning there.
 - Revisit when `MenuBarExtra` gains colored labels natively, or if a macOS release stops passing the status item's appearance to the handler.

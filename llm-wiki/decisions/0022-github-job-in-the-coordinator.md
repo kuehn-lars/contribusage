@@ -41,4 +41,4 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - T-5.14 (FR-43): the GitHub switch removes GitHub from the sources that are on, so `Demand.github` turns false and the job is skipped; the token stays in the Keychain.
 - Revisit if a second non-provider source appears: then a list of jobs instead of one generic slot; `run` already takes any job.
 - GitHub's heatmap layer reads the job's last snapshot, stale or failed ones dimmed (T-5.16, SPEC §11.4).
-- T-5.19: the menu bar's demand set (`AppState.menuBarSources`) also names the menu bar provider for the heatmap style ([[decisions/0035-drawn-menu-bar-label]]); GitHub's part of it is unchanged.
+- T-5.19: the menu bar's demand set (`AppState.menuBarSources`) also names the activity the heatmap styles draw (`menuBarHeatmapSources(_:style:)`) ([[decisions/0035-drawn-menu-bar-label]]); GitHub's part of it is unchanged.

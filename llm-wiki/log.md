@@ -331,3 +331,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] feat | Shared heatmap in the menu bar
 - New `sharedHeatmap` style: the shared heatmap's layers (for example Claude Code and GitHub) over the last three weeks, a stripe per active layer as in FR-49 Combined (FR-51, [[decisions/0035-drawn-menu-bar-label]]).
 - The heatmap styles keep their hues from 90 %; the value text turns red instead, since red beside GitHub's green fails ADR-032's rule.
+
+## [2026-10-04] refactor | Menu bar label review
+- One rule for the layers a heatmap style draws, `menuBarHeatmapSources(_:style:)`, read by the image and the demand ([[decisions/0035-drawn-menu-bar-label]]).
+- `MenuBarArt`: one value-based meter color, straight bars instead of path trimming, layers captured by the glyph; every style renders byte-identical in light and dark.

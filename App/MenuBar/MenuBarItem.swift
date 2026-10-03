@@ -33,26 +33,24 @@ extension AppState {
             let layer = self.layer(source, days: days, at: now)?.layer
             return shown.map { layer?.levels[$0] ?? 0 }
         }
-        let layers: [MenuBarArt.Layer] =
-            switch style {
-            case .heatmap: label.source.map { [.init(levels: levels($0))] } ?? []
-            case .sharedHeatmap:
-                // The label's source takes the tint; the other layers keep their hues (SPEC §11.4).
-                menuBarHeatmapSources(label).map { source in
-                    .init(
-                        levels: levels(source),
-                        color: source == label.source || menuBarTint == .monochrome ? nil : source.hue(in: self))
-                }
-            default: []
-            }
+        // The label's source takes the tint; the other layers keep their hues (SPEC §11.4).
+        let layers = menuBarHeatmapSources(label, style: style).map { source in
+            MenuBarArt.Layer(
+                levels: levels(source),
+                color: source == label.source || menuBarTint == .monochrome ? nil : source.hue(in: self))
+        }
         return MenuBarArt.image(label, style: style, color: menuBarTintColor(for: label), heatmap: layers)
     }
 
-    /// FR-51: the shared heatmap's layers in block order, whether or not its block is visible; the label's source
-    /// alone when no layer is on.
-    func menuBarHeatmapSources(_ label: MenuBarLabel) -> [BlockID] {
-        let sources = heatmapSources
-        return sources.isEmpty ? label.source.map { [$0] } ?? [] : sources
+    /// FR-51: the layers a heatmap style draws, in block order: the label's source for `heatmap`; the shared heatmap's
+    /// layers for `sharedHeatmap`, whether or not its block is visible, else the label's source; none for the others.
+    func menuBarHeatmapSources(_ label: MenuBarLabel, style: MenuBarStyle) -> [BlockID] {
+        let own = label.source.map { [$0] } ?? []
+        switch style {
+        case .heatmap: return own
+        case .sharedHeatmap: return heatmapSources.isEmpty ? own : heatmapSources
+        default: return []
+        }
     }
 
     /// FR-51: `nil` for monochrome; usage follows SPEC §11.4's levels.

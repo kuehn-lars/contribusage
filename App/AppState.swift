@@ -138,18 +138,12 @@ import Observation
             providers: menuBarProviders.map { ($0.descriptor, $0.limits?.snapshot) }, github: github, at: now)
     }
 
-    /// FR-46: what the menu bar label uses; its heatmap style draws the source's activity (FR-51).
-    // ponytail: `highest` can show another provider than the menu bar provider, whose activity then is not watched;
-    // follow the label's `source` once a second provider exists (T-5.17).
+    /// FR-46: what the menu bar label uses: GitHub's value, and the activity its heatmap styles draw (FR-51).
+    // ponytail: read when a setting changes, so a heatmap does not follow `highest` to another provider's window as
+    // limits arrive; re-apply the demand on new limits once a second provider exists (T-5.17).
     private var menuBarSources: Set<BlockID> {
-        var sources: Set<BlockID> = resolvedMenuBarMode.usesGitHub ? [.github] : []
-        if menuBarStyle == .heatmap, resolvedMenuBarMode.usesProviders || resolvedMenuBarMode == .iconOnly,
-            let id = shownMenuBarProvider
-        {
-            sources.insert(.provider(id))
-        }
-        if menuBarStyle == .sharedHeatmap { sources.formUnion(menuBarHeatmapSources(menuBarLabel(at: .now))) }
-        return sources
+        let heatmap = menuBarHeatmapSources(menuBarLabel(at: time.now), style: menuBarStyle)
+        return Set(heatmap).union(resolvedMenuBarMode.usesGitHub ? [.github] : [])
     }
 
     /// The running app: the registered providers and GitHub on the coordinator, fed by the Mac's conditions (SPEC §12).
