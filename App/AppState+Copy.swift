@@ -11,8 +11,11 @@ extension AppState {
             var lines = [header(name, group.limits?.snapshot?.fetchedAt)]
             lines += values(group.limits, name) { report in
                 report.windows.map { window in
-                    ["\(window.label): \(window.percentText(at: now))", window.resetText(at: now)]
-                        .compactMap(\.self).joined(separator: " · ")
+                    [
+                        "\(group.descriptor.toolText(window.label)): \(window.percentText(at: now))",
+                        window.resetText(at: now),
+                    ]
+                    .compactMap(\.self).joined(separator: " · ")
                 }
             }
             lines += values(group.activity, name) { report in
@@ -26,7 +29,7 @@ extension AppState {
                 ]
             }
             if UserDefaults.standard.object(forKey: "showInsights") as? Bool ?? true, let insights = group.insights {
-                lines += insightsLines(insights)
+                lines += insightsLines(insights, group.descriptor.toolText)
             }
             return lines
         }
@@ -100,13 +103,13 @@ private func values<Value>(_ state: SourceState<Value>?, _ name: String, _ lines
 }
 
 /// `InsightsSection`'s content per period: summary, shares, then the top three of each ranking.
-private func insightsLines(_ insights: Insights) -> [String] {
+private func insightsLines(_ insights: Insights, _ toolText: (String) -> String) -> [String] {
     func line(_ share: Insights.Share, indent: String) -> String {
         indent + share.label + (share.percent.map { " " + $0.formatted(.percent) } ?? "")
     }
-    var lines = [String(localized: "Insights") + (insights.note.map { " (\($0))" } ?? "")]
+    var lines = [String(localized: "Insights") + (insights.note.map { " (\(toolText($0)))" } ?? "")]
     for period in insights.periods {
-        lines.append("\(period.label): \(period.summary)")
+        lines.append("\(toolText(period.label)): \(toolText(period.summary))")
         lines += period.shares.map { line($0, indent: "  ") }
         for ranking in period.rankings {
             lines.append("  \(ranking.title)")

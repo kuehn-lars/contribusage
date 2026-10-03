@@ -152,7 +152,7 @@ Before any code for a new AI coding tool is written, all of the following must b
 | **Limits source** | The part of a provider that produces usage windows (for Claude Code: the `/usage` probe plus the optional status line bridge). |
 | **Activity source** | The part of a provider that produces per day activity (for Claude Code: local transcripts). |
 | **Usage window** | One plan limit bucket as reported by a provider, for example Claude Code's "Current session" (rolling 5 hour window) or "Current week (all models)". Has a used percentage and a reset time. |
-| **Window kind** | Provider neutral classification of a usage window: `session`, `weekly` or `other`. Used by the menu bar and settings; the label itself is always shown verbatim. |
+| **Window kind** | Provider neutral classification of a usage window: `session`, `weekly` or `other`. Used by the menu bar and settings; the label is kept verbatim and shown as the provider's window title (FR-5). |
 | **Probe** | (Claude Code) One execution of `claude -p "/usage" --no-session-persistence` by the app. |
 | **Probe folder** | (Claude Code) A dedicated empty directory the probe runs in: `~/Library/Application Support/contribusage/providers/claude-code/probe/`. |
 | **Status line bridge** | (Claude Code) Optional shell script registered as Claude Code's `statusLine` command that mirrors `rate_limits` JSON into a file the app watches. |
@@ -278,7 +278,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | FR-2 | P1 | **Enablement.** Each provider can be enabled or disabled in Settings. A disabled provider starts no processes, watches no files and schedules nothing; only the Providers tab, while shown, may detect its availability (ADR-028). Default on first run: enabled if its detection reports `available`. |
 | FR-3 | P1 | **Detection.** Each provider reports its availability: `available(version)`, `notInstalled`, `notSignedIn`, `unsupportedPlan(note)` or `unknown`. Detection must be cheap and is re-run at most once per minute on popover open while not `available`. |
 | FR-4 | P1 | **Popover groups.** The popover shows one group per enabled provider, in the block order and visibility of FR-44 (default: registry order), each with its capability sections (limits, activity, insights). With a single provider no provider picker or extra chrome is shown. |
-| FR-5 | P1 | **Window kinds.** Every provider classifies each of its usage windows as `session`, `weekly` or `other`. Menu bar modes and settings use kinds; labels are displayed verbatim. |
+| FR-5 | P1 | **Window kinds.** Every provider classifies each of its usage windows as `session`, `weekly` or `other`. Menu bar modes and settings use kinds. Labels are kept verbatim as the window's key; the UI shows the provider's window title for a label: its known labels translated, any other label as printed (ADR-033). |
 
 ### 5.2 Claude Code: plan limits
 
@@ -346,7 +346,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 
 | ID | Pri | Requirement |
 |---|---|---|
-| FR-38 | P3 | Insights area showing the Claude Code `/usage` "What's contributing" block, structured by period (US-8, ADR-023). Generic: any provider with the `insights` capability supplies an `Insights` value (10.3). |
+| FR-38 | P3 | Insights area showing the Claude Code `/usage` "What's contributing" block, structured by period (US-8, ADR-023). Period labels, the request and session counts of a summary and the known sentences of the note show translated, shares and rankings as printed (ADR-033). Generic: any provider with the `insights` capability supplies an `Insights` value (10.3). |
 | FR-39 | P3 | Claude Code status line bridge support: watch the bridge file, merge its windows with probe data (US-9, [8.2](#82-claude-code-status-line-bridge-optional)). Guided installer that backs up `~/.claude/settings.json`, never overwrites an existing `statusLine` without showing a diff and getting consent, and can uninstall cleanly. |
 | FR-40 | P3 | "API-equivalent value" estimate from token counts using a user editable price table per provider, clearly labelled as an estimate, hidden by default. |
 | FR-41 | P3 | Support a custom Claude config directory chosen in Settings. |
@@ -380,7 +380,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
 | NFR-9 | Appearance | Correct in light and dark mode; respects Reduce Motion and Reduce Transparency; uses system fonts and semantic colors. | Manual checklist |
-| NFR-10 | Localization | All user facing strings in a String Catalog. English first; German ships as well, because an app without the user's language formats dates and units in English (ADR-031). Dates, numbers and relative times formatted with the user's locale. | Build check (CI: catalogs match the extracted strings and carry German, ADR-031), pseudo-localization run |
+| NFR-10 | Localization | All user facing strings in a String Catalog. English first; German ships as well, because an app without the user's language formats dates and units in English (ADR-031); a provider's known window labels are translated too (ADR-033). Dates, numbers and relative times formatted with the user's locale. | Build check (CI: catalogs match the extracted strings and carry German, ADR-031), pseudo-localization run |
 | NFR-11 | Code quality | Swift 6 language mode, strict concurrency, zero compiler warnings. | CI build |
 | NFR-12 | Resilience | Survives: `claude` missing or broken, logged out, offline, sleep and wake, time zone change, clock change, malformed or huge files, deleted transcript folders, a provider throwing on every call. | Test matrix in [16.5](#165-manual-test-matrix) |
 | NFR-13 | Privacy | The app itself connects only to `api.github.com`. Logs never contain tokens. | Little Snitch or `nettop`, log review |
@@ -417,7 +417,7 @@ Every provider module must supply:
 1. A `ProviderDescriptor` with a stable ID, display name, neutral SF Symbol, heatmap hue, capabilities, token categories it reports and a `SchedulePolicy` per polled source.
 2. Availability detection (FR-3), cheap and side effect free.
 3. Zero or one `LimitsSource` and zero or one `ActivitySource` ([10.2](#102-provider-types)).
-4. Window classification: a pure function from label to `WindowKind`, fixture tested.
+4. Window classification: a pure function from label to `WindowKind`, fixture tested; optionally translations of the known texts its tool prints (window labels, insights periods and counts) in its own String Catalog (ADR-033).
 5. Error mapping from tool specific failures to the shared `SourceError`.
 6. If the tool's data differs by plan: a table in its section 8 of what each plan delivers (windows, capabilities), and its plan reported per FR-50.
 7. Its own fixtures and tests, plus a passing run of the shared provider conformance suite ([16.4](#164-provider-conformance-suite)).
@@ -499,7 +499,7 @@ A real sample (September 2026, subscription plan) is in [Appendix A](#appendix-a
 | P-1 | Strip ANSI escape sequences (`ESC [ … letter`) before anything else. |
 | P-2 | Split into lines; each line is tested independently. |
 | P-3 | Window line grammar (Swift Regex, whole line): `\s*(?<label>[^:]+):\s*<?\s*(?<pct>\d+(?:\.\d+)?)%\s*used(?:.*?\bresets\s+(?<reset>.+?))?\s*` |
-| P-4 | Label is trimmed and kept verbatim. Known labels today: `Current session`, `Current week (all models)`. Model specific weekly windows may appear on some plans (for example `Current week (<model>)`). |
+| P-4 | Label is trimmed and kept verbatim. Known labels today: `Current session`, `Current week (all models)`. Model specific weekly windows may appear on some plans (for example `Current week (<model>)`). The UI shows these three forms translated, the model name as printed (ADR-033). |
 | P-5 | `<1%` is parsed as 0.5 and displayed as `<1%` (keep a flag `isBelowOne`). |
 | P-6 | Reset clause: optional trailing `(<IANA zone>)`; if the identifier is unknown, use the Mac's time zone. |
 | P-7 | Reset formats tried in order: `MMM d 'at' h:mm a`, `MMM d 'at' h a`, `MMM d`, `h:mm a`, `h a` (after normalizing `am`/`pm` to `AM`/`PM`, locale `en_US_POSIX`). |
@@ -518,7 +518,7 @@ P-1 to P-11 are implemented by `UsageParser` in `ContribusageClaudeCode/Limits/`
 | starts with `Current week` | `weekly` |
 | anything else | `other` |
 
-Classification is a pure function in the Claude Code target with its own tests. An unknown label is never dropped; it is shown verbatim as kind `other`.
+Classification is a pure function in the Claude Code target with its own tests. An unknown label is never dropped; it is shown as printed, as kind `other`.
 
 Token categories reported by Claude Code: `input`, `output`, `cacheWrite`, `cacheRead` (all four).
 
@@ -833,6 +833,7 @@ public struct ProviderDescriptor: Sendable {
     public let capabilities: ProviderCapabilities
     public let tokenCategories: Set<TokenCategory>
     public let limitsPolicy: SchedulePolicy?    // nil if limits are push only or absent
+    public let toolText: @Sendable (String) -> String  // printed text → UI text, default as printed (ADR-033)
 }
 
 /// Named system hues; the app maps them to colors. Green is GitHub's and never a provider's.
@@ -1023,7 +1024,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`, `popoverLayout` (the `PopoverLayout` of 10.8 as JSON, FR-45). Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubEnabled` (FR-43, default on), `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`, `popoverLayout` (the `PopoverLayout` of 10.8 as JSON, FR-45). Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ### 10.8 Popover layout and heatmap
 
@@ -1590,7 +1591,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver on the shared heatmap, in both styles, reading the FR-49 line; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, FR-49, NFR-8)* Depends: T-5.16.
 - [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
 - [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
-- [ ] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
+- [x] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
 - [ ] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
 - [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.
 - [ ] **T-5.17** Second provider evaluation (research only), moved from T-6.9: a second real shape tests the layout and the heatmap metric before v1. Run the provider gate (2.4), then either write its provider section and a new phase, or record an ADR explaining why it is not integrated. *(Q-7)*

@@ -26,9 +26,9 @@ NFR-10 wants every user facing string in a String Catalog, English first. Two ta
 ## Consequences
 - A new string needs a build in the Xcode IDE, or after `xcodebuild` the same `xcstringstool sync` on the catalog itself (the CI step shows the command). The copy must keep the name `Localizable.xcstrings`: sync matches the table by file name.
 - Extracted keys that are not prose (`claude`, `github_pat_…`, `%@ · %@`) are marked `shouldTranslate: false` in the catalog.
-- A provider that needs its own wording adds a catalog to its target and a `check` line to the CI step.
+- A provider that needs its own wording adds a catalog to its target and a `check` line to the CI step; Claude Code did so for its window labels ([[decisions/0033-provider-tool-texts]]), which partly supersedes "providers add no strings".
 - Numbers follow the locale: `percentText` uses the locale's percent style ("23 %" in German), so the menu bar label (T-5.10) must reserve width for it, not for a fixed "100%".
-- Every new string needs its German translation in the same change; `shouldTranslate: false` exempts keys that are not prose.
+- Every new string needs its German translation in the same change (the GitHub switch's subtitle, T-5.14, came with one); `shouldTranslate: false` exempts keys that are not prose.
 - The SwiftPM test host is English only, so the core's lookups stay English in `swift test` on any Mac; tests need no language pinning.
-- Text a tool prints stays English inside German sentences ("Claude Code: Current session bei 80 %").
+- Text a tool prints stays English inside German sentences, except the known window labels, insights periods, counts and note since [[decisions/0033-provider-tool-texts]] ("Claude Code: Aktuelle Sitzung bei 80 %").
 - A further language is a catalog edit, one more line in the CI check and a pseudo-localization run.

@@ -29,3 +29,4 @@ FR-38 showed the `/usage` "What's contributing" block verbatim in a disclosure g
 - Settings' Advanced tab hides the area with `showInsights` (on by default, [[decisions/0028-settings-scope-and-wiring]]).
 - Labels, summaries and ranking titles are the CLI's text and stay untranslated; only the percents follow the locale ([[decisions/0031-string-catalogs]]).
 - Revisit when the CLI changes the block's shape, or when a second provider's insights do not fit periods.
+- Insights stay as printed; only window labels are translated ([[decisions/0033-provider-tool-texts]]).

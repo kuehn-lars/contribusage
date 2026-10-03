@@ -38,7 +38,8 @@ public enum NotificationPlanner {
 
     /// Updates `sent` with the report's windows and drops cycles sent more than 8 days ago.
     public static func plan(
-        _ report: LimitsReport, displayName: String, settings: Settings, sent: inout Sent, now: Date
+        _ report: LimitsReport, displayName: String, windowTitle: (String) -> String, settings: Settings,
+        sent: inout Sent, now: Date
     ) -> [Note] {
         // FR-13: up to 3 values between 50 and 99; the defaults can hold anything.
         let thresholds = Set(settings.thresholds.filter { (50...99).contains($0) }).sorted().prefix(3)
@@ -50,6 +51,7 @@ public enum NotificationPlanner {
         var notes: [Note] = []
         // FR-11: a window past its reset is unknown until the next refresh.
         for window in report.windows where !window.isReset(at: now) {
+            let title = windowTitle(window.label)
             var cycle = cycles[window.label]
             // US-3: another reset time means the cycle ended, so the thresholds re-arm.
             if let ended = cycle, ended.resetsAt != window.resetsAt {
@@ -57,7 +59,7 @@ public enum NotificationPlanner {
                     notes.append(
                         Note(
                             report.provider, window.label, ended.resetsAt,
-                            title: String(localized: "\(displayName): \(window.label) has reset", bundle: .module)))
+                            title: String(localized: "\(displayName): \(title) has reset", bundle: .module)))
                 }
                 cycle = nil
             }
@@ -67,7 +69,7 @@ public enum NotificationPlanner {
             notes += crossed.map {
                 Note(
                     report.provider, window.label, window.resetsAt,
-                    title: String(localized: "\(displayName): \(window.label) at \($0) %", bundle: .module))
+                    title: String(localized: "\(displayName): \(title) at \($0) %", bundle: .module))
             }
         }
         sent[report.provider] = cycles.isEmpty ? nil : cycles

@@ -53,6 +53,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0030-provider-diagnostics-hook]]: ADR-030, providers add their own diagnostics lines through `UsageProvider.diagnostics()`
 - [[decisions/0031-string-catalogs]]: ADR-031, String Catalogs in the app and the core with a CI sync check; tool text stays as printed
 - [[decisions/0032-shared-heatmap]]: ADR-032, one heatmap with a layer per source, Combined or Stacked, levels per source, no red
+- [[decisions/0033-provider-tool-texts]]: ADR-033, `ProviderDescriptor.toolText` translates known tool texts (window labels, insights periods and counts) at display time; the printed text stays the key
 
 ## Research
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary

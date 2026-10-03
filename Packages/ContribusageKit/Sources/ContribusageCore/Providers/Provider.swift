@@ -45,10 +45,14 @@ public struct ProviderDescriptor: Sendable {
     public let tokenCategories: Set<TokenCategory>
     /// `nil` if limits are push only or absent.
     public let limitsPolicy: SchedulePolicy?
+    /// A text the tool printed (a window label, an insights period or summary) as the UI shows it, in the app's
+    /// language (NFR-10); the printed text stays the key.
+    public let toolText: @Sendable (String) -> String
 
     public init(
         id: ProviderID, displayName: String, symbolName: String, capabilities: ProviderCapabilities,
-        tokenCategories: Set<TokenCategory>, limitsPolicy: SchedulePolicy?
+        tokenCategories: Set<TokenCategory>, limitsPolicy: SchedulePolicy?,
+        toolText: @escaping @Sendable (String) -> String = { $0 }
     ) {
         self.id = id
         self.displayName = displayName
@@ -56,6 +60,7 @@ public struct ProviderDescriptor: Sendable {
         self.capabilities = capabilities
         self.tokenCategories = tokenCategories
         self.limitsPolicy = limitsPolicy
+        self.toolText = toolText
     }
 }
 

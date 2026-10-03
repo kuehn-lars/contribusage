@@ -17,7 +17,7 @@ let package = Package(
         .target(name: "ContribusageCore", resources: [.process("Resources")]),
 
         // Providers. Each depends only on the core.
-        .target(name: "ContribusageClaudeCode", dependencies: ["ContribusageCore"]),
+        .target(name: "ContribusageClaudeCode", dependencies: ["ContribusageCore"], resources: [.process("Resources")]),
 
         // GitHub contributions.
         .target(name: "ContribusageGitHub", dependencies: ["ContribusageCore"]),

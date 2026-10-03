@@ -323,12 +323,12 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     private func job(for provider: any UsageProvider) -> Job<LimitsReport>? {
         guard let source = provider.limits, let policy = provider.descriptor.limitsPolicy else { return nil }
         let id = provider.descriptor.id
-        let name = provider.descriptor.displayName
+        let descriptor = provider.descriptor
         return Job(
             policy: policy, origin: .poll,
             fetch: {
                 let report = try await source.fetch()
-                await self.notify(report, name)
+                await self.notify(report, descriptor)
                 return report
             },
             onUpdate: { [onUpdate] in await onUpdate(id, $0) }, triggers: { $0.windows.compactMap(\.resetsAt) },
@@ -337,12 +337,12 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
 
     /// FR-15: the keys are persisted before delivery, so a restart cannot repeat a notification. Runs only on a fetch,
     /// never on a restored snapshot.
-    private func notify(_ report: LimitsReport, _ displayName: String) async {
+    private func notify(_ report: LimitsReport, _ descriptor: ProviderDescriptor) async {
         guard let notifications else { return }
         let before = notificationKeys
         let notes = NotificationPlanner.plan(
-            report, displayName: displayName, settings: notifications.settings(), sent: &notificationKeys, now: time.now
-        )
+            report, displayName: descriptor.displayName, windowTitle: descriptor.toolText,
+            settings: notifications.settings(), sent: &notificationKeys, now: time.now)
         if notificationKeys != before { persist() }
         if !notes.isEmpty { await notifications.deliver(notes) }
     }

@@ -19,7 +19,7 @@ struct ProviderGroup: View {
                     state: limits, displayName: descriptor.displayName,
                     staleAfter: descriptor.limitsPolicy?.staleAfter, placeholder: .placeholder(descriptor.id),
                     retry: appState.refresh,
-                    content: { LimitsSection(report: $0, providerName: descriptor.displayName) })
+                    content: { LimitsSection(report: $0, descriptor: descriptor) })
             }
             if let activity = group.activity {
                 SectionStateView(
@@ -27,7 +27,7 @@ struct ProviderGroup: View {
                     content: { ActivitySection(report: $0, descriptor: descriptor) })
             }
             if showInsights, let insights = group.insights {
-                InsightsSection(insights: insights)
+                InsightsSection(insights: insights, descriptor: descriptor)
             }
         }
     }
@@ -35,7 +35,7 @@ struct ProviderGroup: View {
 
 struct LimitsSection: View {
     let report: LimitsReport
-    let providerName: String
+    let descriptor: ProviderDescriptor
     @Environment(\.now) private var now
 
     var body: some View {
@@ -44,7 +44,7 @@ struct LimitsSection: View {
             let percent = reset ? 0 : window.usedPercent  // FR-11: unknown, drawn empty
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(window.label)
+                    Text(descriptor.toolText(window.label))
                     Spacer()
                     Text(window.percentText(at: now)).monospacedDigit()
                 }
@@ -78,7 +78,9 @@ struct LimitsSection: View {
             } else {
                 String(localized: "\(Int(window.usedPercent)) percent used")
             }
-        return [providerName, window.label, used, window.resetText(at: now, width: .wide)].compactMap(\.self)
+        return [
+            descriptor.displayName, descriptor.toolText(window.label), used, window.resetText(at: now, width: .wide),
+        ].compactMap(\.self)
             .joined(separator: ", ")
     }
 }
@@ -86,6 +88,8 @@ struct LimitsSection: View {
 /// FR-38: one period at a time, its shares, then the top three of each ranking; the tool's note as the title's tooltip.
 struct InsightsSection: View {
     let insights: Insights
+    /// Its `toolText` translates the periods, summaries and note (ADR-033).
+    let descriptor: ProviderDescriptor
     /// A period's label, so the choice survives a refresh.
     @State private var selected: String?
 
@@ -95,11 +99,11 @@ struct InsightsSection: View {
             VStack(alignment: .leading, spacing: 6) {
                 if insights.periods.count > 1 {
                     Picker("Period", selection: Binding(get: { period.label }, set: { selected = $0 })) {
-                        ForEach(insights.periods, id: \.label) { Text($0.label).tag($0.label) }
+                        ForEach(insights.periods, id: \.label) { Text(descriptor.toolText($0.label)).tag($0.label) }
                     }
                     .pickerStyle(.segmented).labelsHidden()
                 }
-                Text(period.summary).font(.caption).foregroundStyle(.secondary)
+                Text(descriptor.toolText(period.summary)).font(.caption).foregroundStyle(.secondary)
                 Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
                     ForEach(period.shares, id: \.label, content: row)
                     ForEach(period.rankings, id: \.title) { ranking in
@@ -111,7 +115,8 @@ struct InsightsSection: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Insights").help(insights.note ?? "").accessibilityHint(insights.note ?? "")
+            let note = insights.note.map(descriptor.toolText) ?? ""
+            Text("Insights").help(note).accessibilityHint(note)
         }
     }
 

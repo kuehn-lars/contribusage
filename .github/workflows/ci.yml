@@ -52,6 +52,8 @@ jobs:
           check App/Resources/Localizable.xcstrings Contribusage.build/Release Contribusage
           check Packages/ContribusageKit/Sources/ContribusageCore/Resources/Localizable.xcstrings \
             ContribusageKit.build/Release ContribusageCore
+          check Packages/ContribusageKit/Sources/ContribusageClaudeCode/Resources/Localizable.xcstrings \
+            ContribusageKit.build/Release ContribusageClaudeCode
 
   wiki:
     name: Wiki lint

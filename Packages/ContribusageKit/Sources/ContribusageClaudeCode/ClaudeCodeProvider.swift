@@ -140,5 +140,52 @@ extension ProviderDescriptor {
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
             defaultInterval: .seconds(15 * 60), minimumInterval: .seconds(5 * 60), maximumInterval: .seconds(60 * 60),
-            staleAfter: .seconds(30 * 60), manualFloor: .seconds(30), needsNetwork: true))
+            staleAfter: .seconds(30 * 60), manualFloor: .seconds(30), needsNetwork: true),
+        toolText: { ClaudeCodeProvider.toolText($0) })
+}
+
+extension ClaudeCodeProvider {
+    /// NFR-10, ADR-033: the window labels of SPEC §8.1.4 P-4 and the insights' note, periods and request and session
+    /// counts, in the app's language; anything else stays as printed. Sentences and summary parts go one by one.
+    nonisolated static func toolText(_ text: String, locale: Locale = .current) -> String {
+        // The insights note: sentence by sentence, each keeping its period.
+        let sentences = text.components(separatedBy: ". ")
+        if sentences.count > 1 {
+            return (sentences.dropLast().map { $0 + "." } + [sentences.last!]).map { toolText($0, locale: locale) }
+                .joined(separator: " ")
+        }
+        if text.contains(" · ") {
+            return text.components(separatedBy: " · ").map { toolText($0, locale: locale) }.joined(separator: " · ")
+        }
+        // Fixed texts are manual catalog keys, looked up as printed; the note's first sentence has been printed with
+        // ";" and with " —". A key the catalog lacks comes back unchanged.
+        let key = text.replacing(" —", with: ";")
+        let fixed = localized(LocalizedStringResource(String.LocalizationValue(key), bundle: bundle), locale)
+        if fixed != key { return fixed }
+        let resource: LocalizedStringResource
+        if let model = text.wholeMatch(of: /Current week \((.+)\)/)?.1 {
+            resource = LocalizedStringResource("Current week (\(String(model)))", bundle: bundle)
+        } else if let hours = text.wholeMatch(of: /Last (\d+)h/).flatMap({ Int($0.1) }) {
+            resource = LocalizedStringResource("Last \(hours)h", bundle: bundle)
+        } else if let days = text.wholeMatch(of: /Last (\d+)d/).flatMap({ Int($0.1) }) {
+            resource = LocalizedStringResource("Last \(days)d", bundle: bundle)
+        } else if let count = text.wholeMatch(of: /(\d+) requests?/).flatMap({ Int($0.1) }) {
+            resource = LocalizedStringResource("\(count) requests", bundle: bundle)
+        } else if let count = text.wholeMatch(of: /(\d+) sessions?/).flatMap({ Int($0.1) }) {
+            resource = LocalizedStringResource("\(count) sessions", bundle: bundle)
+        } else {
+            return text
+        }
+        return localized(resource, locale)
+    }
+
+    private nonisolated static func localized(_ resource: LocalizedStringResource, _ locale: Locale) -> String {
+        var resource = resource
+        resource.locale = locale
+        return String(localized: resource)
+    }
+
+    /// The target's resource bundle, which holds the String Catalog.
+    nonisolated static let resources = Bundle.module.bundleURL
+    private nonisolated static var bundle: LocalizedStringResource.BundleDescription { .atURL(resources) }
 }

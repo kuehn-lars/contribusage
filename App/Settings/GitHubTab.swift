@@ -12,7 +12,13 @@ struct GitHubTab: View {
     @State private var error: String?
 
     var body: some View {
+        @Bindable var appState = appState
         Form {
+            // FR-43: switching off keeps the token; "Disconnect" deletes it.
+            Toggle(isOn: $appState.gitHubEnabled) {
+                Text("GitHub")
+                Text("While off, GitHub gets no requests; the token stays saved.")
+            }
             Section("Account") {
                 if login.isEmpty {
                     LabeledContent("Status") { Text("Not connected") }
