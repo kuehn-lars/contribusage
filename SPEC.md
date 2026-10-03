@@ -1023,7 +1023,7 @@ Directory: `~/Library/Application Support/contribusage/` (created with permissio
 
 Rules: all writes atomic (`Data.write(options: .atomic)`); every file the app writes is `{"schemaVersion": n, "value": …}` (`statusline-limits.json` is the bridge's own format, Appendix D); unknown or newer versions of cache files are discarded, `history.json` is never discarded automatically. "Delete data for this provider" (US-12) removes `providers/<id>/` after a confirmation dialog.
 
-Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`. Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
+Non secret settings live in `UserDefaults`. Global keys: `enabledProviders`, `menuBarMode`, `menuBarProvider`, `githubInterval`, `githubLogin` (the login the saved token resolved to, FR-17), `notificationThresholds`, `notifyOnReset`, `showInsights`, `popoverLayout` (the `PopoverLayout` of 10.8 as JSON, FR-45). Intervals are stored in minutes. Provider keys are namespaced `provider.<id>.<key>`, for Claude Code: `provider.claude-code.pathOverride`, `provider.claude-code.probeInterval`, `provider.claude-code.configDir`. Launch at login state is read from `SMAppService`, not stored.
 
 ### 10.8 Popover layout and heatmap
 
@@ -1048,8 +1048,7 @@ public struct PopoverLayout: Sendable, Codable, Equatable {
     public func demand(on: Set<BlockID>, menuBar: Set<BlockID>) -> Demand
 }
 
-public struct Demand: Sendable, Equatable {
-    public var limits: Set<ProviderID>
+public struct Demand: Sendable, Equatable {        // limits need none: they run while their provider is on (FR-46)
     public var activity: Set<ProviderID>
     public var github: Bool
 }
@@ -1590,7 +1589,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [ ] **T-5.10** Menu bar label with display modes, stale and unknown rendering, stable width, fallback rules; reuses `UsageWindow.percentText(at:)`. Moved from Phase 2 (formerly T-2.8). *(FR-12, US-1, 11.1)* Depends: T-3.6 for the GitHub modes, T-5.13 and T-5.14 for offering only the modes of sources that are on; adds the display mode and menu bar provider settings to Settings' General tab (ADR-028).
 - [ ] **T-5.11** Heatmap keyboard navigation and VoiceOver on the shared heatmap, in both styles, reading the FR-49 line; the palette (11.4, light and dark) came with T-5.7. Moved from Phase 3 (split from T-3.5). *(FR-20, FR-49, NFR-8)* Depends: T-5.16.
 - [ ] **T-5.12** Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` verified end to end. Moved from T-5.9: the popover layout and shared heatmap (T-5.13 to T-5.16) change what US-11 checks, so this check runs after them. *(US-11)*
-- [ ] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
+- [x] **T-5.13** Popover layout in the core: blocks, order, visibility, heatmap membership and style, persistence keys, and the demand rule; the coordinator and activity watching follow the demand. *(FR-44 to FR-47, 10.8, US-13)* Accept: the 16.3 cases for layout and work follows use.
 - [ ] **T-5.14** GitHub on/off switch that keeps the token; the GitHub job is not scheduled while off. *(FR-43, US-12)* Depends: T-5.13.
 - [ ] **T-5.15** Settings' Popover tab, the popover drawing its blocks in the configured order, the "Nothing to show" state, and copy statistics following the layout. *(FR-42, FR-44, FR-47, 11.6, US-13)* Depends: T-5.13, T-5.14.
 - [ ] **T-5.16** Shared heatmap block: provider layers with quartile levels, `heatmapHue` in the descriptor, Combined and Stacked styles, legend and tooltip; the heatmap leaves the GitHub section. *(FR-20, FR-48, FR-49, 11.4, US-14, ADR-032)* Depends: T-5.13. Accept: the 16.3 heatmap cases.

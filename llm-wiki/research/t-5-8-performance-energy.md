@@ -36,3 +36,4 @@ Does the Release build meet NFR-1 to NFR-4 and NFR-14 with one provider and real
 ## Outcome
 - T-5.8 ticked in SPEC §17.5. No spec change: the measured values fit NFR-1, NFR-2 and NFR-14.
 - Open: NFR-3 and NFR-4 still lack an Instruments run, and an M1 run is still missing.
+- Measured before T-5.13: since then an activity source nobody uses (section hidden, layer out of the heatmap) is not watched, and GitHub skips passes while nothing uses it, so the idle figures are an upper bound.

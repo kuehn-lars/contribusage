@@ -277,3 +277,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-03] spec | Plan display after v1 (FR-50, R-6, T-6.10)
 - Providers may report their plan as the tool names it (US-15, FR-50); a provider whose data differs by plan lists what each plan delivers (SPEC §7.3).
 - Claude Code's `/usage` doesn't name the plan; R-6 checks whether `claude auth status` does. Credential files stay off limits.
+
+## [2026-10-03] feat | Popover layout and demand in the core (T-5.13)
+- `PopoverLayout`, `BlockID`, `SectionKind`, `HeatmapStyle` and `Demand` (SPEC §10.8): block order with appended new providers, hidden blocks and sections, the heatmap's "on" rule, and FR-46's demand.
+- Activity watching and GitHub follow the demand; the layout persists as JSON under the `popoverLayout` default (SPEC §10.7).
