@@ -412,3 +412,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - README's Install section: download the DMG, then clear the quarantine flag once (`xattr -dr com.apple.quarantine`) or use Open Anyway, since the app is not notarized.
 - T-6.7 keeps Developer ID signing and notarization for a later stage; [[decisions/0006-no-app-sandbox]] amended, the README roadmap says so.
 - README's license badge is a static MIT badge: the shields.io GitHub lookup had cached "not specified" from before `LICENSE` existed.
+
+## [2026-10-04] docs | Contributor guide
+- `CONTRIBUTING.md`, kept short and open: issues and pull requests without prior sign-off, build and test commands, the SPEC §2 rules in brief, what CI asks for (German translations, stale wiki pages, both of which maintainers can finish), coding agents via `AGENTS.md`, the provider gate for new tools.
+- [[architecture/repo-map]] lists it.
+- `docs/assets/social-preview.svg` and `.png`: the repository's 1280×640 social preview, laid out from the README header's icon, title, tagline and pill; the PNG is rendered with headless Chrome and uploaded by hand.
