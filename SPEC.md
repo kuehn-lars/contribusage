@@ -1303,7 +1303,7 @@ contribusage/
    - **`ARCHS = arm64`** for all configurations (do not use "Standard Architectures", which adds x86_64 in Release). `ONLY_ACTIVE_ARCH = YES` in Debug.
    - Swift 6 language mode; treat warnings as errors in all configurations (NFR-11).
    - `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`: the app target holds views and wiring only.
-3. Signing & Capabilities: remove **App Sandbox**; keep **Hardened Runtime**; signing "Sign to Run Locally" for now.
+3. Signing & Capabilities: remove **App Sandbox**; keep **Hardened Runtime**; signing "Sign to Run Locally" (no Developer ID, ADR-006).
 4. Info.plist: generated from build settings (`GENERATE_INFOPLIST_FILE`); `INFOPLIST_KEY_LSUIElement = YES` makes the app an agent without a Dock icon. `App/` is a synchronised folder, so files added there join the target without editing the project file.
 5. Create the local package at `Packages/ContribusageKit` (File → New → Package), add it to the project (File → Add Package Dependencies → Add Local…), link `ContribusageCore`, `ContribusageClaudeCode` and `ContribusageGitHub` to the app target.
 6. Verify after the first Release build: `lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage` prints `arm64` (NFR-16).
@@ -1632,7 +1632,7 @@ Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T
 - [ ] **T-6.4** API-equivalent value estimate for the last 7 days: tokens per category and money per model from a price table. *(FR-40)* Seam: a pure estimate over `ActivityDay`s and a price table in the core.
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
-- [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), ~~icon~~ (moved to T-5.23), Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
+- [ ] **T-6.7** Distribution: Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. The DMG came 2026-10-04: CI's `release` job attaches it, ad-hoc signed, to every release, and the README tells users to clear the quarantine flag once. Signing and notarization are deferred to a later stage, for example once the project draws enough users (ADR-006). The name check moved to T-5.18, the icon to T-5.23; CI checks `LSMinimumSystemVersion` 14.0.
 - [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014). Since 2026-10-04 its `release` job turns a version bump on `main` into the GitHub release `v<MARKETING_VERSION>` once the other jobs pass: tag, generated notes and the ad-hoc signed arm64 DMG (ADR-006).
 - [ ] ~~**T-6.9** Second provider evaluation (research only).~~ Moved to T-5.17.
 - [ ] **T-6.10** Plan display: the plan in the group header, copy statistics and diagnostics. *(FR-50, US-15)* Depends: R-6. After v1; becomes relevant with a second provider whose data differs by plan (T-5.17).
@@ -1682,7 +1682,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | `claude` path changes after updates | Medium | Probe fails | Re-resolution in FR-6 |
 | Provider abstraction shaped too closely to Claude Code | Medium | Second provider needs core changes | `FakeProvider` with a deliberately different shape, conformance suite, `providerSpecific` error escape hatch |
 | A future tool offers no compliant interface | Medium | That tool cannot be integrated (or only partly) | Provider gate (2.4); partial capabilities are acceptable, non compliant ones are not built |
-| Users on Intel Macs ask for support | Low | Support requests | Documented non-goal (ADR-009); the download page states "Apple Silicon only" |
+| Users on Intel Macs ask for support | Low | Support requests | Documented non-goal (ADR-009); the README states "Apple Silicon only" |
 
 ---
 

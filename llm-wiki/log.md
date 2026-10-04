@@ -407,3 +407,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] chore | Release on version bump
 - `ci.yml` gains a `release` job: on `main`, after the other jobs pass, a new `MARKETING_VERSION` becomes the GitHub release `v<version>` with generated notes and the ad-hoc signed arm64 DMG.
 - [[decisions/0014-build-and-ci-foundation]] records it; AGENTS.md's CI row and SPEC T-6.8 mention it.
+
+## [2026-10-04] docs | Install from the DMG
+- README's Install section: download the DMG, then clear the quarantine flag once (`xattr -dr com.apple.quarantine`) or use Open Anyway, since the app is not notarized.
+- T-6.7 keeps Developer ID signing and notarization for a later stage; [[decisions/0006-no-app-sandbox]] amended, the README roadmap says so.

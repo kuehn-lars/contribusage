@@ -70,11 +70,22 @@ The windows you see are exactly the ones Claude Code prints for your plan. When 
 
 ## Install
 
-There is no signed download yet. Version 1.0 will ship as a notarized, arm64-only DMG; until then, build it from source.
+Download `contribusage-<version>.dmg` from the [latest release](https://github.com/kuehn-lars/contribusage/releases/latest), open it and drag contribusage to your Applications folder.
+
+> [!IMPORTANT]
+> contribusage is not signed with an Apple Developer ID or notarized, because the project has no Apple Developer account. On first launch macOS therefore refuses to open it and says it cannot verify the developer. This is expected. You get past it once with one of the two methods below.
+>
+> **Recommended: Terminal (always works).** After moving contribusage to Applications, remove the quarantine flag macOS set on the download, then open the app normally:
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/contribusage.app
+> ```
+>
+> **Alternative: System Settings.** Open contribusage once and close the warning, then go to System Settings → Privacy & Security, click **Open Anyway** next to the message about contribusage and confirm. This needs an administrator account.
 
 ## Build from source
 
-Building needs Xcode 26 or later.
+An app you build yourself opens without the warning above. Building needs Xcode 26 or later.
 
 ```bash
 git clone https://github.com/kuehn-lars/contribusage.git && cd contribusage
@@ -87,8 +98,7 @@ More commands are in [SPEC §15.6](SPEC.md#156-everyday-commands). The app icon 
 
 ## Roadmap
 
-- **v1.0:** The final manual check of the menu bar, popover, notifications and settings.
-- **Release:** Developer ID signing, notarization and the arm64 DMG.
+- **Notarized download:** Developer ID signing and notarization may follow at a later stage, if the project finds enough users; the DMG then opens without the step above.
 - **Status line bridge:** Live limits after every message in an active Claude Code session, through Claude Code's documented status line ([T-6.2](SPEC.md#176-phase-6-optional-and-release-m5)).
 - **More coding agents:** The provider framework is in place; Codex CLI is the next candidate ([ADR-037](llm-wiki/decisions/0037-no-second-provider-for-v1.md)).
 
