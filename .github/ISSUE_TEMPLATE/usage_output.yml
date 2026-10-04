@@ -1,0 +1,32 @@
+name: Limits missing after a Claude Code update
+description: The limits disappeared or look wrong, probably because Claude Code's /usage output changed.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        contribusage reads the limits from `claude -p "/usage"`. When Claude Code changes that output,
+        the parser needs a new test case (SPEC §16.6), and your output is the best input for it.
+  - type: input
+    id: version
+    attributes:
+      label: Claude Code version
+      description: The output of `claude --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output of /usage
+      description: >-
+        Run `claude -p "/usage" --no-session-persistence` in an empty folder and paste the output.
+        Replace your name, email, paths and anything else personal with placeholders; keep the
+        layout and the numbers.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What contribusage shows
+      description: What the popover shows instead, or a screenshot.

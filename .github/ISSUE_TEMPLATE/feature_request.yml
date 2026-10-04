@@ -1,0 +1,19 @@
+name: Feature request
+description: An idea for contribusage, or support for another coding tool.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: The problem it solves for you, and how you imagine it.
+    validations:
+      required: true
+  - type: textarea
+    id: tool
+    attributes:
+      label: Another coding tool?
+      description: >-
+        If this is about support for another tool: which one, and where does it show its usage
+        (a CLI command, files it writes, a documented hook)? contribusage only uses official
+        interfaces and never reads a tool's credentials (SPEC §2.4).

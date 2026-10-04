@@ -2,13 +2,15 @@
 
 Thanks for your interest! Bug reports, ideas, fixes, docs and features are all welcome. You don't need to ask before you start: open an issue or a pull request, whichever fits.
 
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Report a bug or suggest an idea
 
 [Open an issue](https://github.com/kuehn-lars/contribusage/issues/new) and describe what you expected and what happened. For bugs, Settings → Advanced → **Copy Diagnostics** gives us the versions and each provider's state; it never contains a token, but give it a quick read before you paste it.
 
 If the limits suddenly disappear after a Claude Code update, its `/usage` output has probably changed. The output of `claude -p "/usage"`, with anything personal removed, helps a lot.
 
-Found a security problem? Please report it privately under **Security → Report a vulnerability** instead of in an issue.
+Found a security problem? Please report it privately, as described in the [security policy](SECURITY.md), instead of in an issue.
 
 ## Build and run
 

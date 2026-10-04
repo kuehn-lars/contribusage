@@ -417,3 +417,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `CONTRIBUTING.md`, kept short and open: issues and pull requests without prior sign-off, build and test commands, the SPEC §2 rules in brief, what CI asks for (German translations, stale wiki pages, both of which maintainers can finish), coding agents via `AGENTS.md`, the provider gate for new tools.
 - [[architecture/repo-map]] lists it.
 - `docs/assets/social-preview.svg` and `.png`: the repository's 1280×640 social preview, laid out from the README header's icon, title, tagline and pill; the PNG is rendered with headless Chrome and uploaded by hand.
+
+## [2026-10-04] docs | Community files
+- `CODE_OF_CONDUCT.md`: Contributor Covenant 2.1; reports go through GitHub's "Report content → Report to repository admins", so no address is published.
+- `SECURITY.md`: latest release supported, reports through private vulnerability reporting, the SPEC §2 and §14 promises as the definition of a vulnerability.
+- `.github/ISSUE_TEMPLATE/` (bug, `/usage` output change per SPEC §16.6, feature with the provider-gate question, security contact link) and `.github/pull_request_template.md`; CONTRIBUTING.md links the Code of Conduct and the security policy. [[architecture/repo-map]] lists them.
