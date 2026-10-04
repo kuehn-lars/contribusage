@@ -131,7 +131,11 @@ import Observation
     /// SPEC §11.1; hiding a section changes nothing here (FR-46).
     func menuBarLabel(at now: Date) -> MenuBarLabel {
         let github = github.snapshot.map {
-            (today: $0.value.stats.today, isStale: $0.isStale(at: now, after: GitHubReport.policy.staleAfter))
+            let meters = ContributionStats.menuBarMeters(days: $0.value.calendar.days, now: now, calendar: .current)
+            return (
+                today: $0.value.stats.today, level: meters.level, activeDays: meters.activeDays,
+                isStale: $0.isStale(at: now, after: GitHubReport.policy.staleAfter)
+            )
         }
         return MenuBarLabel(
             mode: resolvedMenuBarMode, provider: shownMenuBarProvider,

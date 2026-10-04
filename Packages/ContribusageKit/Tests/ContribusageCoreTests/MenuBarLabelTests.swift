@@ -6,7 +6,7 @@ import Testing
 
 private let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
 private let enUS = Locale(identifier: "en_US")
-/// U+2007: as wide as a digit, so the label keeps the width of three digits (SPEC §11.1).
+/// U+2007: as wide as a digit, so the label keeps the width of two digits, padded in front (SPEC §11.1).
 private let pad = "\u{2007}"
 private let a = ProviderID(rawValue: "a")
 private let b = ProviderID(rawValue: "b")
@@ -33,7 +33,7 @@ private func limits(
 
 private func label(
     _ mode: MenuBarMode, provider: String? = nil, _ providers: [MenuBarLabel.Provider],
-    github: (today: Int, isStale: Bool)? = nil
+    github: (today: Int, level: Int, activeDays: Int, isStale: Bool)? = nil
 ) -> MenuBarLabel {
     MenuBarLabel(
         mode: mode, provider: provider.map(ProviderID.init) ?? providers.first?.descriptor.id, providers: providers,
@@ -45,12 +45,12 @@ private func label(
     let claude = limits("a", (.session, 23), (.weekly, 51), (.weekly, 70))
     #expect(
         label(.primary, [claude])
-            == MenuBarLabel(text: "23%" + pad, title: "a", meter: 0.23, companion: 0.51, source: .provider(a)))
+            == MenuBarLabel(text: "23%", title: "a", meter: 0.23, companion: 0.51, source: .provider(a)))
     #expect(
         label(.weekly, [claude])
-            == MenuBarLabel(text: "51%" + pad, title: "a", meter: 0.51, companion: 0.23, source: .provider(a)))
+            == MenuBarLabel(text: "51%", title: "a", meter: 0.51, companion: 0.23, source: .provider(a)))
     let other = limits("b", (.session, 5))
-    #expect(label(.primary, provider: "b", [claude, other]).text == "5%" + pad + pad)
+    #expect(label(.primary, provider: "b", [claude, other]).text == pad + "5%")
     #expect(label(.primary, provider: "b", [claude, other]).companion == nil)
     #expect(label(.primary, [limits("a", (.session, 100))]).text == "100%")
 }
@@ -73,38 +73,40 @@ private func label(
     #expect(
         label(.primary, [first, second])
             == MenuBarLabel(
-                text: "77%" + pad, title: "b", meter: 0.77, companion: 0.12, badge: "terminal", source: .provider(b)))
+                text: "77%", title: "b", meter: 0.77, companion: 0.12, badge: "terminal", source: .provider(b)))
     #expect(label(.highest, [first]).badge == nil)
     // US-1: no probe has succeeded yet.
     #expect(
         label(.primary, [(descriptor("a", symbol: "sparkle"), nil)])
-            == MenuBarLabel(text: "?" + pad + pad + pad, title: "a", source: .provider(a)))
-    #expect(label(.weekly, [limits("a", (.session, 5))]).text == "5%" + pad + pad)
+            == MenuBarLabel(text: pad + pad + "?", title: "a", source: .provider(a)))
+    #expect(label(.weekly, [limits("a", (.session, 5))]).text == pad + "5%")
 }
 
 @Test func staleValuesAreMarked() {
     let stale = label(.primary, [limits("a", age: 1801, (.session, 23))])
-    #expect(stale.text == "~23%" + pad)
+    #expect(stale.text == "~23%")
     #expect(stale.isStale)
-    #expect(label(.githubToday, [], github: (7, true)).text == "~7")
-    #expect(label(.githubToday, [], github: (7, true)).isStale)
+    #expect(label(.githubToday, [], github: (7, 2, 3, true)).text == "~7")
+    #expect(label(.githubToday, [], github: (7, 2, 3, true)).isStale)
 }
 
+/// The glyph fills to today's level; the rings' inner ring with the days with contributions this week.
 @Test func gitHubModesShowTodaysContributions() {
     let first = limits("a", (.session, 23))
     #expect(
-        label(.githubToday, [first], github: (7, false)) == MenuBarLabel(text: "7", title: "GitHub", source: .github))
+        label(.githubToday, [first], github: (7, 2, 3, false))
+            == MenuBarLabel(text: "7", title: "GitHub", meter: 0.5, companion: 3.0 / 7, source: .github))
     #expect(label(.githubToday, [first]).text == "?")
-    let both = label(.primaryAndGitHub, [first], github: (7, false))
-    #expect(both.text == "23%" + pad + " · 7")
+    let both = label(.primaryAndGitHub, [first], github: (7, 2, 3, false))
+    #expect(both.text == "23% · 7")
     #expect(both.meter == 0.23)
 }
 
-/// `iconOnly` keeps the primary meter and drops the text; with every source off it names the app.
-@Test func iconOnlyKeepsTheMeter() {
+/// `iconOnly` keeps the primary meters and drops the text; with every source off it names the app.
+@Test func iconOnlyKeepsTheMeters() {
     #expect(
-        label(.iconOnly, [limits("a", (.session, 23))], github: (7, false))
-            == MenuBarLabel(text: "", title: "a", meter: 0.23, source: .provider(a)))
+        label(.iconOnly, [limits("a", (.session, 23), (.weekly, 51))], github: (7, 2, 3, false))
+            == MenuBarLabel(text: "", title: "a", meter: 0.23, companion: 0.51, source: .provider(a)))
     #expect(label(.iconOnly, []) == MenuBarLabel(text: "", title: "contribusage"))
 }
 

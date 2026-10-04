@@ -46,3 +46,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 `AppState.setEnabled` calls `start()` on disable as well, which stops a provider's pushed limits; GitHub's job is unaffected ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
 
 - Since T-5.20 a limits job hands its notes to the app's queue without waiting, so notification delivery never delays the GitHub job in the same pass ([[decisions/0038-notification-cycles-and-delivery]]).
+
+- Since T-5.22 the menu bar label reads GitHub's meters (today's level, the week's active days) from the job's snapshot; the job itself is unchanged ([[decisions/0035-drawn-menu-bar-label]]).
