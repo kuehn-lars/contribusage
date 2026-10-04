@@ -392,3 +392,11 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] feat | T-5.24 About tab
 - Settings gains an About tab: app icon, version and build, copyright, links to source, license and acknowledgements (SPEC §11.6).
 - The copyright comes from `INFOPLIST_KEY_NSHumanReadableCopyright`; [[modules/app]] updated.
+
+## [2026-10-04] spec | M4 check passed
+- SPEC §13 and §16.5 drop the x86_64-without-Rosetta row: such a `claude` fails FR-6's `--version` check and shows as not found; §19 and [[decisions/0009-apple-silicon-only]] say so.
+- The remaining §16.5 rows were traced to code (Low Power Mode log line in the refresh coordinator, day buckets re-aggregated with the autoupdating calendar on each transcript change); the matrix itself runs by hand.
+- Every §16.5 row passed by hand; M4 ticked in SPEC §17.5.
+
+## [2026-10-04] chore | Version 1.0
+- `MARKETING_VERSION` 0.1.0 → 1.0 in both configurations after the M4 check; build number stays 1. The About tab and diagnostics read it from the bundle.

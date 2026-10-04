@@ -1209,7 +1209,6 @@ Global rules:
 | API key billing, no subscription | P-10; `fetch()` throws `SourceError.unsupportedPlan` | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
 | Probe timeout | 30 s elapsed | `failed(.timedOut)` | "Claude Code didn't answer in time." | Backoff |
 | Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output; diagnostics in Settings (FR-36) |
-| `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
 | Offline | `NWPathMonitor` | `failed(.offline)` with previous | "Offline" badge | Auto on reconnect |
 | GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + "Change token…" button (opens Settings) | Stop until token changes |
 | GitHub rate limited | Failed response with `x-ratelimit-remaining: 0` (8.4.3) | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
@@ -1515,7 +1514,6 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 | Sleep 1 h, wake | Refresh after about 10 s; ages correct |
 | Wi-Fi off | "Offline" badges; transcripts still update |
 | `claude` renamed or uninstalled | Limits show "not found"; others unaffected |
-| `claude` installed as x86_64 binary on a Mac without Rosetta | Clear Rosetta message; others unaffected |
 | Claude Code provider disabled | Group hidden; no `claude` processes (check Activity Monitor); menu bar falls back |
 | Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider; the heatmap shows three layers in both styles |
 | Popover tab: reorder, hide every block, switch GitHub off | Popover follows at once; "Nothing to show"; menu bar and notifications keep working while their sections are hidden |
@@ -1624,7 +1622,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.24** About tab in Settings: the app icon, version and build, the copyright from `NSHumanReadableCopyright`, links to the source, the MIT license and the acknowledgements. *(11.6)* Check: the app builds, its Info.plist carries the copyright, and the String Catalog sync of NFR-10 finds every new string translated. Done 2026-10-04.
 
 Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20, T-5.21, T-5.22, T-5.23 and T-5.24 before the M4 check.
-- [ ] **M4 check:** manual matrix 16.5 passes.
+- [x] **M4 check:** manual matrix 16.5 passes. Done 2026-10-04: every row checked by hand in the Release build and the Debug build with `CONTRIBUSAGE_FAKE_PROVIDER`; the Rosetta row was dropped from 13 and 16.5 instead of built (ADR-009).
 
 ### 17.6 Phase 6: Optional and release (M5)
 
@@ -1692,7 +1690,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 
 - **GUI apps do not inherit your shell environment.** `PATH`, `CLAUDE_CONFIG_DIR` and friends are missing when launched from Finder. Resolve once through the login shell (FR-6, FR-22).
 - **Homebrew lives in `/opt/homebrew` on Apple Silicon**, which is not on the default GUI `PATH`. Never assume `/usr/local/bin` is the Homebrew prefix.
-- **x86_64 tools need Rosetta.** A tool installed through an x86_64 Node.js or an old Homebrew under Rosetta launches only if Rosetta is installed. The app itself never needs Rosetta; diagnostics report the executable type (FR-36).
+- **x86_64 tools need Rosetta.** A tool installed through an x86_64 Node.js or an old Homebrew under Rosetta launches only if Rosetta is installed. The app itself never needs Rosetta; diagnostics report the executable type (FR-36). Without Rosetta such a tool fails FR-6's `--version` check and shows as not found; no Rosetta specific message (ADR-009).
 - **Accidental universal builds.** "Standard Architectures" includes x86_64 in Release builds. Set `ARCHS = arm64` explicitly and check with `lipo -archs` in CI (NFR-16).
 - **CI runners.** Use Apple Silicon macOS runners; performance numbers from Intel runners are meaningless for NFR-7.
 - **Pipe deadlocks.** Waiting for a process to exit before reading its output deadlocks when the output fills the pipe buffer. Read stdout and stderr concurrently (T-2.4).
