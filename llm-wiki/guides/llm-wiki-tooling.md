@@ -1,7 +1,7 @@
 ---
 type: guide
 status: active
-updated: 2026-09-28
+updated: 2026-10-04
 tracks: [llm-wiki/tools/wiki.sh, llm-wiki/tools/test-wiki.sh, .claude/settings.json]
 tags: [tooling, wiki]
 ---
@@ -37,7 +37,7 @@ Other agents get no hooks: they follow `AGENTS.md` and run `lint` themselves.
 | `not listed in index.md` | Add a line to `index.md`. |
 | `broken link`, `no heading … in` | Fix the link target or the heading. |
 | `links into local-only sessions/` | Remove the link; move what matters into a committed page. |
-| `stale — <path> changed after this page` | Re-read the tracked code; update the page, or bump `updated:` if it still holds. |
+| `stale — <path> changed after this page's updated: date` | Re-read the tracked code; update the page, or bump `updated:` if it still holds. |
 | `tracks a missing path` | Fix `tracks:` after a move or deletion. |
 | `names: … used in more than one folder` | Rename one page; bare `[[name]]` links would be ambiguous. |
 | `decisions: name must be NNNN-slug.md`, `number … is used twice` | Renumber the newer ADR (parallel branches can collide). |
@@ -47,7 +47,7 @@ Other agents get no hooks: they follow `AGENTS.md` and run `lint` themselves.
 | `session files are tracked by git`, `sessions/ is not ignored` | `git rm --cached` the files and fix `.gitignore`: local memory is about to be published. |
 
 ## Limits
-- Staleness comes from git: a page is stale when a tracked path's last commit, or an uncommitted edit, is newer than the page's. A page and its code both edited in the working tree count as updated together.
+- Staleness compares days: a page is stale when a tracked path's last commit, or an uncommitted edit (today), falls on a later day than the page's `updated:` date, the day it was last checked. Editing a page without bumping `updated:` does not clear it. A page checked earlier the same day misses a later change that day: the vault holds dates only, and a finer stamp would need a time of day, which stays local. That keeps pages free of "still holds" notes when a busy tracked file changes for an unrelated reason.
 - The Stop gate checks that pages changed, not that they are right; the index, the handover and lint findings are the review surface.
 - The repo map check covers the repository root and the vault's top level only.
 - Spec citations (`SPEC §…`, `FR-…`) are plain text and not checked.

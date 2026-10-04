@@ -60,6 +60,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0037-no-second-provider-for-v1]]: ADR-037, v1 ships with Claude Code only; Codex CLI is the next candidate
 - [[decisions/0038-notification-cycles-and-delivery]]: ADR-038, a reset time moving by up to 1 h keeps the notification cycle; only the highest threshold per refresh; delivery 3 s apart, grouped per provider
 - [[decisions/0039-one-minute-probe]]: ADR-039, the Claude Code probe every 5 min by default, every minute on request; R-1 found no quota cost
+- [[decisions/0040-app-icon]]: ADR-040, the app icon: prompt, filling cursor and spark in Liquid Glass, an Icon Composer document
 
 ## Research
 - [[research/r-1-probe-cost]]: R-1, a `/usage` probe costs no plan quota but about 1.7 s CPU; default 5 min, minimum 1 min

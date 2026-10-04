@@ -6,6 +6,7 @@ set -uo pipefail
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 export TMPDIR="$TMP"                                   # the hooks keep their per-turn marker here
 cp -R "$(cd "$(dirname "$0")/../.." && pwd)" "$TMP/repo" && cd "$TMP/repo" || exit 1
+rm -f llm-wiki/sessions/*.md                           # start from the template, not this machine's handover
 W=llm-wiki/tools/wiki.sh
 G() { git -c user.name=test -c user.email=test@example.com "$@"; }
 G add -A && G commit -qm baseline --allow-empty && BASE="$(git rev-parse HEAD)"
@@ -76,8 +77,10 @@ page guides/x 'tracks: [nope.txt]\n';             lint_has "tracked path missing
 page guides/x 'tracks: [README.md]\n'; G add -A; G commit -qm page; echo x >> README.md
                                                     lint_has "code changed after its page" "guides/x: stale — README.md changed after this page"
 page guides/x 'tracks: [README.md]\n'; G add -A; G commit -qm page; echo x >> README.md; echo x >> llm-wiki/guides/x.md
-                                                    lint_clean "page updated along with its code"
-page guides/x 'tracks:\n  - README.md\n  - "llm-wiki/tools/a b.txt"\n'; touch "llm-wiki/tools/a b.txt"
+                                                    lint_has "page edited without bumping updated:" "guides/x: stale — README.md"
+page guides/x "tracks: [README.md]\nupdated: $(date +%F)\n"; G add -A; G commit -qm page; echo x >> README.md
+                                                    lint_clean "page checked today, code changed today"
+page guides/x "tracks:\n  - README.md\n  - \"llm-wiki/tools/a b.txt\"\nupdated: $(date +%F)\n"; touch "llm-wiki/tools/a b.txt"
                                                     lint_clean "block-list tracks and paths with spaces"
 mkdir test && touch test/x;                         lint_has "undocumented top-level folder" "repo-map: test is missing from the tree"
 mkdir llm-wiki/assets && touch llm-wiki/assets/x;   lint_has "undocumented vault folder" "repo-map: llm-wiki/assets is missing from the tree"

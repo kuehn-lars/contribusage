@@ -84,7 +84,7 @@ Write the vault in the project's voice: the subject is the code, the decision or
 
 A folder is created with its first page and added to the repo map. Page rules (lint enforces the checkable ones):
 
-- Frontmatter: `type`, `status`, `updated: YYYY-MM-DD`, `tags`, and `tracks:` listing the repository paths the page describes; lint flags the page stale when one of them changes after it. Decisions carry `aliases: [ADR-NNN]`.
+- Frontmatter: `type`, `status`, `updated: YYYY-MM-DD`, `tags`, and `tracks:` listing the repository paths the page describes; lint flags the page stale when one of them changes on a later day than its `updated:` date. Decisions carry `aliases: [ADR-NNN]`.
 - File names are kebab-case and unique across folders.
 - Link pages with vault-absolute wikilinks: `[[modules/core]]`, `[[decisions/0003-official-interfaces-only#Decision]]`. Cite the spec by section or ID (`SPEC §8.1.3`, `FR-8`); its IDs are stable.
 - One meaning lives on one page: summarise and link. Spec content is cited, never restated.

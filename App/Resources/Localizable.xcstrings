@@ -116,6 +116,26 @@
     "@%@" : {
       "shouldTranslate" : false
     },
+    "AI coding tool usage and GitHub contributions in the menu bar." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nutzung von KI-Coding-Tools und GitHub-Beiträgen in der Menüleiste."
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über"
+          }
+        }
+      }
+    },
     "Accent color" : {
       "localizations" : {
         "de" : {
@@ -132,6 +152,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Konto"
+          }
+        }
+      }
+    },
+    "Acknowledgements" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danksagungen"
           }
         }
       }
@@ -769,6 +799,16 @@
         }
       }
     },
+    "MIT License" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MIT-Lizenz"
+          }
+        }
+      }
+    },
     "Menu bar" : {
       "localizations" : {
         "de" : {
@@ -1229,6 +1269,16 @@
         }
       }
     },
+    "Source Code" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quellcode"
+          }
+        }
+      }
+    },
     "Stacked" : {
       "localizations" : {
         "de" : {
@@ -1515,6 +1565,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bis zu drei Prozentwerte von 50 bis 99, durch Kommas getrennt; andere werden ignoriert."
+          }
+        }
+      }
+    },
+    "Version %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@"
           }
         }
       }

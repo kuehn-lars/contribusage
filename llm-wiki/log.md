@@ -1,6 +1,6 @@
 ---
 type: log
-updated: 2026-09-28
+updated: 2026-10-04
 ---
 # Log
 
@@ -376,3 +376,19 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - GitHub modes fill the glyph with today's contribution level and the inner ring with the week's active days, never red ([[decisions/0035-drawn-menu-bar-label]]).
 - `iconOnly` keeps the companion ring; the value is padded in front to two digits, so no space trails the label.
 - Rings and ring drawn at 15 and 16 pt; SPEC FR-12, FR-51, §11.1 and T-5.22 updated.
+
+## [2026-10-04] wiki | Staleness by day
+- `wiki.sh lint` flags a page when a tracked path changed on a later day than its `updated:` date, so a page that still holds needs only that date; ADR-030's "T-… changed X only in Y" notes are gone. Editing a page without bumping `updated:` no longer clears it (it caught ADR-029, edited in T-5.20).
+- `test-wiki.sh` covers both cases and starts from the session template instead of the machine's latest handover.
+
+## [2026-10-04] chore | MIT license
+- `LICENSE` (MIT) added and listed in the repo map.
+
+## [2026-10-04] feat | T-5.23 app icon and README
+- `App/AppIcon.icon`: the prompt, a filling cursor line and the agent's spark in Liquid Glass, chosen over five render rounds (ADR-040); the target names it, `actool` adds the macOS 14 and 15 fallback; Claude Code's SF Symbol is `sparkle`, the icon's spark, in place of `terminal`.
+- README rewritten: header SVGs in `docs/assets/`, badges, screenshots of the real popover and menu bar styles with mock data, acknowledgements, trademark note.
+- SPEC: T-5.23 added and ticked, the icon moved out of T-6.7, Q-6 answered.
+
+## [2026-10-04] feat | T-5.24 About tab
+- Settings gains an About tab: app icon, version and build, copyright, links to source, license and acknowledgements (SPEC §11.6).
+- The copyright comes from `INFOPLIST_KEY_NSHumanReadableCopyright`; [[modules/app]] updated.

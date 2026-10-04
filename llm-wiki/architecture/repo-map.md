@@ -2,7 +2,7 @@
 type: architecture
 status: active
 updated: 2026-10-04
-tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift]
+tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift, docs, LICENSE]
 tags: [structure]
 ---
 # Repository map
@@ -16,9 +16,11 @@ contribusage/
 ├── .gitignore
 ├── .swift-format           swift-format settings (4 spaces, 120 columns)
 ├── AGENTS.md               agent protocol: orient, work, record; publish policy; hard rules
-├── App/                    the app target: ContribusageApp (the scenes), MenuBar/ (the menu bar item with its minute tick and `MenuBarArt`, which draws the label in each style, GitHub's meters included), AppState and its live wiring (including the demand of the popover layout and the menu bar, FR-46), AppState+Copy (the copied statistics and diagnostics texts), ProviderRegistration (each provider with its live seams), DebugFakeProvider (US-11's second provider, only with `CONTRIBUSAGE_FAKE_PROVIDER`), SystemConditions, Popover/ (sections, the shared heatmap block with its keyboard navigation and VoiceOver, the shared state views and buttons, mock data), Settings/ (the Settings scene: General (menu bar mode, provider, style tiles and color, launch at login, notifications) and Advanced (data folder, caches, diagnostics) and the shared `IntervalPicker` in `SettingsView`, `PopoverTab` (block order by drag and drop, visibility, sections, heatmap membership and style), `ProvidersTab`, `GitHubTab` with the GitHub switch), Notifications/ (delivery: a queue that posts notes 3 s apart, one thread per provider, and asks for permission on the first note), Resources/ (the app's String Catalog, ADR-031); a folder synchronised with Xcode
+├── App/                    the app target: AppIcon.icon (the Icon Composer app icon, ADR-040), ContribusageApp (the scenes), MenuBar/ (the menu bar item with its minute tick and `MenuBarArt`, which draws the label in each style, GitHub's meters included), AppState and its live wiring (including the demand of the popover layout and the menu bar, FR-46), AppState+Copy (the copied statistics and diagnostics texts), ProviderRegistration (each provider with its live seams), DebugFakeProvider (US-11's second provider, only with `CONTRIBUSAGE_FAKE_PROVIDER`), SystemConditions, Popover/ (sections, the shared heatmap block with its keyboard navigation and VoiceOver, the shared state views and buttons, mock data), Settings/ (the Settings scene: General (menu bar mode, provider, style tiles and color, launch at login, notifications) and Advanced (data folder, caches, diagnostics) and the shared `IntervalPicker` in `SettingsView`, `PopoverTab` (block order by drag and drop, visibility, sections, heatmap membership and style), `ProvidersTab`, `GitHubTab` with the GitHub switch), Notifications/ (delivery: a queue that posts notes 3 s apart, one thread per provider, and asks for permission on the first note), Resources/ (the app's String Catalog, ADR-031); a folder synchronised with Xcode
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
+├── LICENSE                 MIT
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
+├── docs/assets/            README art: header SVGs (light and dark) with the icon drawn flat, screenshots
 ├── Packages/               ContribusageKit: every target but the app; fixtures in a test target's `Fixtures/` (SPEC §16.2; so far Claude Code and GitHub); the core's String Catalog in its `Resources/`, declared as a resource in `Package.swift`
 ├── README.md
 ├── SPEC.md                 the contract: requirements, tasks, research items

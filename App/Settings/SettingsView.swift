@@ -15,13 +15,14 @@ struct SettingsView: View {
             ProvidersTab().tabItem { Label("Providers", systemImage: "square.stack") }.tag(SettingsTab.providers)
             GitHubTab().tabItem { Label("GitHub", systemImage: "square.grid.3x3.fill") }.tag(SettingsTab.github)
             AdvancedTab().tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }.tag(SettingsTab.advanced)
+            AboutTab().tabItem { Label("About", systemImage: "info.circle") }.tag(SettingsTab.about)
         }
         .frame(width: 460)
     }
 }
 
 enum SettingsTab: String {
-    case general, popover, providers, github, advanced
+    case general, popover, providers, github, advanced, about
 }
 
 /// FR-12, FR-13, FR-14, FR-34.
@@ -226,6 +227,38 @@ private struct AdvancedTab: View {
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// SPEC §11.6: the app's icon, version, author and license. The author line is the Info.plist copyright.
+private struct AboutTab: View {
+    private static let repository = URL(string: "https://github.com/kuehn-lars/contribusage")!
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 128, height: 128)
+                .accessibilityHidden(true)
+            Text(verbatim: "contribusage").font(.title.weight(.semibold))
+            Text("Version \(Bundle.main.versionAndBuild)")
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            Text("AI coding tool usage and GitHub contributions in the menu bar.")
+                .multilineTextAlignment(.center)
+                .padding(.top, 12)
+            Text(Bundle.main.infoString("NSHumanReadableCopyright"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                Link("Source Code", destination: Self.repository)
+                Link("MIT License", destination: Self.repository.appending(path: "blob/main/LICENSE"))
+                Link("Acknowledgements", destination: URL(string: "\(Self.repository)#acknowledgements")!)
+            }
+            .padding(.top, 12)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
     }
 }
 

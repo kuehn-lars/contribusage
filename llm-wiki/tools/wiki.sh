@@ -59,11 +59,10 @@ present_files() {
   comm -23 <(git_files -co --exclude-standard -- "$@" | sort -u) <(git_files -d -- "$@" | sort -u)
 }
 
-# When a repo path last changed: its last commit's unix time, or a far-future stamp if it has
-# uncommitted changes, so that edits in the working tree count as newer than every commit.
-changed_at() {
-  if [ -n "$(git -C "$ROOT" status --porcelain -- "$1" 2>/dev/null)" ]; then echo 9999999999
-  else git -C "$ROOT" log -1 --format=%ct -- "$1" 2>/dev/null; fi
+# The day a repo path last changed (YYYY-MM-DD): its last commit's date, or today if it has uncommitted changes.
+changed_on() {
+  if [ -n "$(git -C "$ROOT" status --porcelain -- "$1" 2>/dev/null)" ]; then date +%F
+  else git -C "$ROOT" log -1 --format=%cs -- "$1" 2>/dev/null; fi
 }
 
 cmd_context() {
@@ -120,7 +119,7 @@ cmd_new_session() {
 # Per-page checks; each finding is one line starting with the page's name ($2).
 # The allowed values mirror the vault table in AGENTS.md; change both together.
 check_page() {
-  local f="$1" rel="$2" upd type status want link target tracks page_t p
+  local f="$1" rel="$2" upd type status want link target tracks p
   if [ "$(head -1 "$f")" != "---" ]; then
     echo "$rel: no frontmatter"
   else
@@ -149,14 +148,14 @@ check_page() {
       echo "$rel: broken link [[$link]]"
     fi
   done
-  # Stale: a tracked path changed after the page did (a page and a path both edited in the working tree tie).
+  # Stale: a tracked path changed on a later day than the page's updated: date, the day it was last checked.
+  # ponytail: day precision, so a page checked earlier today misses a later same-day change; the vault holds no times.
   tracks="$(fm "$f" tracks)"
   [ -n "$tracks" ] || return 0
-  page_t="$(changed_at "$f")"
   printf '%s\n' "$tracks" | while read -r p; do
     [ -e "$ROOT/$p" ] || { echo "$rel: tracks a missing path: $p"; continue; }
-    [ "$(changed_at "$p")" -gt "${page_t:-0}" ] 2>/dev/null &&
-      echo "$rel: stale — $p changed after this page; update the page (or bump updated: if it still holds)"
+    [[ "$(changed_on "$p")" > "$upd" ]] &&
+      echo "$rel: stale — $p changed after this page's updated: date; update the page (or bump updated: if it still holds)"
   done
 }
 
