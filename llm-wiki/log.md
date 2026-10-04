@@ -380,3 +380,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] wiki | Staleness by day
 - `wiki.sh lint` flags a page when a tracked path changed on a later day than its `updated:` date, so a page that still holds needs only that date; ADR-030's "T-… changed X only in Y" notes are gone. Editing a page without bumping `updated:` no longer clears it (it caught ADR-029, edited in T-5.20).
 - `test-wiki.sh` covers both cases and starts from the session template instead of the machine's latest handover.
+
+## [2026-10-04] chore | MIT license
+- `LICENSE` (MIT) added and listed in the repo map.
