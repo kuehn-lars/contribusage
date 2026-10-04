@@ -383,3 +383,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-04] chore | MIT license
 - `LICENSE` (MIT) added and listed in the repo map.
+
+## [2026-10-04] feat | T-5.23 app icon and README
+- `App/AppIcon.icon`: the prompt, a filling cursor line and the agent's spark in Liquid Glass, chosen over five render rounds (ADR-040); the target names it, `actool` adds the macOS 14 and 15 fallback; Claude Code's SF Symbol is `sparkle`, the icon's spark, in place of `terminal`.
+- README rewritten: header SVGs in `docs/assets/`, badges, screenshots of the real popover and menu bar styles with mock data, acknowledgements, trademark note.
+- SPEC: T-5.23 added and ticked, the icon moved out of T-6.7, Q-6 answered.

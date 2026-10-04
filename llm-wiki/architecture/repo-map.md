@@ -2,7 +2,7 @@
 type: architecture
 status: active
 updated: 2026-10-04
-tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift, LICENSE]
+tracks: [.github/workflows, App, Packages/ContribusageKit/Package.swift, docs, LICENSE]
 tags: [structure]
 ---
 # Repository map
@@ -20,6 +20,7 @@ contribusage/
 ├── CLAUDE.md               imports AGENTS.md for Claude Code
 ├── LICENSE                 MIT
 ├── Contribusage.xcodeproj  the Xcode project: one app target linking the package products
+├── docs/assets/            README art: header SVGs (light and dark) with the icon drawn flat, screenshots
 ├── Packages/               ContribusageKit: every target but the app; fixtures in a test target's `Fixtures/` (SPEC §16.2; so far Claude Code and GitHub); the core's String Catalog in its `Resources/`, declared as a resource in `Package.swift`
 ├── README.md
 ├── SPEC.md                 the contract: requirements, tasks, research items

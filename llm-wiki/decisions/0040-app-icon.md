@@ -4,7 +4,7 @@ status: accepted
 updated: 2026-10-04
 aliases: [ADR-040]
 tags: [design, icon, distribution]
-tracks: [App/AppIcon.icon, Contribusage.xcodeproj, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
+tracks: [App/AppIcon.icon, Contribusage.xcodeproj, docs/assets, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift]
 ---
 # ADR-040: The app icon is the prompt mark in Liquid Glass, as an Icon Composer document
 
