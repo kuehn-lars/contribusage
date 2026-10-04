@@ -4,7 +4,7 @@ import Foundation
 public enum NotificationPlanner {
     /// FR-15: what was sent in one window's reset cycle. The highest threshold stands for every lower one.
     public struct Cycle: Equatable, Sendable, Codable {
-        public let resetsAt: Date?
+        public internal(set) var resetsAt: Date?
         public let threshold: Int
         /// When `threshold` was sent; FR-15 prunes the cycle 8 days later.
         public let sentAt: Date
@@ -16,11 +16,14 @@ public enum NotificationPlanner {
     public struct Note: Equatable, Sendable {
         /// One per window and reset cycle, so a later note replaces an earlier one in Notification Center.
         public let id: String
+        /// FR-52: the notification thread, so Notification Center stacks a provider's notes.
+        public let provider: ProviderID
         /// Starts with the provider's display name (SPEC §7.7).
         public let title: String
 
         fileprivate init(_ provider: ProviderID, _ label: String, _ resetsAt: Date?, title: String) {
             id = "\(provider.rawValue)|\(label)|\(resetsAt?.timeIntervalSince1970.description ?? "-")"
+            self.provider = provider
             self.title = title
         }
     }
@@ -53,24 +56,34 @@ public enum NotificationPlanner {
         for window in report.windows where !window.isReset(at: now) {
             let title = windowTitle(window.label)
             var cycle = cycles[window.label]
-            // US-3: another reset time means the cycle ended, so the thresholds re-arm.
-            if let ended = cycle, ended.resetsAt != window.resetsAt {
+            // US-3, FR-15: the printed reset time drifts by a minute between refreshes (P-7), so only a move of more
+            // than 1 h ends the cycle and re-arms the thresholds. A window printed without a reset time ends it once
+            // the cycle's own time has passed; a cycle without one is kept (ADR-038).
+            if let ended = cycle, let was = ended.resetsAt,
+                window.resetsAt.map({ abs($0.timeIntervalSince(was)) > 3600 }) ?? (now > was)
+            {
                 if settings.notifyOnReset {
                     notes.append(
                         Note(
-                            report.provider, window.label, ended.resetsAt,
+                            report.provider, window.label, was,
                             title: String(localized: "\(displayName): \(title) has reset", bundle: .module)))
                 }
                 cycle = nil
             }
-            let crossed = thresholds.filter { window.usedPercent >= Double($0) && $0 > cycle?.threshold ?? 0 }
-            if let highest = crossed.last { cycle = Cycle(resetsAt: window.resetsAt, threshold: highest, sentAt: now) }
-            cycles[window.label] = cycle
-            notes += crossed.map {
-                Note(
-                    report.provider, window.label, window.resetsAt,
-                    title: String(localized: "\(displayName): \(title) at \($0) %", bundle: .module))
+            // The cycle keeps its first known reset time, so its notes share one identifier (FR-52).
+            let resetsAt = cycle?.resetsAt ?? window.resetsAt
+            let floor = cycle?.threshold ?? 0
+            // FR-13: only the highest threshold crossed in this refresh.
+            if let highest = thresholds.last(where: { window.usedPercent >= Double($0) && $0 > floor }) {
+                cycle = Cycle(resetsAt: resetsAt, threshold: highest, sentAt: now)
+                notes.append(
+                    Note(
+                        report.provider, window.label, resetsAt,
+                        title: String(localized: "\(displayName): \(title) at \(highest) %", bundle: .module)))
+            } else {
+                cycle?.resetsAt = resetsAt
             }
+            cycles[window.label] = cycle
         }
         sent[report.provider] = cycles.isEmpty ? nil : cycles
         return notes

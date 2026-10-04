@@ -32,7 +32,7 @@ T-2.6 builds the scheduler of SPEC §12. Four points were open: how the neutral 
 - Enabling a provider does not wake the loop; the app calls `start()` again.
 - GitHub joined in T-3.6 with the coordinator generic over its value ([[decisions/0022-github-job-in-the-coordinator]]).
 - The extra triggers of SPEC §12 (popover opened, a window's reset) joined the same passes in T-2.7 as `triggers` dates ([[decisions/0019-extra-refresh-triggers]]).
-- T-5.1 plans notifications after each polled limits fetch in the same passes ([[decisions/0027-notification-planning-in-the-coordinator]]).
+- T-5.1 plans notifications after each polled limits fetch in the same passes ([[decisions/0027-notification-planning-in-the-coordinator]]). Delivery is a synchronous hand-off to the app's queue, so the 3 s spacing of FR-52 never holds up a pass ([[decisions/0038-notification-cycles-and-delivery]]).
 - T-5.2's settings enter the same actor as calls: `intervalsChanged()` reschedules, `resetCaches()` forgets the snapshots and runs a pass ([[decisions/0028-settings-scope-and-wiring]]).
 - T-5.6: the wake is a trigger like the others, and `nextRun` treats a source shown offline as a manual refresh, so it runs on reconnect within its floor instead of showing "Offline" until its next interval.
 - T-5.13: what runs follows use (FR-46); provider limits keep running while a provider is on, and GitHub skips passes while `setGitHubWanted(false)` ([[decisions/0022-github-job-in-the-coordinator]]).

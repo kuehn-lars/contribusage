@@ -43,3 +43,5 @@ Measured before the shared heatmap block (T-5.16), which draws up to 182 cells p
 - T-5.19 draws the menu bar label as an image, redrawn once a minute and on data changes; a Debug run sampled with `ps` over 20 s stayed at about 0 % CPU and 88 MB. The menu bar's demand is computed when a setting changes, never per redraw.
 
 Measured before pushed limits (T-5.12): a provider's push consumer is one suspended task, no timer, so the idle figures still hold ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
+
+- T-5.20's delivery queue adds one task that sleeps between notes and waits on an empty stream otherwise; it adds no work to a refresh pass.

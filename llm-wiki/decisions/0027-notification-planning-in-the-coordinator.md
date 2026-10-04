@@ -24,7 +24,7 @@ SPEC §9.2 described `NotificationPlanner` as taking old and new limits plus the
 The limits job's `fetch` runs the planner after every fetch, so a restored snapshot is never planned. FR-15's keys are stored as one `Cycle` per provider and window label (`resetsAt`, the highest threshold sent, when it was sent), which `state.json` keeps under the optional field `notificationKeys` as `{"<provider id>": {"<label>": cycle}}`, so schema 2 stays. A cycle with another `resetsAt` than the window has ended: it is dropped, which re-arms the thresholds, and with `notifyOnReset` one reset note follows. The app supplies the settings, read before every plan, and the delivery (`RefreshCoordinator.Notifications`).
 
 ## Consequences
-- Every note of one window and cycle shares one identifier, so a jump over 80 and 95 sends both (one per threshold, US-3) and Notification Center keeps the 95 % one; the reset note replaces the cycle's last warning.
+- Every note of one window and cycle shares one identifier; the reset note replaces the cycle's last warning. A jump over 80 and 95 sent both until T-5.20, which sends only the highest ([[decisions/0038-notification-cycles-and-delivery]]).
 - The highest threshold stands for every lower one, so a threshold added below it mid-cycle waits for the next cycle; at 96 % a warning "at 90 %" would be late anyway. FR-15 says so.
 - A window past its `resetsAt` is skipped until the next fetch (FR-11), so a stale reading cannot warn.
 - Pushed limits (the status line bridge, T-6.2) are not planned yet; that task routes them through the same `notify`.

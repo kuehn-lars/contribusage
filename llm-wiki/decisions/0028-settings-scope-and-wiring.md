@@ -37,3 +37,5 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 - T-5.19 adds the menu bar style tiles and the color choice to the General tab, saved as `menuBarStyle`, `menuBarTint` and `menuBarColor`; the tiles and the label draw through the same `AppState.menuBarImage(at:style:)` ([[decisions/0035-drawn-menu-bar-label]]).
 
 Interval settings do not reach pushed limits, which are not scheduled ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
+
+- Since T-5.20 the refetch after a cache reset matches a kept cycle even when the printed reset time moved by a minute ([[decisions/0038-notification-cycles-and-delivery]]).

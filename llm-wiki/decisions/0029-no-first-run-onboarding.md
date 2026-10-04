@@ -20,7 +20,7 @@ FR-37 asked for a first run onboarding in the popover: detect providers, offer t
 | No onboarding | Nothing to build or maintain; every step is offered where the user meets it | Launch at login is offered only in Settings |
 
 ## Decision
-No onboarding: FR-37 and T-5.4 are struck. Each step is already covered where it is needed: FR-2 enables the available providers on first run; a missing tool shows "not found" with Locate… and no transcripts show "No … sessions found" (SPEC §11.3); the GitHub section offers Connect GitHub without a token; macOS asks for notification permission before the first notification, which is delivered once allowed; launch at login is a toggle in Settings' General tab (FR-34).
+No onboarding: FR-37 and T-5.4 are struck. Each step is already covered where it is needed: FR-2 enables the available providers on first run; a missing tool shows "not found" with Locate… and no transcripts show "No … sessions found" (SPEC §11.3); the GitHub section offers Connect GitHub without a token; macOS asks for notification permission before the first notification, which is delivered once allowed (later notes wait in the delivery queue until the prompt is answered, FR-52); launch at login is a toggle in Settings' General tab (FR-34).
 
 ## Consequences
 - US-6 no longer offers launch at login on first run; it stays off until the user turns it on in Settings.
