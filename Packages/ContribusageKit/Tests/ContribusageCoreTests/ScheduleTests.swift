@@ -7,7 +7,7 @@ import Testing
 private let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
 private let minute: TimeInterval = 60
 
-/// The Claude Code probe row of SPEC §12.
+/// A 15 min probe policy (the Claude Code row of SPEC §12 before ADR-039), so interval, backoff and floor stay apart.
 private let probe = SchedulePolicy(
     defaultInterval: .seconds(15 * 60), minimumInterval: .seconds(5 * 60), maximumInterval: .seconds(60 * 60),
     staleAfter: .seconds(30 * 60), manualFloor: .seconds(30), needsNetwork: true)

@@ -139,7 +139,7 @@ extension ProviderDescriptor {
         capabilities: [.limits, .activity, .insights],
         tokenCategories: Set(TokenCategory.allCases),
         limitsPolicy: SchedulePolicy(
-            defaultInterval: .seconds(15 * 60), minimumInterval: .seconds(5 * 60), maximumInterval: .seconds(60 * 60),
+            defaultInterval: .seconds(5 * 60), minimumInterval: .seconds(60), maximumInterval: .seconds(60 * 60),
             staleAfter: .seconds(30 * 60), manualFloor: .seconds(30), needsNetwork: true),
         toolText: { ClaudeCodeProvider.toolText($0) })
 }

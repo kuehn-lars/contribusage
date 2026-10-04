@@ -214,3 +214,10 @@ func mapsProbeResult(_ result: ProcessResult, to error: SourceError) async {
             "Last /usage output:\npartial\n",
         ])
 }
+
+/// NFR-5, ADR-039: the probe runs every 5 min by default and at most every minute.
+@Test func probesEveryFiveMinutesAndAtMostEveryMinute() throws {
+    let policy = try #require(provider(runner()).descriptor.limitsPolicy)
+    #expect(policy.defaultInterval == .seconds(5 * 60))
+    #expect(policy.minimumInterval == .seconds(60))
+}

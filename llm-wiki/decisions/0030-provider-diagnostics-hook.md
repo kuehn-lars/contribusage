@@ -32,3 +32,4 @@ US-10 asks "Copy diagnostics" for provider specific facts: for Claude Code the l
 - Copy statistics gives the heatmap one line per layer with its 26 week total, through the core's `HeatmapLayer.text` the tooltips use (T-5.16).
 - The menu bar mode and provider (T-5.10, Settings' General tab) appear in neither Copy statistics nor diagnostics; Copy follows the popover.
 - T-5.19 changed `SettingsView.swift` only in the General tab's menu bar section; the Advanced tab's Copy Diagnostics is as described here.
+- T-5.21 changed `SettingsView.swift` only in `IntervalPicker` and `ClaudeCodeProvider.swift` only in its limits policy; diagnostics are as described here.

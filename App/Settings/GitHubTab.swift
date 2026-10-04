@@ -58,8 +58,7 @@ struct GitHubTab: View {
             }
             Section {
                 IntervalPicker(
-                    "Refresh every", key: "githubInterval", policy: GitHubReport.policy,
-                    choices: [10, 15, 30, 60, 120, 240, 360])
+                    "Refresh every", key: "githubInterval", policy: GitHubReport.policy)
             }
         }
         .formStyle(.grouped)
