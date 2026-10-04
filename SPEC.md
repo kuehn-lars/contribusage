@@ -565,11 +565,11 @@ Claude Code runs a user configured `statusLine` command and passes session JSON 
 
 ### 8.3 Claude Code: activity from local transcripts
 
-> ⚠️ The transcript format is **not a documented interface**. Everything in this section must be verified against real files in research R-3 before implementation, and re-verified when Claude Code changes.
+> ⚠️ The transcript format is **not a documented interface**. This section was verified against real files in research R-3; re-verify it when Claude Code changes.
 
 #### 8.3.1 Location
 
-`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with every character outside `[a-zA-Z0-9]` replaced by `-` (observed for `/` and spaces; confirm the rest in R-3).
+`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with every character outside `[a-zA-Z0-9]` replaced by `-` (R-3 observed it for `/` and spaces).
 
 #### 8.3.2 Fields used
 
@@ -580,7 +580,7 @@ Claude Code runs a user configured `statusLine` command and passes session JSON 
 | `sessionId` | string | Session counting. |
 | `requestId` | string | De-duplication. |
 | `message.id` | string | De-duplication. |
-| `message.model` | string | Per model breakdown. Skip placeholder models such as `<synthetic>` (verify in R-3). |
+| `message.model` | string | Per model breakdown. Skip placeholder models such as `<synthetic>`; R-3 found them carrying zero usage. |
 | `message.usage.input_tokens` | int | Input tokens. |
 | `message.usage.output_tokens` | int | Output tokens. |
 | `message.usage.cache_creation_input_tokens` | int | Cache write tokens. |
@@ -598,7 +598,7 @@ An illustrative line is in [Appendix E](#appendix-e-illustrative-transcript-line
 
 #### 8.3.4 History and retention
 
-Claude Code removes old transcripts after a retention period (setting `cleanupPeriodDays`, default believed to be 30 days; verify in R-3). The provider therefore keeps two layers:
+Claude Code removes old transcripts after a retention period (setting `cleanupPeriodDays`, default 30 days per Claude Code's settings documentation). The provider therefore keeps two layers:
 
 1. **Live index** (in memory, rebuilt from the transcripts at launch, [ADR-024](llm-wiki/decisions/0024-live-index-in-memory.md)): unique keys and their usage for all entries in files that currently exist. Recent days are computed from it.
 2. **History store** (persisted): one aggregate per day. A day is **frozen** into the history store once it is more than 48 h in the past. Frozen days are never recomputed from files, so deleted transcripts do not erase history. Keep 365 days.
@@ -1546,7 +1546,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [x] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry. Done 2026-10-04 in T-5.21: no quota cost, about 1.7 s CPU per probe; default 5 min, minimum 1 min (ADR-039, `llm-wiki/research/r-1-probe-cost.md`).
 - [x] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13. Answered 2026-09-29: `llm-wiki/research/r-2-usage-output-variants.md`.
-- [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
+- [x] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6). Closed 2026-10-04: roots, field paths and de-duplication confirmed by T-4.1 to T-4.7, daily totals within 1 % of ccusage, `<synthetic>` lines carry zero usage and are skipped, `cleanupPeriodDays` defaults to 30 days; 8.3 updated.
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
 - [ ] **R-6 Plan source.** For Claude Code: `/usage` says only that a subscription is used, not which. Check whether `claude auth status` (an official CLI command) names the plan, in which format, and what personal data it prints that must not be stored or logged; the credential file's fields stay off limits (section 2). Running it from the app extends 8.1.1 and FR-6's argument list, so the outcome is a spec change. For later providers the same question is part of their provider gate (2.4). *Outcome:* FR-50's Claude Code source, or an ADR that it has none. After v1.
@@ -1662,7 +1662,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 |---|---|---|---|
 | R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values; the default interval (T-5.21) | Answered: no; default 5 min, minimum 1 min |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
-| R-3 | Transcript format details and retention default | Phase 4 | Open |
+| R-3 | Transcript format details and retention default | Phase 4 | Answered (8.3) |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
 | Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-5.23 (icon) | Answered: the name is free (T-5.18); the icon is done (T-5.23, ADR-040) |

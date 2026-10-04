@@ -400,3 +400,6 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-04] chore | Version 1.0
 - `MARKETING_VERSION` 0.1.0 → 1.0 in both configurations after the M4 check; build number stays 1. The About tab and diagnostics read it from the bundle.
+
+## [2026-10-04] spec | R-3 closed
+- R-3 checked off: SPEC §8.3 drops its "verify in R-3" caveats (`<synthetic>` lines carry zero usage and are skipped, `cleanupPeriodDays` defaults to 30 days).
