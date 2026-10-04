@@ -1165,6 +1165,7 @@ The percentage is always shown as text next to the bar. Each heatmap layer draws
 | Providers | List of registered providers with enable toggle and availability status. Selecting Claude Code shows: detected `claude` path, version and executable type; override path (file picker) and "Test" button; probe interval (1 to 60 min); status line bridge instructions (P3: installer); "Delete data for this provider", offered while the provider is off (ADR-028) |
 | GitHub | On/off switch, keeping the token (FR-43); account row: "@login" with "Connected" or, after a 401, "Token invalid or expired", and "Disconnect" (deletes the token); token secure field with "Connect", or "Replace" while connected (the saved token stays until the new one validates); refresh interval (10 min to 6 h); link to GitHub's token creation page |
 | Advanced | Open data folder; reset caches (never history, never the notification keys, ADR-028); copy diagnostics |
+| About | The app icon, name, version and build, a one-line description, the copyright (author, from the Info.plist), links to the source code, the license and the README's acknowledgements |
 
 ### 11.7 Accessibility examples
 
@@ -1620,7 +1621,9 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.22** Menu bar polish: `iconOnly` keeps the companion ring; the GitHub modes fill the glyph with today's level and the inner ring with the week's active days, never red; the value is padded in front to two digits so no space trails it; rings and ring drawn at 15 and 16 pt. *(FR-12, FR-51, 11.1, ADR-035)* Seam: `MenuBarLabel` and `ContributionStats.menuBarMeters`; the drawing checked in rendered light and dark sheets. Done 2026-10-04.
 - [x] **T-5.23** App icon and README, split from T-6.7: the icon is the app's mark in Liquid Glass, a prompt `›`, a cursor line that fills like a meter and the agent's spark (§2.3: no vendor logo), as an Icon Composer document `App/AppIcon.icon` with light, dark, clear and tinted renditions and Xcode's flat fallback for macOS 14 and 15 (ADR-040); Claude Code's SF Symbol is `sparkle`, the icon's spark, in place of `terminal`; the README with header, logo, badges and screenshots from the real views with mock data. *(§2.3, Q-6)* Check: the app builds with `AppIcon.icns` and `Assets.car`, and the icon was rendered in every rendition with Icon Composer's `ictool`. Done 2026-10-04.
 
-Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20, T-5.21, T-5.22 and T-5.23 before the M4 check.
+- [x] **T-5.24** About tab in Settings: the app icon, version and build, the copyright from `NSHumanReadableCopyright`, links to the source, the MIT license and the acknowledgements. *(11.6)* Check: the app builds, its Info.plist carries the copyright, and the String Catalog sync of NFR-10 finds every new string translated. Done 2026-10-04.
+
+Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20, T-5.21, T-5.22, T-5.23 and T-5.24 before the M4 check.
 - [ ] **M4 check:** manual matrix 16.5 passes.
 
 ### 17.6 Phase 6: Optional and release (M5)

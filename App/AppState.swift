@@ -167,7 +167,7 @@ import Observation
             secrets: KeychainSecretStore(service: Bundle.main.bundleIdentifier! + ".github"),
             client: GitHubClient(
                 transport: URLSessionTransport(),
-                version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String))
+                version: Bundle.main.infoString("CFBundleShortVersionString")))
         state.gitHubAccount = gitHubAccount
         let github = RefreshCoordinator<GitHubReport>.Job(
             policy: GitHubReport.policy, origin: .github,

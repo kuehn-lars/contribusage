@@ -74,9 +74,8 @@ extension AppState {
     /// The app, the Mac, every registered provider and GitHub. Never a token: the GitHub token never reaches `AppState`.
     /// English in every language, since it goes into bug reports (ADR-031).
     func diagnostics() async -> String {
-        let info = Bundle.main.infoDictionary ?? [:]
         var lines = [
-            "contribusage \(info["CFBundleShortVersionString"] ?? "?") (\(info["CFBundleVersion"] ?? "?"))",
+            "contribusage \(Bundle.main.versionAndBuild)",
             "macOS \(ProcessInfo.processInfo.operatingSystemVersionString)",
             "Chip: \(Self.chip)",
         ]
@@ -134,4 +133,12 @@ private func insightsLines(_ insights: Insights, _ toolText: (String) -> String)
         }
     }
     return lines
+}
+
+extension Bundle {
+    /// "0.1.0 (1)", shared by diagnostics and Settings' About tab.
+    var versionAndBuild: String { "\(infoString("CFBundleShortVersionString")) (\(infoString("CFBundleVersion")))" }
+
+    /// An Info.plist string that the build settings always set.
+    func infoString(_ key: String) -> String { object(forInfoDictionaryKey: key) as! String }
 }

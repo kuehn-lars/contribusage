@@ -388,3 +388,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `App/AppIcon.icon`: the prompt, a filling cursor line and the agent's spark in Liquid Glass, chosen over five render rounds (ADR-040); the target names it, `actool` adds the macOS 14 and 15 fallback; Claude Code's SF Symbol is `sparkle`, the icon's spark, in place of `terminal`.
 - README rewritten: header SVGs in `docs/assets/`, badges, screenshots of the real popover and menu bar styles with mock data, acknowledgements, trademark note.
 - SPEC: T-5.23 added and ticked, the icon moved out of T-6.7, Q-6 answered.
+
+## [2026-10-04] feat | T-5.24 About tab
+- Settings gains an About tab: app icon, version and build, copyright, links to source, license and acknowledgements (SPEC §11.6).
+- The copyright comes from `INFOPLIST_KEY_NSHumanReadableCopyright`; [[modules/app]] updated.
