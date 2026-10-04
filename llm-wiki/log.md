@@ -1,6 +1,6 @@
 ---
 type: log
-updated: 2026-09-28
+updated: 2026-10-04
 ---
 # Log
 
@@ -376,3 +376,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - GitHub modes fill the glyph with today's contribution level and the inner ring with the week's active days, never red ([[decisions/0035-drawn-menu-bar-label]]).
 - `iconOnly` keeps the companion ring; the value is padded in front to two digits, so no space trails the label.
 - Rings and ring drawn at 15 and 16 pt; SPEC FR-12, FR-51, §11.1 and T-5.22 updated.
+
+## [2026-10-04] wiki | Staleness by day
+- `wiki.sh lint` flags a page when a tracked path changed on a later day than its `updated:` date, so a page that still holds needs only that date; ADR-030's "T-… changed X only in Y" notes are gone. Editing a page without bumping `updated:` no longer clears it (it caught ADR-029, edited in T-5.20).
+- `test-wiki.sh` covers both cases and starts from the session template instead of the machine's latest handover.
