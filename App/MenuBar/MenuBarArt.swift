@@ -32,10 +32,11 @@ enum MenuBarArt {
         let size = NSSize(width: max(badgeWidth + glyphWidth + textWidth, 1), height: height)
 
         // A heatmap is history, not the limit: it keeps its hues, and red next to GitHub's green would fail the most
-        // common color blindness (ADR-032). Its value turns red instead.
+        // common color blindness (ADR-032). Its value turns red instead. GitHub's meters are activity, never a limit.
         let isHeatmap = style == .heatmap || style == .sharedHeatmap
+        let limit = label.source == .github ? nil : label.meter
         let image = NSImage(size: size, flipped: false) { _ in
-            let fill = paint(isHeatmap ? nil : label.meter, color, stale: label.isStale)
+            let fill = paint(isHeatmap ? nil : limit, color, stale: label.isStale)
             var x: CGFloat = 0
             if let badge {
                 badge.tinted(.labelColor).draw(
@@ -49,10 +50,10 @@ enum MenuBarArt {
             let value = NSMutableAttributedString(attributedString: attributed)
             value.addAttribute(
                 .foregroundColor, value: NSColor.labelColor, range: NSRange(location: 0, length: value.length))
-            if color != nil && (style == .text || isHeatmap && (label.meter ?? 0) >= 0.9) {
+            if color != nil && (style == .text || isHeatmap && (limit ?? 0) >= 0.9) {
                 let range = NSRange(location: (text as NSString).length, length: (label.text as NSString).length)
                 value.addAttribute(
-                    .foregroundColor, value: paint(label.meter, color, stale: label.isStale), range: range)
+                    .foregroundColor, value: paint(limit, color, stale: label.isStale), range: range)
             }
             value.draw(at: NSPoint(x: x, y: (height - value.size().height) / 2 + 0.5))
             return true
@@ -92,26 +93,27 @@ enum MenuBarArt {
                 bars(lines, filled: meter, fill: fill, width: 2.2)
             }
         case .rings:
-            return Glyph(width: 17) { x, fill in
-                let center = NSPoint(x: x + 8.5, y: height / 2)
-                ring(center, radius: 7.4, value: meter, fill: fill, width: 2.2)
+            return Glyph(width: 15) { x, fill in
+                let center = NSPoint(x: x + 7.5, y: height / 2)
+                ring(center, radius: 6.5, value: meter, fill: fill, width: 2)
                 if let companion = label.companion {
+                    let limit = label.source == .github ? nil : companion
                     ring(
-                        center, radius: 4.2, value: companion, fill: paint(companion, color, stale: label.isStale),
-                        width: 2.2)
+                        center, radius: 3.3, value: companion, fill: paint(limit, color, stale: label.isStale), width: 2
+                    )
                 }
             }
         case .ring:
-            return Glyph(width: 18) { x, fill in
-                let center = NSPoint(x: x + 9, y: height / 2)
-                ring(center, radius: 8, value: meter, fill: fill, width: 1.8)
+            return Glyph(width: 16) { x, fill in
+                let center = NSPoint(x: x + 8, y: height / 2)
+                ring(center, radius: 7.1, value: meter, fill: fill, width: 1.6)
                 let value = label.text.split(separator: " · ").first ?? ""
                 let digits = value.filter { $0.isNumber || $0 == "<" }
                 let number = digits.isEmpty && value.contains("?") ? "?" : String(digits)
                 let string = NSAttributedString(
                     string: number,
                     attributes: [
-                        .font: NSFont.monospacedDigitSystemFont(ofSize: number.count > 2 ? 6.8 : 8.5, weight: .bold),
+                        .font: NSFont.monospacedDigitSystemFont(ofSize: number.count > 2 ? 6.2 : 7.8, weight: .bold),
                         .foregroundColor: NSColor.labelColor, .kern: -0.3,
                     ])
                 let size = string.size()

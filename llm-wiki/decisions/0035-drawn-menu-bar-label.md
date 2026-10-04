@@ -4,7 +4,7 @@ status: accepted
 updated: 2026-10-04
 aliases: [ADR-035]
 tags: [menu-bar, ui, design]
-tracks: [App/MenuBar/MenuBarArt.swift, App/MenuBar/MenuBarItem.swift, Packages/ContribusageKit/Sources/ContribusageCore/Models/MenuBarLabel.swift]
+tracks: [App/MenuBar/MenuBarArt.swift, App/MenuBar/MenuBarItem.swift, Packages/ContribusageKit/Sources/ContribusageCore/Models/MenuBarLabel.swift, Packages/ContribusageKit/Sources/ContribusageGitHub/GitHubReport.swift]
 ---
 # ADR-035: The menu bar label is one drawn, colored image with seven styles
 
@@ -29,4 +29,7 @@ T-5.10 shipped the label as an SF Symbol gauge plus text, rendered as a template
 - The heatmap styles add what they draw to the activity demand (FR-46): `AppState.menuBarHeatmapSources(_:style:)` is the one rule, read by the image and the demand alike (the label's source; for the shared style every layer of the shared heatmap, its hidden block notwithstanding).
 - `MenuBarArt.paint` is the one meter color rule (tint, red from 90 %, half strength while stale), shared by the meter, the companion ring and the value text; the bar meters fill straight bars in order rather than trimming a path.
 - The heatmap styles never turn red: a red Claude Code stripe next to GitHub's green failed the color blindness rule of [[decisions/0032-shared-heatmap]] in the light and dark review render, so the value text carries the 90 % warning there.
+- T-5.22 (2026-10-04): the GitHub modes drew an empty, grey glyph, since contributions have no limit to fill. The glyph now fills to today's contribution level of four, the GitHub hue of the heatmap, and the rings' inner ring to the week's days with contributions of seven (`ContributionStats.menuBarMeters`), so a day without contributions yet still shows the week in color. Both are activity: `MenuBarArt` keeps them out of the red and orange limit colors.
+- T-5.22: `iconOnly` kept only the outer ring; it now keeps the companion as well.
+- T-5.22: three digits of trailing figure spaces left an empty gap at the label's right edge in the common two-digit case. The padding now goes in front and reserves two digits: the label ends at its value, the percent sign stays put from 0 to 99 %, and only `100%` widens it by one digit. The rings and the ring shrank from 17 and 18 pt to 15 and 16 pt, closer to the system's status item glyphs next to 13 pt text.
 - Revisit when `MenuBarExtra` gains colored labels natively, or if a macOS release stops passing the status item's appearance to the handler.

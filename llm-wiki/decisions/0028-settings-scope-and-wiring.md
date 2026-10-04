@@ -39,3 +39,5 @@ T-5.2 builds the controls no other task owns; the menu bar display mode and menu
 Interval settings do not reach pushed limits, which are not scheduled ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
 
 - Since T-5.20 the refetch after a cache reset matches a kept cycle even when the printed reset time moved by a minute ([[decisions/0038-notification-cycles-and-delivery]]).
+
+- Since T-5.22 the style tiles of the GitHub modes show the GitHub meters as well, through the same `menuBarImage(at:style:)` ([[decisions/0035-drawn-menu-bar-label]]).

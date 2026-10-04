@@ -62,3 +62,19 @@ func streakEndingYesterdayNeedsToday(counts: [Int]) throws {
     #expect(ContributionStats(days: days, now: lateUTC, calendar: calendar()).today == 1)
     #expect(ContributionStats(days: days, now: lateUTC, calendar: calendar(zone: "Asia/Tokyo")).today == 2)
 }
+
+/// FR-12: the menu bar's GitHub meters, today's level and the days with contributions in the week so far; the entry
+/// after today counts nowhere.
+@Test func menuBarMetersReadTodaysLevelAndTheWeeksActiveDays() throws {
+    let levels: [ContributionLevel] = [.second, .none, .first, .third, .fourth]  // 09-27 (Sunday) … 10-01
+    let days = try days(from: "2026-09-27", levels.map(\.rawValue)).enumerated().map { index, day in
+        ContributionDay(date: day.date, count: day.count, level: levels[index])
+    }
+    let meters = ContributionStats.menuBarMeters(days: days, now: wednesday, calendar: calendar())
+    #expect(meters.level == 3)
+    #expect(meters.activeDays == 2)
+    #expect(
+        ContributionStats.menuBarMeters(days: days, now: wednesday, calendar: calendar(firstWeekday: 1)).activeDays == 3
+    )
+    #expect(ContributionStats.menuBarMeters(days: [], now: wednesday, calendar: calendar()) == (0, 0))
+}

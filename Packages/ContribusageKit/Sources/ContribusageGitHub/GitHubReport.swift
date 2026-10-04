@@ -49,6 +49,17 @@ public struct ContributionStats: Sendable, Codable, Equatable {
             streakNeedsToday: todayCount == 0 && current > 0,
             longestStreak: past.split { $0.count == 0 }.map(\.count).max() ?? 0)
     }
+
+    /// FR-12: the menu bar's GitHub meters, today's level and the days with contributions in today's week, with the day
+    /// boundary and week start of `calendar` as in `init(days:now:calendar:)`.
+    public static func menuBarMeters(days: [ContributionDay], now: Date, calendar: Calendar) -> (
+        level: Int, activeDays: Int
+    ) {
+        let today = DayKey(now, calendar: calendar)
+        let weekStart = DayKey(calendar.dateInterval(of: .weekOfYear, for: now)!.start, calendar: calendar)
+        let week = days.filter { $0.date >= weekStart && $0.date <= today }
+        return (week.last { $0.date == today }?.level.rawValue ?? 0, week.filter { $0.count > 0 }.count)
+    }
 }
 
 /// The calendar as GitHub returns it (FR-18): its weeks start on Sunday, the first and the last one can be short.

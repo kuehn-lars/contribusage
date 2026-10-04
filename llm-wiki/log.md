@@ -371,3 +371,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `NotificationPlanner.plan`: a cycle ends only on a reset time move of more than 1 h, keeps its first known reset time (one identifier per window and cycle) and notifies only the highest threshold crossed ([[decisions/0038-notification-cycles-and-delivery]]).
 - `NotificationDelivery` queues notes and posts them 3 s apart in one thread per provider; the coordinator's `deliver` closure is synchronous now, so a refresh never waits for delivery ([[modules/app]]).
 - Spec: US-3 says "at most one" per threshold; FR-15 names the cycle's first reset time as its key and ends a cycle when the window reports no reset time after the cycle's has passed.
+
+## [2026-10-04] fix | T-5.22 menu bar polish
+- GitHub modes fill the glyph with today's contribution level and the inner ring with the week's active days, never red ([[decisions/0035-drawn-menu-bar-label]]).
+- `iconOnly` keeps the companion ring; the value is padded in front to two digits, so no space trails the label.
+- Rings and ring drawn at 15 and 16 pt; SPEC FR-12, FR-51, §11.1 and T-5.22 updated.

@@ -45,3 +45,5 @@ Measured before the shared heatmap block (T-5.16), which draws up to 182 cells p
 Measured before pushed limits (T-5.12): a provider's push consumer is one suspended task, no timer, so the idle figures still hold ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
 
 - T-5.20's delivery queue adds one task that sleeps between notes and waits on an empty stream otherwise; it adds no work to a refresh pass.
+
+- T-5.22 adds a filter over the calendar's days (about a year) to each label read for GitHub's meters; the label is read once a minute and on data changes, so the idle figures still hold.

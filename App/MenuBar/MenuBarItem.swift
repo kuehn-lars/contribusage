@@ -58,7 +58,7 @@ extension AppState {
         switch menuBarTint {
         case .monochrome: nil
         case .accent: .controlAccentColor
-        case .usage: (label.meter ?? 0) >= 0.7 ? .systemOrange : .controlAccentColor
+        case .usage: label.source != .github && (label.meter ?? 0) >= 0.7 ? .systemOrange : .controlAccentColor
         case .custom: NSColor(hex: menuBarColor)
         case .provider:
             label.source?.hue(in: self) ?? .controlAccentColor

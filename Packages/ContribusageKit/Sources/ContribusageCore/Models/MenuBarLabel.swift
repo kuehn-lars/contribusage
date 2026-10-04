@@ -48,13 +48,15 @@ public struct MenuBarLabel: Equatable, Sendable {
     /// An enabled provider and its last limits, if any.
     public typealias Provider = (descriptor: ProviderDescriptor, limits: Snapshot<LimitsReport>?)
 
-    /// `23%` with figure spaces up to three digits, `?`, today's contributions, or empty for `iconOnly`.
+    /// `23%` with figure spaces in front up to two digits, `?`, today's contributions, or empty for `iconOnly`.
     public var text: String
     /// The source's name, for the text style and VoiceOver; the app's name with every source off.
     public var title: String
-    /// The shown window's used fraction, 0 to 1; `nil` without a window or while it is reset (FR-11).
+    /// The shown window's used fraction, 0 to 1; `nil` without a window or while it is reset (FR-11). For GitHub, today's
+    /// contribution level of 4.
     public var meter: Double?
-    /// The same provider's other window (weekly beside session, session beside weekly), for the rings style.
+    /// The same provider's other window (weekly beside session, session beside weekly), for the rings style. For
+    /// GitHub, the days with contributions this week of 7.
     public var companion: Double?
     public var isStale = false
     /// The provider's symbol when `highest` chose among more than one provider (SPEC §7.7).
@@ -76,9 +78,11 @@ public struct MenuBarLabel: Equatable, Sendable {
     }
 
     /// `mode` is resolved (`MenuBarMode.resolved`); `providers` are the enabled ones in registry order; `provider` is
-    /// the menu bar provider's ID; `github` is `nil` before GitHub's first data.
+    /// the menu bar provider's ID; `github` is `nil` before GitHub's first data, its `level` today's (0 to 4) and
+    /// `activeDays` this week's days with contributions.
     public init(
-        mode: MenuBarMode, provider: ProviderID?, providers: [Provider], github: (today: Int, isStale: Bool)?,
+        mode: MenuBarMode, provider: ProviderID?, providers: [Provider],
+        github: (today: Int, level: Int, activeDays: Int, isStale: Bool)?,
         at now: Date, locale: Locale = .autoupdatingCurrent
     ) {
         let limits = { (kind: WindowKind?) in
@@ -90,14 +94,16 @@ public struct MenuBarLabel: Equatable, Sendable {
         case .weekly: self = limits(.weekly)
         case .highest: self = limits(nil)
         case .githubToday:
-            self.init(text: gitHubText, title: "GitHub", isStale: github?.isStale ?? false, source: .github)
+            self.init(
+                text: gitHubText, title: "GitHub", meter: github.map { Double($0.level) / 4 },
+                companion: github.map { Double($0.activeDays) / 7 }, isStale: github?.isStale ?? false,
+                source: .github)
         case .primaryAndGitHub:
             self = limits(.session)
             text += " · " + gitHubText
         case .iconOnly:
             self = providers.isEmpty ? Self(text: "", title: "contribusage") : limits(.session)
             text = ""
-            companion = nil
         }
     }
 
@@ -140,9 +146,10 @@ public struct MenuBarLabel: Equatable, Sendable {
         window.isReset(at: now) ? nil : min(max(window.usedPercent / 100, 0), 1)
     }
 
-    /// SPEC §11.1 stable width: figure spaces (as wide as a digit) up to three digits.
+    /// SPEC §11.1 stable width: figure spaces (as wide as a digit) in front up to two digits, so the label ends at its
+    /// value; `100%` widens it by one digit.
     // ponytail: `~` and `<` still widen the label by a few points; measure the text if that jitter shows.
     private static func padded(_ text: String) -> String {
-        text + String(repeating: "\u{2007}", count: max(0, 3 - text.filter(\.isNumber).count))
+        String(repeating: "\u{2007}", count: max(0, 2 - text.filter(\.isNumber).count)) + text
     }
 }
