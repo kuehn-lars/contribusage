@@ -40,11 +40,11 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
     /// FR-13 to FR-15: the settings, read before every plan, and the app's delivery.
     public struct Notifications: Sendable {
         let settings: @Sendable () -> NotificationPlanner.Settings
-        let deliver: @Sendable ([NotificationPlanner.Note]) async -> Void
+        let deliver: @Sendable ([NotificationPlanner.Note]) -> Void
 
         public init(
             settings: @escaping @Sendable () -> NotificationPlanner.Settings,
-            deliver: @escaping @Sendable ([NotificationPlanner.Note]) async -> Void
+            deliver: @escaping @Sendable ([NotificationPlanner.Note]) -> Void
         ) {
             self.settings = settings
             self.deliver = deliver
@@ -378,7 +378,7 @@ public actor RefreshCoordinator<GitHubValue: Sendable & Codable> {
             report, displayName: descriptor.displayName, windowTitle: descriptor.toolText,
             settings: notifications.settings(), sent: &notificationKeys, now: time.now)
         if notificationKeys != before { persist() }
-        if !notes.isEmpty { await notifications.deliver(notes) }
+        if !notes.isEmpty { notifications.deliver(notes) }
     }
 
     private func record(_ id: ProviderID) -> Record<LimitsReport> {

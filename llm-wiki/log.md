@@ -366,3 +366,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] refactor | Interval choices from the policy
 - `IntervalPicker` derives its choices from fixed steps within the `SchedulePolicy` bounds; the Claude Code and GitHub callers no longer repeat the bounds ([[modules/app]]).
 - The T-5.21 test asserts the policy's default and minimum directly; Low Power Mode doubling stays covered in `ScheduleTests`.
+
+## [2026-10-04] fix | T-5.20 notification cycles and delivery
+- `NotificationPlanner.plan`: a cycle ends only on a reset time move of more than 1 h, keeps its first known reset time (one identifier per window and cycle) and notifies only the highest threshold crossed ([[decisions/0038-notification-cycles-and-delivery]]).
+- `NotificationDelivery` queues notes and posts them 3 s apart in one thread per provider; the coordinator's `deliver` closure is synchronous now, so a refresh never waits for delivery ([[modules/app]]).
+- Spec: US-3 says "at most one" per threshold; FR-15 names the cycle's first reset time as its key and ends a cycle when the window reports no reset time after the cycle's has passed.

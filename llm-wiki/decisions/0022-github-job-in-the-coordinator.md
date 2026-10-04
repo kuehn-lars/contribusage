@@ -44,3 +44,5 @@ The app passes `Calendar.current` to `GitHubAccount.report(now:calendar:)`, the 
 - T-5.19: the menu bar's demand set (`AppState.menuBarSources`) also names the activity the heatmap styles draw (`menuBarHeatmapSources(_:style:)`) ([[decisions/0035-drawn-menu-bar-label]]); GitHub's part of it is unchanged.
 
 `AppState.setEnabled` calls `start()` on disable as well, which stops a provider's pushed limits; GitHub's job is unaffected ([[decisions/0036-pushed-limits-and-debug-fake-provider]]).
+
+- Since T-5.20 a limits job hands its notes to the app's queue without waiting, so notification delivery never delays the GitHub job in the same pass ([[decisions/0038-notification-cycles-and-delivery]]).

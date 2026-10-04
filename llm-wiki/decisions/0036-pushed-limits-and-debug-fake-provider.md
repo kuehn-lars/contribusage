@@ -26,3 +26,5 @@ The coordinator keeps one task per enabled provider with limits that consumes `p
 
 ## Consequences
 A push also moves a polled source's last success, so a bridge push postpones the next probe; T-6.2 decides whether that is wanted. A push resets no backoff count. The flag is set on the command line (SPEC §15.5), not in a configuration, so no shipped build can carry the fake.
+
+- A pushed report's notes are handed to the app's delivery queue without waiting, like a fetched report's ([[decisions/0038-notification-cycles-and-delivery]]).
