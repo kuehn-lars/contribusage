@@ -411,3 +411,4 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] docs | Install from the DMG
 - README's Install section: download the DMG, then clear the quarantine flag once (`xattr -dr com.apple.quarantine`) or use Open Anyway, since the app is not notarized.
 - T-6.7 keeps Developer ID signing and notarization for a later stage; [[decisions/0006-no-app-sandbox]] amended, the README roadmap says so.
+- README's license badge is a static MIT badge: the shields.io GitHub lookup had cached "not specified" from before `LICENSE` existed.

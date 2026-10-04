@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/UI-SwiftUI-0a84ff?style=plastic" alt="SwiftUI">
   <img src="https://img.shields.io/badge/agent-Claude%20Code-ff9f1a?style=plastic" alt="Supports Claude Code">
   <img src="https://img.shields.io/badge/telemetry-none-34c759?style=plastic" alt="No telemetry">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/kuehn-lars/contribusage?style=plastic&color=5a5ed0" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-5a5ed0?style=plastic" alt="MIT License"></a>
   <a href="https://github.com/kuehn-lars/contribusage/releases"><img src="https://img.shields.io/github/v/release/kuehn-lars/contribusage?include_prereleases&style=plastic&color=8e8e93" alt="Latest release"></a>
 </p>
 
