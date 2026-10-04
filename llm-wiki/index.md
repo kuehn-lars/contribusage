@@ -26,7 +26,7 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0003-official-interfaces-only]]: ADR-003, no credentials, no undocumented vendor endpoints
 - [[decisions/0004-logic-in-contribusagekit-package]]: ADR-004, all logic in the local Swift package
 - [[decisions/0005-json-file-persistence]]: ADR-005, versioned atomic JSON files
-- [[decisions/0006-no-app-sandbox]]: ADR-006, no sandbox, notarized download
+- [[decisions/0006-no-app-sandbox]]: ADR-006, no sandbox; ad-hoc signed DMG, notarization later
 - [[decisions/0007-native-transcript-parsing]]: ADR-007, native transcript parser, `ccusage` for validation
 - [[decisions/0008-minimum-macos-14]]: ADR-008, macOS 14 minimum
 - [[decisions/0009-apple-silicon-only]]: ADR-009, arm64 only

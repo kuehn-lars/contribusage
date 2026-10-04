@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-28
+updated: 2026-10-04
 aliases: [ADR-009]
 tags: [platform]
 ---
@@ -23,4 +23,4 @@ Build with `ARCHS = arm64` in every configuration; CI checks the Release executa
 
 ## Consequences
 - Xcode's "Standard Architectures" would silently add x86_64 in Release; the explicit setting and the CI check prevent that (SPEC §20).
-- `claude` installations built for x86_64 still need Rosetta; diagnostics report the executable type (FR-36).
+- `claude` installations built for x86_64 still need Rosetta; diagnostics report the executable type (FR-36). Without Rosetta such a `claude` shows as not found: the M4 check (2026-10-04) dropped SPEC §13's Rosetta message and its §16.5 row, since only a migration from an Intel Mac leads there.

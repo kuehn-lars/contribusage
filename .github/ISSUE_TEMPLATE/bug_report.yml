@@ -1,0 +1,26 @@
+name: Bug report
+description: Something in contribusage doesn't work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the popover
+        2. …
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: >-
+        Settings → Advanced → Copy Diagnostics, then paste here. It never contains a token,
+        but read it first and remove anything you'd rather keep private.
+      render: text

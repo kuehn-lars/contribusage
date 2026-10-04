@@ -136,7 +136,7 @@ private func insightsLines(_ insights: Insights, _ toolText: (String) -> String)
 }
 
 extension Bundle {
-    /// "0.1.0 (1)", shared by diagnostics and Settings' About tab.
+    /// "1.0 (1)", shared by diagnostics and Settings' About tab.
     var versionAndBuild: String { "\(infoString("CFBundleShortVersionString")) (\(infoString("CFBundleVersion")))" }
 
     /// An Info.plist string that the build settings always set.

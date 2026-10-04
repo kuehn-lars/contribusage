@@ -176,7 +176,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = contribusage;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Lars Kuehn";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kuehnlars.contribusage;
 				PRODUCT_NAME = contribusage;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -195,7 +195,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = contribusage;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Lars Kuehn";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kuehnlars.contribusage;
 				PRODUCT_NAME = contribusage;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;

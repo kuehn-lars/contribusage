@@ -110,6 +110,6 @@ A folder is created with its first page and added to the repo map. Page rules (l
 | Build the app | `xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Debug -derivedDataPath .build/xcode build` |
 | Swift lint | `swift format lint --strict -r App Packages` |
 | Architecture check | `lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage` prints `arm64` |
-| CI | `.github/workflows/ci.yml` runs the package tests and lint, the Release build with the `arm64` check, and the wiki lint on every pull request |
+| CI | `.github/workflows/ci.yml` runs the package tests and lint, the Release build with the `arm64` check, and the wiki lint on every pull request; on `main` a green push with a new `MARKETING_VERSION` creates the GitHub release `v<version>` with the DMG |
 | Wiki | `llm-wiki/tools/wiki.sh context`, `new-session <slug> [agent]`, `lint` |
 | Wiki tooling test | `llm-wiki/tools/test-wiki.sh` (after changing `wiki.sh`) |

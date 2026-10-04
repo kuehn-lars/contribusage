@@ -565,11 +565,11 @@ Claude Code runs a user configured `statusLine` command and passes session JSON 
 
 ### 8.3 Claude Code: activity from local transcripts
 
-> ⚠️ The transcript format is **not a documented interface**. Everything in this section must be verified against real files in research R-3 before implementation, and re-verified when Claude Code changes.
+> ⚠️ The transcript format is **not a documented interface**. This section was verified against real files in research R-3; re-verify it when Claude Code changes.
 
 #### 8.3.1 Location
 
-`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with every character outside `[a-zA-Z0-9]` replaced by `-` (observed for `/` and spaces; confirm the rest in R-3).
+`<root>/projects/<encoded project path>/<session id>.jsonl`, possibly with nested folders (for example for subagents). Roots per FR-22. The encoded project path is the absolute working directory with every character outside `[a-zA-Z0-9]` replaced by `-` (R-3 observed it for `/` and spaces).
 
 #### 8.3.2 Fields used
 
@@ -580,7 +580,7 @@ Claude Code runs a user configured `statusLine` command and passes session JSON 
 | `sessionId` | string | Session counting. |
 | `requestId` | string | De-duplication. |
 | `message.id` | string | De-duplication. |
-| `message.model` | string | Per model breakdown. Skip placeholder models such as `<synthetic>` (verify in R-3). |
+| `message.model` | string | Per model breakdown. Skip placeholder models such as `<synthetic>`; R-3 found them carrying zero usage. |
 | `message.usage.input_tokens` | int | Input tokens. |
 | `message.usage.output_tokens` | int | Output tokens. |
 | `message.usage.cache_creation_input_tokens` | int | Cache write tokens. |
@@ -598,7 +598,7 @@ An illustrative line is in [Appendix E](#appendix-e-illustrative-transcript-line
 
 #### 8.3.4 History and retention
 
-Claude Code removes old transcripts after a retention period (setting `cleanupPeriodDays`, default believed to be 30 days; verify in R-3). The provider therefore keeps two layers:
+Claude Code removes old transcripts after a retention period (setting `cleanupPeriodDays`, default 30 days per Claude Code's settings documentation). The provider therefore keeps two layers:
 
 1. **Live index** (in memory, rebuilt from the transcripts at launch, [ADR-024](llm-wiki/decisions/0024-live-index-in-memory.md)): unique keys and their usage for all entries in files that currently exist. Recent days are computed from it.
 2. **History store** (persisted): one aggregate per day. A day is **frozen** into the history store once it is more than 48 h in the past. Frozen days are never recomputed from files, so deleted transcripts do not erase history. Keep 365 days.
@@ -1209,7 +1209,6 @@ Global rules:
 | API key billing, no subscription | P-10; `fetch()` throws `SourceError.unsupportedPlan` | `notConfigured(.unsupportedPlan)` | See 11.3 | Re-check every 6 h |
 | Probe timeout | 30 s elapsed | `failed(.timedOut)` | "Claude Code didn't answer in time." | Backoff |
 | Unparseable output | Exit 0, zero windows | `failed(.unparseable)` | "Couldn't read the /usage output. Claude Code may have changed its format." | Keep previous; offer raw output; diagnostics in Settings (FR-36) |
-| `claude` is an x86_64 binary and Rosetta is missing | Process launch fails with a bad CPU type error | `failed(.processFailed)` | "This Claude Code installation needs Rosetta. Reinstall Claude Code for Apple Silicon." | Re-resolve on next popover open |
 | Offline | `NWPathMonitor` | `failed(.offline)` with previous | "Offline" badge | Auto on reconnect |
 | GitHub 401 | HTTP status | `failed(.unauthorized)` | "GitHub token is invalid or expired." + "Change token…" button (opens Settings) | Stop until token changes |
 | GitHub rate limited | Failed response with `x-ratelimit-remaining: 0` (8.4.3) | `failed(.rateLimited(until:))` | "GitHub rate limit, retrying at 15:04." | Wait until reset |
@@ -1251,7 +1250,7 @@ contribusage/
 ├── AGENTS.md                       ← agent instructions (replaces Appendix B)
 ├── CLAUDE.md                       ← imports AGENTS.md for Claude Code
 ├── .claude/settings.json           ← Claude Code hooks for the llm-wiki protocol
-├── .github/workflows/ci.yml        ← CI (16.1): package tests, app build, architecture, wiki lint
+├── .github/workflows/ci.yml        ← CI (16.1): package tests, app build, architecture, wiki lint; release on version bump
 ├── llm-wiki/                       ← project memory (Obsidian vault), ADRs in decisions/
 ├── .gitignore
 ├── .swift-format
@@ -1304,7 +1303,7 @@ contribusage/
    - **`ARCHS = arm64`** for all configurations (do not use "Standard Architectures", which adds x86_64 in Release). `ONLY_ACTIVE_ARCH = YES` in Debug.
    - Swift 6 language mode; treat warnings as errors in all configurations (NFR-11).
    - `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`: the app target holds views and wiring only.
-3. Signing & Capabilities: remove **App Sandbox**; keep **Hardened Runtime**; signing "Sign to Run Locally" for now.
+3. Signing & Capabilities: remove **App Sandbox**; keep **Hardened Runtime**; signing "Sign to Run Locally" (no Developer ID, ADR-006).
 4. Info.plist: generated from build settings (`GENERATE_INFOPLIST_FILE`); `INFOPLIST_KEY_LSUIElement = YES` makes the app an agent without a Dock icon. `App/` is a synchronised folder, so files added there join the target without editing the project file.
 5. Create the local package at `Packages/ContribusageKit` (File → New → Package), add it to the project (File → Add Package Dependencies → Add Local…), link `ContribusageCore`, `ContribusageClaudeCode` and `ContribusageGitHub` to the app target.
 6. Verify after the first Release build: `lipo -archs .build/xcode/Build/Products/Release/contribusage.app/Contents/MacOS/contribusage` prints `arm64` (NFR-16).
@@ -1515,7 +1514,6 @@ Scrubbing rule for real fixtures: replace user names, paths, prompt text and ids
 | Sleep 1 h, wake | Refresh after about 10 s; ages correct |
 | Wi-Fi off | "Offline" badges; transcripts still update |
 | `claude` renamed or uninstalled | Limits show "not found"; others unaffected |
-| `claude` installed as x86_64 binary on a Mac without Rosetta | Clear Rosetta message; others unaffected |
 | Claude Code provider disabled | Group hidden; no `claude` processes (check Activity Monitor); menu bar falls back |
 | Debug build with `CONTRIBUSAGE_FAKE_PROVIDER` | Two provider groups render correctly; notifications name the right provider; the heatmap shows three layers in both styles |
 | Popover tab: reorder, hide every block, switch GitHub off | Popover follows at once; "Nothing to show"; menu bar and notifications keep working while their sections are hidden |
@@ -1548,7 +1546,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 - [x] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry. Done 2026-10-04 in T-5.21: no quota cost, about 1.7 s CPU per probe; default 5 min, minimum 1 min (ADR-039, `llm-wiki/research/r-1-probe-cost.md`).
 - [x] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13. Answered 2026-09-29: `llm-wiki/research/r-2-usage-output-variants.md`.
-- [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
+- [x] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6). Closed 2026-10-04: roots, field paths and de-duplication confirmed by T-4.1 to T-4.7, daily totals within 1 % of ccusage, `<synthetic>` lines carry zero usage and are skipped, `cleanupPeriodDays` defaults to 30 days; 8.3 updated.
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
 - [ ] **R-5 Probe performance.** `time` a probe in the probe folder; watch Activity Monitor for child processes (user level MCP servers may start even in an empty folder). Check that the resolved `claude` runs natively (`file "$(command -v claude)"`, Activity Monitor "Kind" column shows "Apple"). Evaluate adding `--strict-mcp-config --mcp-config '{"mcpServers":{}}'` to skip MCP startup, adopt only if the output is unchanged. *Outcome:* final argument list in 8.1.1.
 - [ ] **R-6 Plan source.** For Claude Code: `/usage` says only that a subscription is used, not which. Check whether `claude auth status` (an official CLI command) names the plan, in which format, and what personal data it prints that must not be stored or logged; the credential file's fields stay off limits (section 2). Running it from the app extends 8.1.1 and FR-6's argument list, so the outcome is a spec change. For later providers the same question is part of their provider gate (2.4). *Outcome:* FR-50's Claude Code source, or an ADR that it has none. After v1.
@@ -1624,7 +1622,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.24** About tab in Settings: the app icon, version and build, the copyright from `NSHumanReadableCopyright`, links to the source, the MIT license and the acknowledgements. *(11.6)* Check: the app builds, its Info.plist carries the copyright, and the String Catalog sync of NFR-10 finds every new string translated. Done 2026-10-04.
 
 Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20, T-5.21, T-5.22, T-5.23 and T-5.24 before the M4 check.
-- [ ] **M4 check:** manual matrix 16.5 passes.
+- [x] **M4 check:** manual matrix 16.5 passes. Done 2026-10-04: every row checked by hand in the Release build and the Debug build with `CONTRIBUSAGE_FAKE_PROVIDER`; the Rosetta row was dropped from 13 and 16.5 instead of built (ADR-009).
 
 ### 17.6 Phase 6: Optional and release (M5)
 
@@ -1634,8 +1632,8 @@ Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T
 - [ ] **T-6.4** API-equivalent value estimate for the last 7 days: tokens per category and money per model from a price table. *(FR-40)* Seam: a pure estimate over `ActivityDay`s and a price table in the core.
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
-- [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), ~~icon~~ (moved to T-5.23), Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
-- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
+- [ ] **T-6.7** Distribution: Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. The DMG came 2026-10-04: CI's `release` job attaches it, ad-hoc signed, to every release, and the README tells users to clear the quarantine flag once. Signing and notarization are deferred to a later stage, for example once the project draws enough users (ADR-006). The name check moved to T-5.18, the icon to T-5.23; CI checks `LSMinimumSystemVersion` 14.0.
+- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014). Since 2026-10-04 its `release` job turns a version bump on `main` into the GitHub release `v<MARKETING_VERSION>` once the other jobs pass: tag, generated notes and the ad-hoc signed arm64 DMG with a build provenance attestation (`gh attestation verify`, `SECURITY.md`) (ADR-006).
 - [ ] ~~**T-6.9** Second provider evaluation (research only).~~ Moved to T-5.17.
 - [ ] **T-6.10** Plan display: the plan in the group header, copy statistics and diagnostics. *(FR-50, US-15)* Depends: R-6. After v1; becomes relevant with a second provider whose data differs by plan (T-5.17).
 
@@ -1664,7 +1662,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 |---|---|---|---|
 | R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values; the default interval (T-5.21) | Answered: no; default 5 min, minimum 1 min |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
-| R-3 | Transcript format details and retention default | Phase 4 | Open |
+| R-3 | Transcript format details and retention default | Phase 4 | Answered (8.3) |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |
 | R-5 | Probe duration, child processes, MCP skipping, native execution | 8.1.1 | Open |
 | Q-6 | Availability of the name "contribusage" and final icon | T-5.18 (name), T-5.23 (icon) | Answered: the name is free (T-5.18); the icon is done (T-5.23, ADR-040) |
@@ -1684,7 +1682,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 | `claude` path changes after updates | Medium | Probe fails | Re-resolution in FR-6 |
 | Provider abstraction shaped too closely to Claude Code | Medium | Second provider needs core changes | `FakeProvider` with a deliberately different shape, conformance suite, `providerSpecific` error escape hatch |
 | A future tool offers no compliant interface | Medium | That tool cannot be integrated (or only partly) | Provider gate (2.4); partial capabilities are acceptable, non compliant ones are not built |
-| Users on Intel Macs ask for support | Low | Support requests | Documented non-goal (ADR-009); the download page states "Apple Silicon only" |
+| Users on Intel Macs ask for support | Low | Support requests | Documented non-goal (ADR-009); the README states "Apple Silicon only" |
 
 ---
 
@@ -1692,7 +1690,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 
 - **GUI apps do not inherit your shell environment.** `PATH`, `CLAUDE_CONFIG_DIR` and friends are missing when launched from Finder. Resolve once through the login shell (FR-6, FR-22).
 - **Homebrew lives in `/opt/homebrew` on Apple Silicon**, which is not on the default GUI `PATH`. Never assume `/usr/local/bin` is the Homebrew prefix.
-- **x86_64 tools need Rosetta.** A tool installed through an x86_64 Node.js or an old Homebrew under Rosetta launches only if Rosetta is installed. The app itself never needs Rosetta; diagnostics report the executable type (FR-36).
+- **x86_64 tools need Rosetta.** A tool installed through an x86_64 Node.js or an old Homebrew under Rosetta launches only if Rosetta is installed. The app itself never needs Rosetta; diagnostics report the executable type (FR-36). Without Rosetta such a tool fails FR-6's `--version` check and shows as not found; no Rosetta specific message (ADR-009).
 - **Accidental universal builds.** "Standard Architectures" includes x86_64 in Release builds. Set `ARCHS = arm64` explicitly and check with `lipo -archs` in CI (NFR-16).
 - **CI runners.** Use Apple Silicon macOS runners; performance numbers from Intel runners are meaningless for NFR-7.
 - **Pipe deadlocks.** Waiting for a process to exit before reading its output deadlocks when the output fills the pipe buffer. Read stdout and stderr concurrently (T-2.4).

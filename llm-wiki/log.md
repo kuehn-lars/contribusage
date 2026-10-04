@@ -392,3 +392,42 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] feat | T-5.24 About tab
 - Settings gains an About tab: app icon, version and build, copyright, links to source, license and acknowledgements (SPEC §11.6).
 - The copyright comes from `INFOPLIST_KEY_NSHumanReadableCopyright`; [[modules/app]] updated.
+
+## [2026-10-04] spec | M4 check passed
+- SPEC §13 and §16.5 drop the x86_64-without-Rosetta row: such a `claude` fails FR-6's `--version` check and shows as not found; §19 and [[decisions/0009-apple-silicon-only]] say so.
+- The remaining §16.5 rows were traced to code (Low Power Mode log line in the refresh coordinator, day buckets re-aggregated with the autoupdating calendar on each transcript change); the matrix itself runs by hand.
+- Every §16.5 row passed by hand; M4 ticked in SPEC §17.5.
+
+## [2026-10-04] chore | Version 1.0
+- `MARKETING_VERSION` 0.1.0 → 1.0 in both configurations after the M4 check; build number stays 1. The About tab and diagnostics read it from the bundle.
+
+## [2026-10-04] spec | R-3 closed
+- R-3 checked off: SPEC §8.3 drops its "verify in R-3" caveats (`<synthetic>` lines carry zero usage and are skipped, `cleanupPeriodDays` defaults to 30 days).
+
+## [2026-10-04] chore | Release on version bump
+- `ci.yml` gains a `release` job: on `main`, after the other jobs pass, a new `MARKETING_VERSION` becomes the GitHub release `v<version>` with generated notes and the ad-hoc signed arm64 DMG.
+- [[decisions/0014-build-and-ci-foundation]] records it; AGENTS.md's CI row and SPEC T-6.8 mention it.
+
+## [2026-10-04] docs | Install from the DMG
+- README's Install section: download the DMG, then clear the quarantine flag once (`xattr -dr com.apple.quarantine`) or use Open Anyway, since the app is not notarized.
+- T-6.7 keeps Developer ID signing and notarization for a later stage; [[decisions/0006-no-app-sandbox]] amended, the README roadmap says so.
+- README's license badge is a static MIT badge: the shields.io GitHub lookup had cached "not specified" from before `LICENSE` existed.
+
+## [2026-10-04] docs | Contributor guide
+- `CONTRIBUTING.md`, kept short and open: issues and pull requests without prior sign-off, build and test commands, the SPEC §2 rules in brief, what CI asks for (German translations, stale wiki pages, both of which maintainers can finish), coding agents via `AGENTS.md`, the provider gate for new tools.
+- [[architecture/repo-map]] lists it.
+- `docs/assets/social-preview.svg` and `.png`: the repository's 1280×640 social preview, laid out from the README header's icon, title, tagline and pill; the PNG is rendered with headless Chrome and uploaded by hand.
+
+## [2026-10-04] docs | Community files
+- `CODE_OF_CONDUCT.md`: Contributor Covenant 2.1; reports go through GitHub's "Report content → Report to repository admins", so no address is published.
+- `SECURITY.md`: latest release supported, reports through private vulnerability reporting, the SPEC §2 and §14 promises as the definition of a vulnerability.
+- `.github/ISSUE_TEMPLATE/` (bug, `/usage` output change per SPEC §16.6, feature with the provider-gate question, security contact link) and `.github/pull_request_template.md`; CONTRIBUTING.md links the Code of Conduct and the security policy. [[architecture/repo-map]] lists them.
+
+## [2026-10-04] fix | Release job hardened
+- The `release` job's `hdiutil` retries overwrite a partial image and fail the job after the third try; only its two `gh` steps get the token, and its checkout keeps no credentials.
+- Runs on `main` queue instead of cancelling each other, so a release cannot stop half-created; [[decisions/0014-build-and-ci-foundation]] updated.
+- [[modules/claude-code]] no longer cites the SPEC §13 Rosetta row the M4 check removed.
+
+## [2026-10-04] chore | Release build provenance
+- The `release` job attests each DMG with `actions/attest` before creating the release; `SECURITY.md` shows the `gh attestation verify` check and the README links it.
+- [[decisions/0014-build-and-ci-foundation]] and SPEC T-6.8 say so.
