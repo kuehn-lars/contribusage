@@ -67,7 +67,8 @@ jobs:
       - run: llm-wiki/tools/test-wiki.sh
 
   # A version bump that lands on main becomes the GitHub release v<MARKETING_VERSION> with generated notes and the
-  # app as an arm64 DMG, ad-hoc signed and not notarized (ADR-006, T-6.7). Later pushes find the release and stop.
+  # app as an arm64 DMG, ad-hoc signed and not notarized (ADR-006, T-6.7), with a build provenance attestation.
+  # Later pushes find the release and stop.
   release:
     name: Release on version bump
     if: github.event_name == 'push'
@@ -75,6 +76,8 @@ jobs:
     runs-on: macos-26
     permissions:
       contents: write
+      id-token: write # the Sigstore certificate that signs the attestation
+      attestations: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -91,9 +94,8 @@ jobs:
       - if: steps.version.outputs.new
         run: xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Release -derivedDataPath .build/xcode build
       - if: steps.version.outputs.new
-        name: DMG and release
+        name: DMG
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.new }}
         run: |
           mkdir dmg
@@ -105,4 +107,14 @@ jobs:
             [[ $try == 3 ]] && exit 1
             sleep 10
           done
-          gh release create "v$VERSION" "contribusage-$VERSION.dmg" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
+      # Build provenance: anyone can check a downloaded DMG with `gh attestation verify` (SECURITY.md).
+      - if: steps.version.outputs.new
+        uses: actions/attest@v4
+        with:
+          subject-path: contribusage-${{ steps.version.outputs.new }}.dmg
+      - if: steps.version.outputs.new
+        name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.new }}
+        run: gh release create "v$VERSION" "contribusage-$VERSION.dmg" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes

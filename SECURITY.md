@@ -25,4 +25,16 @@ contribusage promises a few things about safety (see [SPEC §2](SPEC.md#2-consti
 - The app reads files outside the roots SPEC §14 declares, or writes outside its own folder without asking you.
 - A downloaded release is not the build CI made from the tagged commit.
 
+## Verify a download
+
+Every release DMG carries a build provenance attestation, signed by the CI run that built it. To check that a download is that build, run [GitHub CLI](https://cli.github.com) on it:
+
+```bash
+gh attestation verify contribusage-<version>.dmg --repo kuehn-lars/contribusage
+```
+
+A DMG that fails this check did not come from this repository's CI; please report it.
+
+## Not a vulnerability
+
 The app is ad-hoc signed and not notarized ([ADR-006](llm-wiki/decisions/0006-no-app-sandbox.md)), so Gatekeeper warns on first launch. That is expected and not a vulnerability.

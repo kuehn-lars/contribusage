@@ -427,3 +427,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - The `release` job's `hdiutil` retries overwrite a partial image and fail the job after the third try; only its two `gh` steps get the token, and its checkout keeps no credentials.
 - Runs on `main` queue instead of cancelling each other, so a release cannot stop half-created; [[decisions/0014-build-and-ci-foundation]] updated.
 - [[modules/claude-code]] no longer cites the SPEC §13 Rosetta row the M4 check removed.
+
+## [2026-10-04] chore | Release build provenance
+- The `release` job attests each DMG with `actions/attest` before creating the release; `SECURITY.md` shows the `gh attestation verify` check and the README links it.
+- [[decisions/0014-build-and-ci-foundation]] and SPEC T-6.8 say so.

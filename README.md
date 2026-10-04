@@ -70,7 +70,7 @@ The windows you see are exactly the ones Claude Code prints for your plan. When 
 
 ## Install
 
-Download `contribusage-<version>.dmg` from the [latest release](https://github.com/kuehn-lars/contribusage/releases/latest), open it and drag contribusage to your Applications folder.
+Download `contribusage-<version>.dmg` from the [latest release](https://github.com/kuehn-lars/contribusage/releases/latest), open it and drag contribusage to your Applications folder. To check that the DMG is the one CI built, see [Verify a download](SECURITY.md#verify-a-download).
 
 > [!IMPORTANT]
 > contribusage is not signed with an Apple Developer ID or notarized, because the project has no Apple Developer account. On first launch macOS therefore refuses to open it and says it cannot verify the developer. This is expected. You get past it once with one of the two methods below.
