@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-09-28
+updated: 2026-10-04
 aliases: [ADR-014]
 tags: [build, ci, architecture]
 ---
@@ -27,4 +27,5 @@ Build as in the table. CI runs on pull requests and on pushes to `main`, with re
 - Warnings in package code fail `swift test` only with the flag; the app build shows them without failing. Revisit `treatAllWarnings` once CI and the minimum Xcode (SPEC §15.1) are 27 or later.
 - `xcodebuild` needs a full Xcode selected (`xcode-select -p` points into `Xcode.app`, or `DEVELOPER_DIR` is set); the Command Line Tools alone build the package but not the app.
 - The `Contribusage` scheme is created automatically by `xcodebuild`; a shared scheme file is added when a scheme setting has to differ from the default (archiving in T-6.7).
-- Left out until a task needs them: the NFR-15 coverage gate (with the first parsing code, T-2.1), fixture resources (with the first fixture), notarization and release jobs (T-6.7), live smoke tests (never in CI, SPEC §16.1), dependency update bots (no dependencies yet).
+- The `release` job (2026-10-04) runs on pushes to `main` after the three jobs pass, on `macos-26`: Debug and Release must share one `MARKETING_VERSION` of digits and dots; only when the release `v<version>` is missing does it build the Release app, pack it with an Applications link into `contribusage-<version>.dmg` (`hdiutil`, three tries against the runners' "Resource busy" failures) and create the release at the pushed commit with generated notes and the DMG. Only this job may write (`contents: write`); a cancelled run leaves the release to the next push.
+- Left out until a task needs them: the NFR-15 coverage gate (with the first parsing code, T-2.1), fixture resources (with the first fixture), notarization (T-6.7), live smoke tests (never in CI, SPEC §16.1), dependency update bots (no dependencies yet).

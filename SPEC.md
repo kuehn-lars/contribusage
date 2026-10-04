@@ -1250,7 +1250,7 @@ contribusage/
 ├── AGENTS.md                       ← agent instructions (replaces Appendix B)
 ├── CLAUDE.md                       ← imports AGENTS.md for Claude Code
 ├── .claude/settings.json           ← Claude Code hooks for the llm-wiki protocol
-├── .github/workflows/ci.yml        ← CI (16.1): package tests, app build, architecture, wiki lint
+├── .github/workflows/ci.yml        ← CI (16.1): package tests, app build, architecture, wiki lint; release on version bump
 ├── llm-wiki/                       ← project memory (Obsidian vault), ADRs in decisions/
 ├── .gitignore
 ├── .swift-format
@@ -1633,7 +1633,7 @@ Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T
 - [ ] **T-6.5** Import token from `gh`. *(FR-21)*
 - [ ] **T-6.6** Custom Claude config directory. *(FR-41)*
 - [ ] **T-6.7** Distribution: ~~name availability check (Q-6)~~ (moved to T-5.18), ~~icon~~ (moved to T-5.23), Developer ID signing, notarization (`xcrun notarytool`), arm64 only DMG. `LSMinimumSystemVersion` 14.0.
-- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014).
+- [x] **T-6.8** CI: `swift test` and the architecture checks on an Apple Silicon macOS runner for every push. Done in Phase 1 (`.github/workflows/ci.yml`, ADR-014). Since 2026-10-04 its `release` job turns a version bump on `main` into the GitHub release `v<MARKETING_VERSION>` once the other jobs pass: tag, generated notes and the ad-hoc signed arm64 DMG (ADR-006).
 - [ ] ~~**T-6.9** Second provider evaluation (research only).~~ Moved to T-5.17.
 - [ ] **T-6.10** Plan display: the plan in the group header, copy statistics and diagnostics. *(FR-50, US-15)* Depends: R-6. After v1; becomes relevant with a second provider whose data differs by plan (T-5.17).
 

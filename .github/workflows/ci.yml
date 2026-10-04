@@ -64,3 +64,40 @@ jobs:
           fetch-depth: 0 # the stale-page check compares commit times
       - run: llm-wiki/tools/wiki.sh lint
       - run: llm-wiki/tools/test-wiki.sh
+
+  # A version bump that lands on main becomes the GitHub release v<MARKETING_VERSION> with generated notes and the
+  # app as an arm64 DMG, ad-hoc signed and not notarized (ADR-006, T-6.7). Later pushes find the release and stop.
+  release:
+    name: Release on version bump
+    if: github.event_name == 'push'
+    needs: [package, app, wiki]
+    runs-on: macos-26
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: New version
+        id: version
+        run: |
+          v=$(grep -o 'MARKETING_VERSION = [^;]*' Contribusage.xcodeproj/project.pbxproj | cut -d' ' -f3 | sort -u)
+          # Debug and Release share one version of digits and dots.
+          [[ $v =~ ^[0-9]+(\.[0-9]+)*$ ]] || { echo "::error::MARKETING_VERSION is not one version: $v"; exit 1; }
+          gh release view "v$v" >/dev/null 2>&1 || echo "new=$v" >> "$GITHUB_OUTPUT"
+      - if: steps.version.outputs.new
+        run: xcodebuild -project Contribusage.xcodeproj -scheme Contribusage -configuration Release -derivedDataPath .build/xcode build
+      - if: steps.version.outputs.new
+        name: DMG and release
+        env:
+          VERSION: ${{ steps.version.outputs.new }}
+        run: |
+          mkdir dmg
+          ditto .build/xcode/Build/Products/Release/contribusage.app dmg/contribusage.app
+          ln -s /Applications dmg/Applications
+          # ponytail: hdiutil on hosted runners sometimes fails with "Resource busy"; three tries, then the job fails.
+          for try in 1 2 3; do
+            hdiutil create -volname contribusage -srcfolder dmg -format UDZO "contribusage-$VERSION.dmg" && break
+            sleep 10
+          done
+          gh release create "v$VERSION" "contribusage-$VERSION.dmg" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes

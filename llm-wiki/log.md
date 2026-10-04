@@ -403,3 +403,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 
 ## [2026-10-04] spec | R-3 closed
 - R-3 checked off: SPEC §8.3 drops its "verify in R-3" caveats (`<synthetic>` lines carry zero usage and are skipped, `cleanupPeriodDays` defaults to 30 days).
+
+## [2026-10-04] chore | Release on version bump
+- `ci.yml` gains a `release` job: on `main`, after the other jobs pass, a new `MARKETING_VERSION` becomes the GitHub release `v<version>` with generated notes and the ad-hoc signed arm64 DMG.
+- [[decisions/0014-build-and-ci-foundation]] records it; AGENTS.md's CI row and SPEC T-6.8 mention it.
