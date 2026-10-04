@@ -112,8 +112,7 @@ private struct ClaudeCodeRows: View {
             if case .success(let url) = result { set(url.path(percentEncoded: false)) }
         }
         IntervalPicker(
-            "Check limits every", key: "provider.claude-code.probeInterval", policy: descriptor.limitsPolicy!,
-            choices: [5, 10, 15, 30, 60]
+            "Check limits every", key: "provider.claude-code.probeInterval", policy: descriptor.limitsPolicy!
         )
         .task { lookup = Lookup(await provider.located()) }
     }

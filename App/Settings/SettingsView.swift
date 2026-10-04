@@ -230,15 +230,18 @@ private struct AdvancedTab: View {
 }
 
 /// An interval setting of SPEC §11.6, in minutes (§10.7); unset shows the policy's default. A change reschedules at once.
+/// The choices are the steps within the policy's bounds, so a policy change needs no picker change.
 struct IntervalPicker: View {
+    private static let steps = [1, 2, 5, 10, 15, 30, 60, 120, 240, 360]
     let title: LocalizedStringKey
     let choices: [Int]
     @AppStorage private var minutes: Int
     @Environment(AppState.self) private var appState
 
-    init(_ title: LocalizedStringKey, key: String, policy: SchedulePolicy, choices: [Int]) {
+    init(_ title: LocalizedStringKey, key: String, policy: SchedulePolicy) {
+        let bounds = Int(policy.minimumInterval / .seconds(60))...Int(policy.maximumInterval / .seconds(60))
         self.title = title
-        self.choices = choices
+        choices = Self.steps.filter(bounds.contains)
         _minutes = AppStorage(wrappedValue: Int(policy.defaultInterval / .seconds(60)), key)
     }
 

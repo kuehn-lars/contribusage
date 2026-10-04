@@ -59,9 +59,10 @@ Every page in the vault, one line each. Read this first to pick the pages a task
 - [[decisions/0036-pushed-limits-and-debug-fake-provider]]: ADR-036, the coordinator consumes pushed limits; `DebugFakeProvider` is an app file under its flag
 - [[decisions/0037-no-second-provider-for-v1]]: ADR-037, v1 ships with Claude Code only; Codex CLI is the next candidate
 - [[decisions/0038-notification-cycles-and-delivery]]: ADR-038, a reset time moving by up to 1 h keeps the notification cycle; only the highest threshold per refresh; delivery 3 s apart, grouped per provider
-- [[decisions/0039-one-minute-probe]]: ADR-039, the Claude Code probe runs every minute by default; R-1 checked before it ships
+- [[decisions/0039-one-minute-probe]]: ADR-039, the Claude Code probe every 5 min by default, every minute on request; R-1 found no quota cost
 
 ## Research
+- [[research/r-1-probe-cost]]: R-1, a `/usage` probe costs no plan quota but about 1.7 s CPU; default 5 min, minimum 1 min
 - [[research/r-2-usage-output-variants]]: R-2, `/usage` without a subscription: logged out and API key billing print the same cost summary
 - [[research/nfr-7-transcript-scan]]: NFR-7 and memory: a generated 520 MB tree scans in under 2 s and adds 27 MB
 - [[research/t-5-8-performance-energy]]: T-5.8, the Release build idles at 0.07 % CPU and 47 MB; transcript writes cost about 0.2 %

@@ -1,7 +1,7 @@
 ---
 type: decision
 status: accepted
-updated: 2026-10-03
+updated: 2026-10-04
 aliases: [ADR-033]
 tags: [localization, providers, claude-code]
 tracks: [Packages/ContribusageKit/Sources/ContribusageCore/Providers/Provider.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/ClaudeCodeProvider.swift, Packages/ContribusageKit/Sources/ContribusageClaudeCode/Resources, Packages/ContribusageKit/Sources/ContribusageCore/Notifications/NotificationPlanner.swift]

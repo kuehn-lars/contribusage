@@ -23,7 +23,7 @@ SPEC §11.6 lists controls that other tasks own: launch at login (T-5.3), copy d
 T-5.2 builds the controls no other task owns; the menu bar display mode and menu bar provider settings move to T-5.10, next to the label that reads them. Intervals are settings a `Job` reads before every scheduling decision (`interval`, `limitsInterval(ProviderID)` for providers) as the policy's default, which `Schedule` clamps to the policy's bounds; `intervalsChanged()` reschedules at once. `resetCaches()` lives in the coordinator: it forgets every snapshot, keeps the notification keys and runs every source. Detecting availability and locating `claude` while the Providers tab is shown are allowed for a disabled provider: the user asked by opening the tab, and the registry's once-a-minute rule (FR-3) still bounds it.
 
 ## Consequences
-- An edited `UserDefaults` value outside 5 to 60 min (1 to 60 min since [[decisions/0039-one-minute-probe]]) (or 10 min to 6 h) cannot break the schedule; it is clamped like any other interval.
+- An edited `UserDefaults` value outside 1 to 60 min (5 to 60 min before [[decisions/0039-one-minute-probe]]), or 10 min to 6 h for GitHub, cannot break the schedule; it is clamped like any other interval.
 - Keeping the notification keys means a reset cannot repeat a notification (FR-15); a cache reset is not a way to re-send one.
 - "Delete data for this provider" is offered only while the provider is off, so no running activity source writes `history.json` back during or after the deletion.
 - Enabling a provider calls `start()` again; `restore()` therefore publishes only for sources that show no state yet, or a rejected GitHub token would turn back into its snapshot and poll once more.

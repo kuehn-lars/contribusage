@@ -379,7 +379,7 @@ The menu bar criteria arrive with FR-12 in M4 (T-5.10); until then the menu bar 
 | NFR-2 | Memory | Typical resident memory below 80 MB with one provider; each additional provider adds at most 20 MB. | Activity Monitor after 24 h |
 | NFR-3 | Latency | Popover shows cached data within 150 ms of the click. Opening the popover never waits for a network call or a process. | Manual, Instruments |
 | NFR-4 | Main thread | App code never blocks the main thread longer than 16 ms. Process execution, file IO and parsing run off the main actor. | Thread Performance Checker, code review |
-| NFR-5 | Probe budget | Automatic Claude Code probes every 1 min by default, never more often than every 1 min (ADR-039). Manual refresh at most every 30 s. | Unit tests on the scheduler |
+| NFR-5 | Probe budget | Automatic Claude Code probes every 5 min by default, never more often than every 1 min (ADR-039). Manual refresh at most every 30 s. | Unit tests on the scheduler |
 | NFR-6 | GitHub budget | Automatic GitHub fetches at most every 30 min by default, never more often than every 10 min. Rate limit headers respected. | Unit tests |
 | NFR-7 | Scan speed | Initial scan of 500 MB of Claude Code transcripts under 30 s on an Apple M1 (the slowest supported chip) at utility QoS; incremental update under 200 ms. | Performance test with generated fixtures; on an M3 against half the budget ([ADR-026](llm-wiki/decisions/0026-nfr-7-on-an-m3.md)) |
 | NFR-8 | Accessibility | Every bar, chart and heatmap has a VoiceOver label; information is never conveyed by color alone; popover and Settings are fully keyboard navigable. | Accessibility Inspector, VoiceOver pass |
@@ -526,13 +526,13 @@ Classification is a pure function in the Claude Code target with its own tests. 
 
 Token categories reported by Claude Code: `input`, `output`, `cacheWrite`, `cacheRead` (all four).
 
-Schedule policy for the probe: default 1 min, minimum 1 min, maximum 60 min (ADR-039), stale after 30 min, manual floor 30 s ([section 12](#12-refresh-policy)).
+Schedule policy for the probe: default 5 min, minimum 1 min, maximum 60 min (ADR-039), stale after 30 min, manual floor 30 s ([section 12](#12-refresh-policy)).
 
 #### 8.1.5 Limitations (documented, accepted)
 
 - The `/usage` text is written for humans and is not a documented, stable format. Claude Code updates frequently. The parser is generic and fixture tested so a wording change is detected immediately (principles 4 and 6).
 - Values are as fresh as the last probe. Usage from claude.ai, Claude Desktop or other devices shares the same plan limits and is reflected by the next probe.
-- Whether a probe consumes any plan quota is unverified (research R-1). The 1 min default (ADR-039) is checked against R-1 in T-5.21: if a probe costs quota, the default goes back up.
+- A probe consumes no plan quota (R-1): `/usage` is a local command with no model turn. Each probe costs about 1.7 s of CPU in the `claude` process, which is why the default is 5 min and 1 min is a choice (ADR-039).
 
 ### 8.2 Claude Code: status line bridge (optional)
 
@@ -1178,7 +1178,7 @@ The percentage is always shown as text next to the bar. Each heatmap layer draws
 
 | Source | Automatic interval (default / min / max) | Extra triggers | Stale after | On failure |
 |---|---|---|---|---|
-| Claude Code limits probe | 1 min / 1 min / 60 min | Popover opened and data older than 5 min; a window's reset time reached; wake (after 10 s); manual | 30 min | Exponential backoff: 2×, 4×, 8× the interval, capped at 60 min; reset on success |
+| Claude Code limits probe | 5 min / 1 min / 60 min | Popover opened and data older than 5 min; a window's reset time reached; wake (after 10 s); manual | 30 min | Exponential backoff: 2×, 4×, 8× the interval, capped at 60 min; reset on success |
 | Claude Code bridge file | Event driven (file watch) | none | 30 min | Ignore file, fall back to probe |
 | Claude Code transcripts | Event driven (FSEvents, 5 s debounce) | Popover opened; wake | not applicable | Retry on next event |
 | GitHub | 30 min / 10 min / 6 h | Popover opened and data older than 10 min; wake (after 10 s); token changed; manual | 2 h | Rate limit: run again at the reset, not earlier even manually; other errors: 2×, 4×, 8× backoff capped at 6 h; no token or 401: no automatic run until the token changes, manual refresh still runs (ADR-022) |
@@ -1545,7 +1545,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 
 ### 17.0 Phase 0: Research (do first, each updates the spec)
 
-- [ ] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry.
+- [x] **R-1 Probe cost.** Note current session %; run 20 probes 30 s apart; compare. Also run `claude -p "/usage" --output-format json --no-session-persistence` and inspect cost and token fields. *Outcome:* default and minimum probe interval confirmed or changed (NFR-5, 8.1.4), ADR entry. Done 2026-10-04 in T-5.21: no quota cost, about 1.7 s CPU per probe; default 5 min, minimum 1 min (ADR-039, `llm-wiki/research/r-1-probe-cost.md`).
 - [x] **R-2 Output variants.** Capture exit code, stdout and stderr for: subscription (done), logged out (try an empty config: `CLAUDE_CONFIG_DIR=$(mktemp -d) claude -p "/usage"`, so your real login stays untouched; if it still finds your login, capture this variant on a second macOS user account instead), API key billing (same, plus a dummy `ANTHROPIC_API_KEY`). *Outcome:* fixtures, exact texts for P-10 and section 13. Answered 2026-09-29: `llm-wiki/research/r-2-usage-output-variants.md`.
 - [ ] **R-3 Transcripts.** Inspect real files (`ls ~/.claude/projects`, `head -n 5 file.jsonl | jq .`). Confirm roots, field paths, duplicate lines per response, subagent file layout, placeholder models, default `cleanupPeriodDays`. Compare a quick prototype's daily totals with `npx ccusage daily --json`. *Outcome:* section 8.3 confirmed or corrected, fixtures. The ccusage comparison was done 2026-10-02 against the built activity source (8.3.6).
 - [ ] **R-4 GitHub details.** Which token type and permissions include private contributions; meaning of `restrictedContributionsCount`; which time zone defines "today" (compare API with the profile page around midnight). *Outcome:* 8.4.2 and 8.4.4 finalized.
@@ -1616,7 +1616,7 @@ Each task lists its requirements, dependencies and acceptance. A task is done wh
 - [x] **T-5.18** Name availability check (Q-6), split from T-6.7: a rename costs more with every string and the bundle ID. *Outcome:* 2026-10-04, the name is free in the App Stores, the domains `.com`, `.dev`, `.app`, `.io` and `.org`, GitHub, the package registries, the web, USPTO and TMview; ADR-011 stands. Method in the vault's research page for T-5.18.
 - [x] **T-5.19** Menu bar styles and colors: the `prompt` mark, rings, ring, line, heatmap, shared heatmap and text, five colors, live previews in Settings; the label carries its meter, companion window and source instead of a gauge symbol. *(FR-51, FR-12, FR-46, 11.1)* Depends: T-5.10. Done 2026-10-04: `MenuBarStyle`, `MenuBarTint` and the new `MenuBarLabel` in the core, `MenuBarArt` and `MenuBarItem` in the app (ADR-035).
 - [ ] **T-5.20** Notification fixes: a cycle ends only when the reset time moves more than 1 h (the false "has reset" and repeated "at 80 %" after background probes), only the highest threshold crossed in one refresh, delivery 3 s apart and grouped per provider. *(FR-13, FR-15, FR-52, US-3, ADR-038)* Seam: `NotificationPlanner.plan` for the cycle and threshold rules; delivery checked by hand. Accept: the 16.3 notification planner cases.
-- [ ] **T-5.21** Claude Code probe every minute: `SchedulePolicy` 1 min default and minimum, Settings from 1 min; answer R-1 (does a probe cost plan quota) before the default ships, and re-measure NFR-1 with the 1 min probe. *(NFR-5, NFR-1, section 12, 11.6, ADR-039)* Seam: `Schedule.nextRun` with Claude Code's `limitsPolicy`.
+- [x] **T-5.21** Claude Code probe every minute: `SchedulePolicy` 1 min minimum, 5 min default (changed from 1 min after R-1 measured the CPU per probe), Settings from 1 min; answer R-1 (does a probe cost plan quota) before the default ships, and re-measure NFR-1 with the 1 min probe. *(NFR-5, NFR-1, section 12, 11.6, ADR-039)* Seam: `Schedule.nextRun` with Claude Code's `limitsPolicy`. Done 2026-10-04: R-1 answered (no quota); Release build probing every minute, popover closed, 0.08 % CPU over 9 min, footprint 22 to 23 MB.
 
 Order: T-5.13, T-5.14, T-5.15, T-5.16, then T-5.10, T-5.11, T-5.12; T-5.17 and T-5.18 any time before the M4 check; T-5.20 and T-5.21 before the M4 check.
 - [ ] **M4 check:** manual matrix 16.5 passes.
@@ -1657,7 +1657,7 @@ Decisions are recorded as ADR pages in [`llm-wiki/decisions/`](llm-wiki/decision
 
 | ID | Question | Blocks | Status |
 |---|---|---|---|
-| R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values; the 1 min default (T-5.21) | Open |
+| R-1 | Does a `/usage` probe consume plan quota? | Final NFR-5 values; the default interval (T-5.21) | Answered: no; default 5 min, minimum 1 min |
 | R-2 | Exact Claude Code outputs for logged out and API key billing | T-2.2, section 13 | Answered |
 | R-3 | Transcript format details and retention default | Phase 4 | Open |
 | R-4 | GitHub private contributions and day boundaries | 8.4.2; the calendar passed in T-3.6 | Open |

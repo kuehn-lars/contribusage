@@ -358,3 +358,11 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - T-5.20 (FR-13, FR-15, new FR-52, US-3; [[decisions/0038-notification-cycles-and-delivery]]): false "has reset" and repeated threshold notifications traced to the exact reset time match; tolerance, highest threshold only, spaced and grouped delivery.
 - T-5.21 ([[decisions/0039-one-minute-probe]]): probe default and minimum 1 min (NFR-5, §12 rule 10), R-1 and NFR-1 checked in the task.
 - T-6.4 and FR-40 cover the last 7 days: tokens per category and money per model.
+
+## [2026-10-04] feat | T-5.21 probe from one minute, R-1 answered
+- Claude Code's `limitsPolicy`: 5 min default, 1 min minimum, 60 min maximum; Settings offers 1 to 60 min ([[decisions/0039-one-minute-probe]] revised).
+- [[research/r-1-probe-cost]]: a probe costs no plan quota but about 1.7 s CPU, hence the 5 min default; the app probing every minute stays at 0.08 % CPU (NFR-1).
+
+## [2026-10-04] refactor | Interval choices from the policy
+- `IntervalPicker` derives its choices from fixed steps within the `SchedulePolicy` bounds; the Claude Code and GitHub callers no longer repeat the bounds ([[modules/app]]).
+- The T-5.21 test asserts the policy's default and minimum directly; Low Power Mode doubling stays covered in `ScheduleTests`.
