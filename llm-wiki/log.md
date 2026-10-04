@@ -422,3 +422,8 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 - `CODE_OF_CONDUCT.md`: Contributor Covenant 2.1; reports go through GitHub's "Report content → Report to repository admins", so no address is published.
 - `SECURITY.md`: latest release supported, reports through private vulnerability reporting, the SPEC §2 and §14 promises as the definition of a vulnerability.
 - `.github/ISSUE_TEMPLATE/` (bug, `/usage` output change per SPEC §16.6, feature with the provider-gate question, security contact link) and `.github/pull_request_template.md`; CONTRIBUTING.md links the Code of Conduct and the security policy. [[architecture/repo-map]] lists them.
+
+## [2026-10-04] fix | Release job hardened
+- The `release` job's `hdiutil` retries overwrite a partial image and fail the job after the third try; only its two `gh` steps get the token, and its checkout keeps no credentials.
+- Runs on `main` queue instead of cancelling each other, so a release cannot stop half-created; [[decisions/0014-build-and-ci-foundation]] updated.
+- [[modules/claude-code]] no longer cites the SPEC §13 Rosetta row the M4 check removed.

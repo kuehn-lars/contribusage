@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Pushes to main queue instead: a cancelled release job could leave a draft release that blocks the version.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   package:
@@ -74,12 +75,14 @@ jobs:
     runs-on: macos-26
     permissions:
       contents: write
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false # keeps the write token out of .git/config while the build runs
       - name: New version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           v=$(grep -o 'MARKETING_VERSION = [^;]*' Contribusage.xcodeproj/project.pbxproj | cut -d' ' -f3 | sort -u)
           # Debug and Release share one version of digits and dots.
@@ -90,6 +93,7 @@ jobs:
       - if: steps.version.outputs.new
         name: DMG and release
         env:
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.new }}
         run: |
           mkdir dmg
@@ -97,7 +101,8 @@ jobs:
           ln -s /Applications dmg/Applications
           # ponytail: hdiutil on hosted runners sometimes fails with "Resource busy"; three tries, then the job fails.
           for try in 1 2 3; do
-            hdiutil create -volname contribusage -srcfolder dmg -format UDZO "contribusage-$VERSION.dmg" && break
+            hdiutil create -ov -volname contribusage -srcfolder dmg -format UDZO "contribusage-$VERSION.dmg" && break
+            [[ $try == 3 ]] && exit 1
             sleep 10
           done
           gh release create "v$VERSION" "contribusage-$VERSION.dmg" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes

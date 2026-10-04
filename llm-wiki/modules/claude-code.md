@@ -44,7 +44,7 @@ Beyond the windows, `billingNote` is the first non-empty line, `insights` the "W
 - Every pass opens every transcript (a `ponytail:` note), and every usage line stays in memory; T-4.7 measures both against NFR-7 and NFR-2.
 - The probe gets the login shell's PATH but not its `CLAUDE_CONFIG_DIR`: with a custom config dir set only in the shell profile, a Finder-started app's probe reads `~/.claude`, while the activity source reads the custom root.
 - Cancelling one caller that joined a running probe cancels it for every joined caller (a `ponytail:` note marks it); the coordinator is the only caller, so joins are rare.
-- An x86_64 `claude` without Rosetta fails `--version` too, so the locator never returns it: SPEC §13's Rosetta row shows up as `toolNotFound` today, and `ExecutableKind` (FR-36) is what tells the two apart.
+- An x86_64 `claude` without Rosetta fails `--version` too, so the locator never returns it and the provider reports `toolNotFound` (SPEC §20, [[decisions/0009-apple-silicon-only]]); with Rosetta, `ExecutableKind` (FR-36) names it in the Providers tab and diagnostics.
 - `Fixtures/usage/subscription-basic.txt` is reconstructed from Appendix A, not yet captured byte for byte as SPEC §16.2 requires; recapture it with the SPEC §16.6 command.
 - Reset times resolve through `Calendar` in the clause's zone, so the Berlin DST change and New Year come out right; time only resets use `nextDate(after:)`, which already skips past `now`.
 - Logged out and API key billing print the same bytes and exit 0 ([[research/r-2-usage-output-variants]]); the parser cannot tell them apart, and neither can the provider.
