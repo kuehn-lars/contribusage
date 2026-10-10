@@ -431,3 +431,7 @@ Append-only record of what changed in the project, newest last. Entry format: `#
 ## [2026-10-04] chore | Release build provenance
 - The `release` job attests each DMG with `actions/attest` before creating the release; `SECURITY.md` shows the `gh attestation verify` check and the README links it.
 - [[decisions/0014-build-and-ci-foundation]] and SPEC T-6.8 say so.
+
+## [2026-10-10] docs | README video slot
+- The README gets a placeholder under the screenshot for a showcase video, to be replaced with a GitHub user-attachments link in the web editor, and a caption crediting [brag](https://github.com/latent-spaces/brag).
+- Acknowledgements list brag for the video.

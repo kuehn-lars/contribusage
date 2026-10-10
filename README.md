@@ -29,6 +29,11 @@
   </picture>
 </p>
 
+<!-- Video: in the GitHub web editor, drag the MP4 onto the placeholder line below. GitHub uploads it and puts an https://github.com/user-attachments/assets/… link in its place, which renders as a player when it stands on its own line. -->
+VIDEO_PLACEHOLDER
+
+<p align="center"><sub>Video made with <a href="https://github.com/latent-spaces/brag">brag</a>.</sub></p>
+
 ## Highlights
 
 - **Limits.** Every usage window your coding agent reports, such as the current session and the current week, with its percentage and the time it resets. Bars turn orange at 70 % and red at 90 %.
@@ -117,6 +122,7 @@ contribusage is built spec-first, with coding agents, and everything they need l
 - Andrej Karpathy's [**LLM-wiki pattern**](llm-wiki/sources/karpathy-llm-wiki.md) shapes the project memory in `llm-wiki/`, kept in [**Obsidian**](https://obsidian.md).
 - Apple's **Icon Composer** and **SF Symbols** give the app its icon and its interface symbols.
 - [**Shields.io**](https://shields.io) draws the badges above.
+- [**brag**](https://github.com/latent-spaces/brag) made the showcase video at the top.
 
 ## License
 
