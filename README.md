@@ -29,8 +29,7 @@
   </picture>
 </p>
 
-<!-- Video: in the GitHub web editor, drag the MP4 onto the placeholder line below. GitHub uploads it and puts an https://github.com/user-attachments/assets/… link in its place, which renders as a player when it stands on its own line. -->
-VIDEO_PLACEHOLDER
+https://github.com/user-attachments/assets/165a451c-b7fc-475a-a722-0c8e4cffb3e1
 
 <p align="center"><sub>Video made with <a href="https://github.com/latent-spaces/brag">brag</a>.</sub></p>
 
